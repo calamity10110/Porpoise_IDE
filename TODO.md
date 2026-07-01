@@ -300,4 +300,14 @@
 
 ---
 
+## Phase Completion Checklist
+
+Run this ritual after every phase is marked complete:
+
+1. **Update documentation** — sync status in README.md, ROADMAP.md, and TODO.md summary table
+2. **Run graphify** — regenerate knowledge graph (`graphify-out/`) to reflect new code relationships
+3. **Git commit** — atomic commits per crate/change, following dependency order
+
+---
+
 *Last updated: 2026-07-01 after Phase 0–1 implementation pass. Next update: after Phase 2 work.*
