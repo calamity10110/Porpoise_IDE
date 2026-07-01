@@ -1,0 +1,22 @@
+[package]
+name = "porpoise-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Process supervision, PTY allocation, and resource management"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+tokio.workspace = true
+tracing.workspace = true
+nix.workspace = true
+libc.workspace = true
+chrono.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+nix.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+
+[dev-dependencies]
+tempfile.workspace = true
