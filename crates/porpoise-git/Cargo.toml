@@ -1,0 +1,20 @@
+[package]
+name = "porpoise-git"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Git operations, worktree management, and remote provider integration"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+porpoise-network = { path = "../porpoise-network", optional = true }
+git2.workspace = true
+octocrab.workspace = true
+notify.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+tempfile.workspace = true
+
+[dev-dependencies]

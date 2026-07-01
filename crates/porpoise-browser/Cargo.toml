@@ -1,0 +1,13 @@
+[package]
+name = "porpoise-browser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Embedded browser engine abstraction — WKWebView, webkit2gtk, WebView2"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+porpoise-network = { path = "../porpoise-network", optional = true }
+tokio.workspace = true
+serde.workspace = true
+tracing.workspace = true
