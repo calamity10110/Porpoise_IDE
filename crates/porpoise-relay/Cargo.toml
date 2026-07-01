@@ -1,0 +1,19 @@
+[package]
+name = "porpoise-relay"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "IPC protocol for Porpoise — binary framing, transport, and client/server"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+bitflags.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+proptest.workspace = true
