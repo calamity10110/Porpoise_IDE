@@ -1,0 +1,25 @@
+[package]
+name = "porpoise-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Command-line interface for Porpoise"
+
+[[bin]]
+name = "porpoise"
+path = "src/main.rs"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+porpoise-relay = { path = "../porpoise-relay" }
+clap.workspace = true
+clap_complete.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+owo-colors.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+tempfile.workspace = true
