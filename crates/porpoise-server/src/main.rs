@@ -12,7 +12,7 @@ async fn main() -> Result<(), PorpoiseError> {
         .init();
 
     let config = AppConfig::default();
-    let data_dir = porpoise_core::config::defaults::AppConfig::default_data_dir()?;
+    let data_dir = AppConfig::default_data_dir()?;
     std::fs::create_dir_all(&data_dir)
         .map_err(|e| PorpoiseError::Config(format!("cannot create data dir: {e}")))?;
 

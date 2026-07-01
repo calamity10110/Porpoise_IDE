@@ -1,6 +1,7 @@
 pub mod services;
 
 use std::path::PathBuf;
+#[cfg(unix)]
 use std::sync::Arc;
 use porpoise_core::bus::EventBus;
 use porpoise_core::config::AppConfig;
