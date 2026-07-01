@@ -1,0 +1,22 @@
+[package]
+name = "porpoise-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Foundation types, traits, errors, config, and event bus for Porpoise"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+chrono.workspace = true
+tracing.workspace = true
+config.workspace = true
+bitflags.workspace = true
+async-trait.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+tempfile.workspace = true
