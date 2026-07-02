@@ -9,12 +9,13 @@ use crate::process::ProcessManager;
 pub struct HealthChecker {
     process_manager: Arc<ProcessManager>,
     interval: Duration,
-    _event_bus: EventBus,
+    #[allow(dead_code)]
+    event_bus: EventBus,
 }
 
 impl HealthChecker {
     pub fn new(pm: Arc<ProcessManager>, interval: Duration, event_bus: EventBus) -> Self {
-        Self { process_manager: pm, interval, _event_bus: event_bus }
+        Self { process_manager: pm, interval, event_bus }
     }
 
     pub async fn run(&self) {

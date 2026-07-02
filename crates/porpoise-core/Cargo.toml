@@ -16,6 +16,7 @@ tracing.workspace = true
 config.workspace = true
 bitflags.workspace = true
 async-trait.workspace = true
+bincode.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

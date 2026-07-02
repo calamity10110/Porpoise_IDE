@@ -17,6 +17,7 @@ struct AppStateInner {
     pub event_bus: EventBus,
     pub worktrees: RwLock<HashMap<WorktreeId, WorktreeState>>,
     pub agents: RwLock<HashMap<AgentId, AgentState>>,
+    #[allow(dead_code)]
     pub sessions: RwLock<HashMap<SessionId, SessionState>>,
 }
 

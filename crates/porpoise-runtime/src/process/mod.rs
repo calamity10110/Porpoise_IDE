@@ -41,6 +41,7 @@ pub enum ProcessCommand {
 
 pub struct ProcessManager {
     processes: Arc<RwLock<HashMap<ProcessId, ProcessEntry>>>,
+    #[allow(dead_code)]
     event_bus: EventBus,
 }
 

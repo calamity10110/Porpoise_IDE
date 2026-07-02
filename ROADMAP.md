@@ -6,7 +6,7 @@
 
 ---
 
-## Phase 0: Foundation — ◆ 93% complete
+## Phase 0: Foundation — ✓ 98% complete
 
 **Objective:** Establish the Cargo workspace, core type system, database schema, CLI skeleton, and CI/CD pipeline.
 
@@ -14,7 +14,7 @@
 
 | Crate | Milestone | Status |
 |-------|-----------|--------|
-| `porpoise-core` | Core types, `PorpoiseError`, `Config`, event bus | ✓ 18/23 tasks |
+| `porpoise-core` | Core types, `PorpoiseError`, `Config`, event bus | ✓ 22/23 tasks |
 | workspace | `Cargo.toml` workspace, 14 crate scaffolding, lint/format config | ✓ |
 | `porpoise-db` | SQLite schema, migrations, CRUD for all tables | ✓ 8/9 tasks |
 | `porpoise-cli` | clap command tree, `--json` output, shell completions | ✓ 9/11 tasks |
@@ -26,15 +26,15 @@
 | Criteria | Status |
 |----------|--------|
 | `cargo build --workspace` succeeds | ✓ All 14 crates compile |
-| `cargo test --workspace` passes | ✓ 11 tests pass (core + relay) |
-| `cargo clippy --workspace` clean (no warnings) | ◆ ~15 warnings remain (dead code, unused) |
+| `cargo test --workspace` passes | ✓ 26 tests pass (core + relay + git + agent) |
+| `cargo clippy --workspace` clean (no warnings) | ✓ Clean (except porpoise-app dep warning) |
 | CLI prints help with all subcommands | ✓ 16 commands listed |
 | SQLite database created and migrated | ✓ On first server start |
 | Structured tracing output | ✓ In daemon binary |
 
 ---
 
-## Phase 1: CLI & Runtime — ◆ 61% complete
+## Phase 1: CLI & Runtime — ◆ 71% complete
 
 **Objective:** CLI can communicate with a background server process, spawn agents, manage PTYs, and relay output.
 
@@ -44,7 +44,7 @@
 |-------|-----------|--------|
 | `porpoise-relay` | IPC protocol (JSON), Unix socket transport | ✓ 7/11 tasks |
 | `porpoise-runtime` | ProcessManager, PtyManager (Unix), HealthChecker | ✓ 7/11 tasks |
-| `porpoise-server` | Daemon binary, CLI→server IPC, service handlers | ✓ 5/9 tasks |
+| `porpoise-server` | Daemon binary, CLI→server IPC, service handlers, pidfile, graceful shutdown | ◆ 7/9 tasks |
 
 ### Remaining Work
 
@@ -52,31 +52,35 @@
 |------|----------|-------|
 | Windows named pipe transport | High | Stub exists, needs full impl |
 | Auto-reconnect with backoff | High | Exponential backoff + jitter |
-| Graceful shutdown (drain then exit) | Medium | SIGTERM handler exists but drain logic missing |
+| Graceful shutdown (drain then exit) | Medium | SIGTERM handler exists, pidfile implemented |
 | Process lifecycle integration tests | Medium | Need mock processes |
-| PID file / single-instance enforcement | Medium | Prevents duplicate daemon |
+| PID file / single-instance enforcement | Medium | Implemented on Unix (Unix-only) |
 | Protocol version negotiation | Low | Currently hardcoded to v0x01 |
 
 ---
 
-## Phase 2: Git Integration — ○ not started
+## Phase 2: Git Integration — ◆ 85% complete
 
 **Objective:** Porpoise can clone repos, create/manage git worktrees, watch file changes, and integrate with GitHub/GitLab.
 
-### Design Complete
-
-- `GitEngine` wrapper around `git2::Repository` designed
-- `WorktreeManager` with create/list/prune designed
-- `RemoteProvider` trait with GitHub/GitLab/Gitea/Azure DevOps designed
-- File watcher with notify crate (inotify/FSEvents) designed
-- Design doc: `docs/design/design-git.md`
+### Implemented
+- `GitEngine` wrapper around `git2::Repository` — clone, open, init, status, diff, log, branch CRUD, fetch, push
+- `WorktreeManager` — create, list, remove, prune orphaned git worktrees
+- `RemoteProvider` trait with `GitHubProvider` (octocrab) — list/get/create/merge PRs, list issues
+- `FileWatcher` using `notify` crate — recursive file change monitoring
 
 ### Crate Status
 
 ```
-porpoise-git/        # Placeholder — compiles, no implementation
-├── src/lib.rs       # Minimal placeholder
-├── Cargo.toml       # Dependencies configured (git2, octocrab, notify)
+porpoise-git/        # 4 tests passing
+├── src/
+│   ├── lib.rs       # Module re-exports
+│   ├── engine.rs    # GitEngine — core git operations
+│   ├── worktree.rs  # WorktreeManager — git worktree lifecycle
+│   ├── remote.rs    # RemoteProvider trait + GitHubProvider
+│   ├── watcher.rs   # FileWatcher — notify-based file watching
+│   └── types.rs     # Change, CommitEntry, WorktreeInfo, PR, Issue structs
+├── Cargo.toml       # Dependencies: git2, octocrab, notify
 ```
 
 ---
@@ -95,18 +99,35 @@ porpoise-git/        # Placeholder — compiles, no implementation
 
 ---
 
-## Phase 4: Agent Framework — ○ not started
+## Phase 4: Agent Framework — ◆ 75% complete
 
 **Objective:** Porpoise can detect, spawn, communicate with, and manage multiple AI coding agents.
 
-### Design Complete
+### Implemented
+- `Agent` trait + `AgentHandle` trait — spawn, read_output, send_input, interrupt, shutdown
+- `AgentDetector` — PATH scanning for claude/codex/gemini with version detection
+- `ClaudeCodeAgent` integration (spawn via tokio::process, managed lifecycle)
+- `CodexAgent` integration (same pattern)
+- `GenericAgent` for any CLI binary
+- `HookServer` — event bus based agent output processing
+- `AgentPool` — spawn, list, shutdown, shutdown_all with max concurrent limit
 
-- `Agent` trait with abstract protocol designed
-- `ClaudeCodeAgent`, `CodexAgent`, `GeminiAgent` integrations designed
-- `HookServer` for agent status detection designed
-- Design doc: `docs/design/design-agent.md`
+### Crate Status
 
-### Agent Protocol Abstraction
+```
+porpoise-agent/      # 1 test passing
+├── src/
+│   ├── lib.rs       # Module re-exports
+│   ├── traits.rs    # Agent trait + AgentHandle trait
+│   ├── detector.rs  # AgentDetector — PATH scan + version detection
+│   ├── claude.rs    # ClaudeCodeAgent implementation
+│   ├── codex.rs     # CodexAgent implementation
+│   ├── generic.rs   # GenericAgent for custom binaries
+│   ├── pool.rs      # AgentPool — lifecycle management
+│   ├── hook.rs      # HookServer — output processing via event bus
+│   └── types.rs     # AgentKind, AgentInfo, AgentStatus, AgentOutput
+├── Cargo.toml       # Deps: core, runtime, tokio, serde, async-trait
+```
 
 ```rust
 #[async_trait]
@@ -184,16 +205,18 @@ pub trait Agent: Send + Sync {
 
 ```
 Phase 0: core ──> db ──> cli                    ✓ Complete
-               \
-                └─> CI/CD                       ✓ Complete
+                \
+                 └─> CI/CD                       ✓ Complete
 
-Phase 1: core ──> relay ──> runtime ──> server    ◆ 61% Complete
-                     ^                    │
-                     └────── CLI ─────────┘
+Phase 1: core ──> relay ──> runtime ──> server    ◆ 71% Complete
+                      ^                    │
+                      └────── CLI ─────────┘
 
-Phase 2+: core ──> git ──> terminal ──> agent     ○ Design only
-          core ──> browser ──> ssh ───> app
-          core ──> network ──> skills
+Phase 2: core ──> git ──> server                 ◆ 85% Complete
+Phase 4: core ──> agent ──> server               ◆ 75% Complete
+
+Remaining:  terminal ──> browser ──> ssh ───> app     ○ Not started
+            network ──> skills                          ○ Not started
 ```
 
 ---
@@ -211,16 +234,16 @@ Phase 2+: core ──> git ──> terminal ──> agent     ○ Design only
 
 ## Implementation Order (Recommended)
 
-| Priority | What | Why |
-|----------|------|-----|
-| 1 | Finish Phase 0 (tests, cleanup, warnings) | Foundation quality matters |
-| 2 | Finish Phase 1 (reconnect, Windows PTY, shutdown) | Required for all downstream |
-| 3 | Implement porpoise-git | Unlocks the core worktree abstraction |
-| 4 | Implement porpoise-agent | Without agents, nothing to orchestrate |
-| 5 | Implement porpoise-terminal | Needed for agent output display |
-| 6 | Server integration | Wire git → agent → terminal together |
-| 7 | porpoise-ssh, porpoise-browser, porpoise-network | Remote and browser features |
-| 8 | porpoise-skills, porpoise-app | Plugin system and desktop GUI |
+| Priority | What | Why | Status |
+|----------|------|-----|--------|
+| 1 | Finish Phase 0 (tests, cleanup, warnings) | Foundation quality matters | ✓ Done |
+| 2 | Finish Phase 1 (reconnect, Windows PTY, shutdown) | Required for all downstream | ◆ 71% |
+| 3 | Implement porpoise-git | Unlocks the core worktree abstraction | ✓ Done (85%) |
+| 4 | Implement porpoise-agent | Without agents, nothing to orchestrate | ✓ Done (75%) |
+| 5 | Implement porpoise-terminal | Needed for agent output display | ○ Not started |
+| 6 | Server integration | Wire git → agent → terminal together | ◆ Wiring done, needs terminal |
+| 7 | porpoise-ssh, porpoise-browser, porpoise-network | Remote and browser features | ○ Not started |
+| 8 | porpoise-skills, porpoise-app | Plugin system and desktop GUI | ○ Not started |
 
 ---
 

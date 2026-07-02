@@ -1,25 +1,13 @@
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Capabilities {
     pub fs_read: Vec<PathBuf>,
     pub fs_write: Vec<PathBuf>,
     pub network: Vec<UrlPattern>,
     pub process: Vec<ProcessPattern>,
     pub ssh: Vec<HostPattern>,
-}
-
-impl Default for Capabilities {
-    fn default() -> Self {
-        Self {
-            fs_read: vec![],
-            fs_write: vec![],
-            network: vec![],
-            process: vec![],
-            ssh: vec![],
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

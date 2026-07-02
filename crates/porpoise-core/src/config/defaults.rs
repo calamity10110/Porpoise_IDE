@@ -37,6 +37,7 @@ impl AppConfig {
     }
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn home_dir() -> Result<std::path::PathBuf, crate::error::PorpoiseError> {
     std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))

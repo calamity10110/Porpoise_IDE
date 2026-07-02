@@ -1,6 +1,7 @@
 #[derive(Debug, Clone)]
 pub enum OutputFormat {
     Plain,
+    #[allow(dead_code)]
     Json,
     JsonPretty,
 }

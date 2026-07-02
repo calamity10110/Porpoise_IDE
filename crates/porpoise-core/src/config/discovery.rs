@@ -42,6 +42,7 @@ fn platform_config_dir() -> Result<PathBuf> {
     }
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn home_dir() -> Result<PathBuf> {
     std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))

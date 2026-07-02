@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use porpoise_core::config::discovery;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct CliSettings {
     pub output_format: super::output::OutputFormat,

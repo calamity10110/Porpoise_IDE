@@ -14,7 +14,7 @@ pub async fn handle(args: crate::app::GitArgs, format: &OutputFormat) -> Result<
         GitAction::Diff { repo_path, staged } => {
             Ok(format!("[diff for {repo_path} staged={staged}]"))
         }
-        GitAction::Log { repo_path, count } => {
+        GitAction::Log { repo_path, count: _ } => {
             Ok(format!("[git log for {repo_path}]"))
         }
         GitAction::Clone { url, path } => {

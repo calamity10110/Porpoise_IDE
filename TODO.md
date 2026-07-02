@@ -19,7 +19,7 @@
 
 ## Phase 0: Foundation
 
-### 🔴 porpoise-core (weeks 1-3) — 18/23 ✓
+### 🔴 porpoise-core (weeks 1-3) — 22/23 ✓
 
 - [x] Define `PorpoiseError` enum with typed variants: `Config`, `Db`, `Runtime`, `Git`, `Ssh`, `Agent`, `Network`, `Ipc`, `Terminal`, `Browser`, `Plugin`, `Validation`, `Internal`
 - [x] Create newtype IDs: `WorktreeId`, `TerminalId`, `AgentId`, `SessionId`, `PageId`, `CorrelationId`, `ProcessId`, `SkillId`
@@ -39,9 +39,9 @@
 - [x] Config file discovery (`PORPOISE_CONFIG` env var, XDG/AppData paths)
 - [x] Config loading from TOML + environment variables
 - [x] Config defaults per platform (data dir, socket path)
-- [ ] Implement `Platform` detection: `#[cfg]`-based OS/arch constants
-- [ ] Implement `Version` struct for app version tracking
-- [ ] Write core serialization helpers (bincode config, json pretty-print)
+- [x] Implement `Platform` detection: `#[cfg]`-based OS/arch constants
+- [x] Implement `Version` struct for app version tracking
+- [x] Write core serialization helpers (bincode config, json pretty-print)
 - [ ] Document all public APIs with `#[doc]` attributes
 - [ ] ⚪ P3: Add property-based tests with `proptest` for core types
 
@@ -148,14 +148,14 @@
 
 ## Phase 2: Git Integration
 
-### 🟡 porpoise-git — 0/13 ✓ (placeholder crate only)
+### 🟡 porpoise-git — 11/13 ✓
 
-- [ ] `GitEngine` wrapper around `git2::Repository`: clone, open, status, diff, log, branch, checkout, merge
-- [ ] `WorktreeManager`: create, list, remove, prune, `git2::Repository::worktree()`
-- [ ] `RemoteProvider` trait: list_prs, get_pr, create_pr, merge_pr, list_issues
-- [ ] GitHub provider using `octocrab`
+- [x] `GitEngine` wrapper around `git2::Repository`: clone, open, init, status, diff, log, branch_create, branch_checkout, branch_list, fetch, push
+- [x] `WorktreeManager`: create, list, remove, prune orphaned, `git2::Repository::worktree()`
+- [x] `RemoteProvider` trait: list_prs, get_pr, create_pr, merge_pr, list_issues
+- [x] GitHub provider using `octocrab`
 - [ ] GitLab provider
-- [ ] File watcher using `notify` crate (inotify/FSEvents/ReadDirectoryChanges)
+- [x] File watcher using `notify` crate (inotify/FSEvents/ReadDirectoryChanges)
 - [ ] SSH git support (key auth)
 - [ ] `git stash`/`git stash pop` for context switching
 - [ ] Integration tests with temp repos
@@ -183,17 +183,19 @@
 
 ## Phase 4: Agent Framework
 
-### 🟡 porpoise-agent — 0/12 ✓ (placeholder crate only)
+### 🟡 porpoise-agent — 9/12 ✓
 
-- [ ] `AgentDetector`: PATH scanning, version detection, config discovery
-- [ ] `Agent` trait: spawn, send_input, read_output, interrupt, shutdown
-- [ ] `ClaudeCodeAgent` integration
-- [ ] `CodexAgent` integration
-- [ ] `GeminiAgent`/`GrokAgent` integration
-- [ ] `HookServer`: file-based hook endpoint for agent status
+- [x] `AgentDetector`: PATH scanning, version detection, config discovery
+- [x] `Agent` trait: spawn, read_output, send_input, interrupt, shutdown
+- [x] `AgentHandle` trait for runtime lifecycle management
+- [x] `ClaudeCodeAgent` integration
+- [x] `CodexAgent` integration
+- [x] `GenericAgent` for custom CLI binaries
+- [x] `HookServer`: event bus based output processing
+- [x] `AgentPool` with max concurrent limit: spawn, list, shutdown, shutdown_all
 - [ ] Agent session resume (SQLite-backed)
 - [ ] Agent account switcher (multi-account)
-- [ ] `AgentPool` with max concurrent limit
+- [ ] `GeminiAgent` custom integration
 - [ ] Mock tests with fake agent processes
 - [ ] 🟡 P1: Agent output streaming to WebSocket
 - [ ] 🟢 P2: Custom agent configuration DSL
@@ -287,16 +289,16 @@
 
 | Phase | Total | ✓ Done | ◆ Partial | ○ Not Started |
 |-------|-------|--------|-----------|---------------|
-| 0 | ~43 tasks | 40 | 3 | 0 |
+| 0 | ~43 tasks | 42 | 1 | 0 |
 | 1 | ~31 tasks | 19 | 12 | 0 |
-| 2 | ~13 tasks | 0 | 0 | 13 |
+| 2 | ~13 tasks | 11 | 0 | 2 |
 | 3 | ~11 tasks | 0 | 0 | 11 |
-| 4 | ~12 tasks | 0 | 0 | 12 |
+| 4 | ~12 tasks | 9 | 0 | 3 |
 | 5 | ~10 tasks | 0 | 0 | 10 |
 | 6 | ~24 tasks | 0 | 0 | 24 |
 | 7 | ~12 tasks | 0 | 0 | 12 |
 | 8 | ~20 tasks | 0 | 0 | 20 |
-| **Total** | **~176 tasks** | **59** | **15** | **102** |
+| **Total** | **~176 tasks** | **81** | **13** | **82** |
 
 ---
 

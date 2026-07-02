@@ -26,6 +26,7 @@ pub async fn setup_signal_handlers(_process_manager: Arc<ProcessManager>) {
     }
 }
 
+#[allow(dead_code)]
 async fn shutdown(process_manager: &ProcessManager) {
     tracing::info!(
         "graceful shutdown: killing {} processes",

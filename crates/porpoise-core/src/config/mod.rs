@@ -4,7 +4,7 @@ pub mod discovery;
 use std::path::PathBuf;
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct AppConfig {
     #[serde(default)]
     pub core: CoreConfig,
@@ -22,21 +22,6 @@ pub struct AppConfig {
     pub ssh: SshConfig,
     #[serde(default)]
     pub browser: BrowserConfig,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            core: CoreConfig::default(),
-            cli: CliConfig::default(),
-            db: DbConfig::default(),
-            runtime: RuntimeConfig::default(),
-            agent: AgentConfig::default(),
-            git: GitConfig::default(),
-            ssh: SshConfig::default(),
-            browser: BrowserConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

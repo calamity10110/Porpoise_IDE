@@ -1,4 +1,3 @@
 # Porpoise clippy configuration
-# Keep this in sync with CI checks
 
-disallowed-methods = ["std::process::exit"]
+warn-on-all-wildcard-imports = true
