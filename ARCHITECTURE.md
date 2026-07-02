@@ -640,13 +640,15 @@ impl Transport for NamedPipeTransport { ... }
 |---------|-------|-------|---------|
 | CLI | ✅ Built | ✅ Built | ✅ Built |
 | PTY | ✅ forkpty | ✅ forkpty | ⬜ ConPTY (stub) |
-| IPC | ✅ Unix socket | ✅ Unix socket | ⬜ Named pipe (stub) |
-| Git | ⬜ (git2) | ⬜ (git2) | ⬜ (git2) |
+| IPC | ✅ Unix socket | ✅ Unix socket | ✅ Named pipe (client + server) |
+| Git | ✅ (git2) | ✅ (git2) | ✅ (git2) |
 | SSH | ⬜ | ⬜ | ⬜ |
 | Browser | ⬜ WKWebView | ⬜ webkit2gtk | ⬜ WebView2 |
-| File watch | ⬜ FSEvents | ⬜ inotify | ⬜ ReadDirectoryChanges |
+| File watch | ✅ (notify) | ✅ (notify) | ✅ (notify) |
+| Agent | ✅ Claude/Codex | ✅ Claude/Codex | ✅ Claude/Codex |
 | Desktop | ⬜ (Tauri) | ⬜ (Tauri) | ⬜ (Tauri) |
-| Daemon | ⬜ launchd | ⬜ systemd | ⬜ service |
+| Daemon | ◆ pidfile | ◆ pidfile | ⬜ service |
+| Terminal | ✅ PtyMux | ✅ PtyMux | ⬜ ConPTY |
 
 ✅ = Implemented · ⬜ = Design done, not implemented
 
@@ -716,31 +718,31 @@ impl EventBus {
 
 ## 15. Implementation Status
 
-### Crate Implementation Matrix (2026-07-01)
+### Crate Implementation Matrix (2026-07-02)
 
 | Crate | Lines | Level | Status |
 |-------|-------|-------|--------|
-| `porpoise-core` | ~800 | Foundation | ✅ 18/23 tasks — tests pass |
-| `porpoise-db` | ~500 | Foundation | ✅ 8/9 tasks — all CRUD models |
-| `porpoise-cli` | ~600 | Application | ✅ 9/11 tasks — 16 commands |
-| `porpoise-relay` | ~400 | Service | ◆ 7/11 tasks — Unix IPC works |
-| `porpoise-runtime` | ~500 | Service | ◆ 7/11 tasks — Unix PTY works |
-| `porpoise-server` | ~250 | Orchestration | ◆ 5/9 tasks — daemon skeleton |
-| `porpoise-git` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-terminal` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-agent` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-ssh` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-browser` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-network` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-skills` | ~20 | Service | ○ placeholder — design complete |
-| `porpoise-app` | ~20 | Application | ○ placeholder — design complete |
+| `porpoise-core` | ~1,117 | Foundation | ✅ 22/23 tasks — tests pass |
+| `porpoise-db` | ~622 | Foundation | ✅ 8/9 tasks — all CRUD models |
+| `porpoise-cli` | ~512 | Application | ✅ 9/11 tasks — 16 commands |
+| `porpoise-relay` | ~377 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect, handshake |
+| `porpoise-runtime` | ~419 | Service | ◆ 7/11 tasks — Unix PTY works |
+| `porpoise-server` | ~133 | Orchestration | ✅ 7/9 tasks — daemon, pidfile, graceful shutdown, 8 IPC methods |
+| `porpoise-git` | ~1,300 | Service | ◆ 11/13 tasks — GitEngine, WorktreeManager, GitHubProvider |
+| `porpoise-terminal` | ~450 | Service | ◆ 7/11 tasks — PtyMultiplexer, OutputParser, scrollback, layout |
+| `porpoise-agent` | ~500 | Service | ◆ 9/12 tasks — Agent trait, detectors, ClaudeCode/Codex, pool, hook |
+| `porpoise-ssh` | ~2 | Service | ○ placeholder — design complete |
+| `porpoise-browser` | ~2 | Service | ○ placeholder — design complete |
+| `porpoise-network` | ~2 | Service | ○ placeholder — design complete |
+| `porpoise-skills` | ~2 | Service | ○ placeholder — design complete |
+| `porpoise-app` | ~2 | Application | ○ placeholder — design complete |
 
 ### Key Architectural Decisions Made During Implementation
 
 | Decision | Rationale |
 |----------|-----------|
 | serde_json instead of bincode for IPC | Debuggable wire format, simpler tooling, no schema versioning issues |
-| `#[cfg(unix)]` on entire relay crate | Unix sockets not available on Windows; named pipe impl deferred |
+| Cross-platform IPC via cfg gating | Unix sockets on Unix, named pipes on Windows; `#[cfg]`-separated modules |
 | Platform-specific PTY via `src/pty/mod.rs` | Unified `PtySession` struct, platform impls behind `#[cfg]` |
 | Direct tokio I/O instead of Transport trait | Avoids `async_trait` dyn-compatibility issues on Windows |
 | UUID v7 for all entity IDs | Time-ordered sorting, no coordinator needed, collision-free |
@@ -748,4 +750,4 @@ impl EventBus {
 
 ---
 
-*This architecture is living documentation. As Porpoise evolves, update this document to reflect changes. See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidance on architectural decisions. Last updated: 2026-07-01 after Phase 0–1 implementation.*
+*This architecture is living documentation. As Porpoise evolves, update this document to reflect changes. See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidance on architectural decisions. Last updated: 2026-07-02 after Phase 0–4 implementation.*

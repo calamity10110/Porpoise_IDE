@@ -7,7 +7,8 @@ description = "Embedded browser engine abstraction — WKWebView, webkit2gtk, We
 
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
-porpoise-network = { path = "../porpoise-network", optional = true }
+porpoise-network = { path = "../porpoise-network" }
 tokio.workspace = true
 serde.workspace = true
 tracing.workspace = true
+async-trait.workspace = true

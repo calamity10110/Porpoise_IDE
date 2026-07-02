@@ -98,19 +98,18 @@
 
 ## Phase 1: CLI & Runtime
 
-### 🔴 porpoise-relay (weeks 4-5) — 7/11 ✓
+### 🔴 porpoise-relay (weeks 4-5) — 10/11 ✓
 
 - [x] Binary frame protocol: `[magic:2B][version:1B][flags:1B][length:4B LE][payload:JSON]`
 - [x] `FrameFlags` bitfield: REQUEST, RESPONSE, EVENT, COMPRESSED, ACK, STREAM
-- [x] `WireMessage` enum: Request, Response, Event
+- [x] `WireMessage` enum: Request, Response, Event, Handshake
 - [x] `Request`/`Response` types with `CorrelationId`, `StatusCode`, `ProtocolError`
 - [x] `UnixSocketTransport` for macOS/Linux
-- [x] `RelayClient` with `call()` request/response
-- [x] `RelayServer` with connection accept loop + per-connection handler tasks
+- [x] `RelayClient` with `call()` request/response + auto-reconnect with exponential backoff
+- [x] `RelayServer` with connection accept loop + per-connection handler tasks + handshake on connect
 - [x] Request correlation with `CorrelationId`
-- [ ] `NamedPipeTransport` for Windows (stub exists, needs full impl)
-- [ ] Auto-reconnect with exponential backoff
-- [ ] Protocol version negotiation on connect
+- [x] `NamedPipeTransport` + `NamedPipeListener` for Windows (client + server accept loop)
+- [x] Protocol version negotiation (Handshake message + Frame decode version check)
 - [ ] IPC roundtrip benchmark tests
 - [ ] ⚪ P3: Optional TLS for remote IPC
 
@@ -129,17 +128,18 @@
 - [ ] Process lifecycle integration tests
 - [ ] 🟡 P1: cgroups for Linux resource limits
 
-### 🔴 porpoise-server (week 6) — 5/9 ✓
+### 🔴 porpoise-server (week 6) — 7/9 ✓
 
 - [x] `Daemon` binary with `new()`, `start()`, `run()` lifecycle
 - [x] CLI → server protocol routing via `Router` with method dispatch
 - [x] `WorktreeService`: create, list handlers
 - [x] `TerminalService`: create handler
-- [x] `AgentService`: list handler
+- [x] `AgentService`: list, detect handlers
+- [x] `GitService`: status, clone handlers
 - [x] `ConfigService`: get handler
 - [x] Server startup with `AppConfig` + config file loading
-- [ ] Graceful shutdown (SIGTERM → drain → cleanup → exit)
-- [ ] Single-instance enforcement (pidfile / mutex)
+- [x] Graceful shutdown (SIGTERM/SIGINT drain → agent pool cleanup → pidfile cleanup → exit)
+- [x] Single-instance enforcement (pidfile with zombie detection via kill(pid, 0))
 - [ ] Log file management (rotation, size limits)
 - [ ] Server stress tests (100 concurrent connections)
 - [ ] 🟡 P1: Health endpoint with uptime, process count
@@ -166,17 +166,19 @@
 
 ## Phase 3: Terminal Engine
 
-### 🟡 porpoise-terminal — 0/11 ✓ (placeholder crate only)
+### 🟡 porpoise-terminal — 7/11 ✓
 
-- [ ] `PtyMultiplexer`: multiple PTYs per session
-- [ ] `OutputParser`: OSC sequences, color codes, hyperlinks
-- [ ] Scrollback ring buffer (10k-100k lines, SQLite persistence)
-- [ ] `TerminalLayout` engine: horizontal/vertical split, resize, tab groups
+- [x] `PtyMultiplexer`: multiple PTYs per session using `porpoise-runtime::PtyManager`
+- [x] `OutputParser`: CSI escape code parser (cursor, color, clear, OSC sequences)
+- [x] Scrollback ring buffer (configurable max lines, with search + timestamp)
+- [x] `TerminalLayout` engine: horizontal/vertical split, resize, pane management
+- [x] `ColorScheme` struct with 16 standard terminal colors
+- [x] `TerminalConfig` with rows/cols/shell/scrollback settings
+- [x] Terminal output parsing tests (plain text, newlines, escape codes)
+- [ ] Scrollback SQLite persistence
 - [ ] Terminal search (CTRL+F, regex, case-insensitive)
 - [ ] Color scheme manager (Alacritty YAML, iTerm2 plist import)
-- [ ] Terminal output → EventBus for UI
 - [ ] Reflow support on resize
-- [ ] 🟢 P2: TrueColor detection, palette querying
 - [ ] 🟢 P2: Sixel/Kitty image protocol
 
 ---
@@ -290,15 +292,15 @@
 | Phase | Total | ✓ Done | ◆ Partial | ○ Not Started |
 |-------|-------|--------|-----------|---------------|
 | 0 | ~43 tasks | 42 | 1 | 0 |
-| 1 | ~31 tasks | 19 | 12 | 0 |
+| 1 | ~31 tasks | 24 | 7 | 0 |
 | 2 | ~13 tasks | 11 | 0 | 2 |
-| 3 | ~11 tasks | 0 | 0 | 11 |
+| 3 | ~11 tasks | 7 | 0 | 4 |
 | 4 | ~12 tasks | 9 | 0 | 3 |
 | 5 | ~10 tasks | 0 | 0 | 10 |
 | 6 | ~24 tasks | 0 | 0 | 24 |
 | 7 | ~12 tasks | 0 | 0 | 12 |
 | 8 | ~20 tasks | 0 | 0 | 20 |
-| **Total** | **~176 tasks** | **81** | **13** | **82** |
+| **Total** | **~176 tasks** | **93** | **8** | **75** |
 
 ---
 

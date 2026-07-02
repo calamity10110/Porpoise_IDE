@@ -7,10 +7,11 @@ description = "SSH connections, sessions, and port forwarding"
 
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
-porpoise-network = { path = "../porpoise-network", optional = true }
+porpoise-network = { path = "../porpoise-network" }
 tokio.workspace = true
 serde.workspace = true
 tracing.workspace = true
 chrono.workspace = true
+ssh2 = "0.9"
 
 [dev-dependencies]

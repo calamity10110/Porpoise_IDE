@@ -1,3 +1,6 @@
-// porpoise-browser crate - placeholder
-pub fn init() {}
+pub mod engine;
+pub mod navigation;
+
+pub use engine::BrowserEngine;
+pub use navigation::NavigationResult;
 

@@ -2159,6 +2159,7 @@ dependencies = [
 name = "porpoise-browser"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "porpoise-core",
  "porpoise-network",
  "serde",
@@ -2238,6 +2239,7 @@ dependencies = [
 name = "porpoise-network"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "porpoise-core",
  "reqwest",
  "serde",
@@ -2319,6 +2321,7 @@ dependencies = [
  "porpoise-core",
  "porpoise-network",
  "serde",
+ "ssh2",
  "tokio",
  "tracing",
 ]
@@ -3175,6 +3178,18 @@ name = "sptr"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b9b39299b249ad65f3b7e96443bad61c02ca5cd3589f46cb6d610a0fd6c0d6a"
+
+[[package]]
+name = "ssh2"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c95eb3c09e378543395a3fa9796f897861862466ee331d59140ade4ea0dcfdfc"
+dependencies = [
+ "bitflags 2.13.0",
+ "libc",
+ "libssh2-sys",
+ "parking_lot",
+]
 
 [[package]]
 name = "stable_deref_trait"

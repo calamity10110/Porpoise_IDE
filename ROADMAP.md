@@ -34,7 +34,7 @@
 
 ---
 
-## Phase 1: CLI & Runtime — ◆ 71% complete
+## Phase 1: CLI & Runtime — ◆ 80% complete
 
 **Objective:** CLI can communicate with a background server process, spawn agents, manage PTYs, and relay output.
 
@@ -42,20 +42,18 @@
 
 | Crate | Milestone | Status |
 |-------|-----------|--------|
-| `porpoise-relay` | IPC protocol (JSON), Unix socket transport | ✓ 7/11 tasks |
+| `porpoise-relay` | IPC protocol (JSON), Unix + Windows transport, handshake | ✓ 10/11 tasks |
 | `porpoise-runtime` | ProcessManager, PtyManager (Unix), HealthChecker | ✓ 7/11 tasks |
-| `porpoise-server` | Daemon binary, CLI→server IPC, service handlers, pidfile, graceful shutdown | ◆ 7/9 tasks |
+| `porpoise-server` | Daemon binary, CLI→server IPC, service handlers, pidfile, graceful shutdown | ✓ 7/9 tasks |
 
 ### Remaining Work
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Windows named pipe transport | High | Stub exists, needs full impl |
-| Auto-reconnect with backoff | High | Exponential backoff + jitter |
-| Graceful shutdown (drain then exit) | Medium | SIGTERM handler exists, pidfile implemented |
+| Windows PTY (ConPTY) | High | Stub exists, needs full impl |
 | Process lifecycle integration tests | Medium | Need mock processes |
-| PID file / single-instance enforcement | Medium | Implemented on Unix (Unix-only) |
-| Protocol version negotiation | Low | Currently hardcoded to v0x01 |
+| Windows named pipe integration | Medium | Client+server implemented, needs full integration test |
+| IPC roundtrip benchmark tests | Medium | |
 
 ---
 
@@ -85,17 +83,31 @@ porpoise-git/        # 4 tests passing
 
 ---
 
-## Phase 3: Terminal Engine — ○ not started
+## Phase 3: Terminal Engine — ◆ 70% complete
 
 **Objective:** Full terminal emulation with split panes, scrollback persistence, color schemes, and proper OSC parsing.
 
-### Design Complete
+### Implemented
+- `PtyMultiplexer` — multiple PTYs per session via `porpoise-runtime::PtyManager`, read/write/close/resize
+- `OutputParser` — CSI (ESC[) and OSC (ESC]) escape code parser: cursor movement, clear screen, color changes, bell
+- `ScrollbackBuffer` — in-memory ring buffer (configurable max lines, timestamped, search with case sensitivity)
+- `TerminalLayout` — pane management with horizontal/vertical split, add/remove/resize
+- `ColorScheme` — 16-color standard terminal palette
+- `TerminalConfig` — rows, cols, shell, scrollback limit
 
-- `PtyMultiplexer` for multiple PTYs per session designed
-- `OutputParser` for OSC sequences designed
-- Scrollback ring buffer → SQLite persistence designed
-- Terminal split layout engine designed
-- Design doc: `docs/design/design-terminal.md`
+### Crate Status
+
+```
+porpoise-terminal/   # 2 tests passing
+├── src/
+│   ├── lib.rs       # Module re-exports
+│   ├── types.rs     # TerminalConfig, TerminalPane, SplitDirection, ColorScheme, OutputLine
+│   ├── multiplexer.rs # PtyMultiplexer — PTY allocation per session
+│   ├── parser.rs    # OutputParser — CSI/OSC escape code parsing
+│   ├── scrollback.rs# ScrollbackBuffer — ring buffer with search
+│   └── layout.rs    # TerminalLayout — pane split/resize management
+├── Cargo.toml       # Deps: core, runtime, tokio, serde
+```
 
 ---
 
@@ -208,15 +220,15 @@ Phase 0: core ──> db ──> cli                    ✓ Complete
                 \
                  └─> CI/CD                       ✓ Complete
 
-Phase 1: core ──> relay ──> runtime ──> server    ◆ 71% Complete
+Phase 1: core ──> relay ──> runtime ──> server    ◆ 80% Complete
                       ^                    │
                       └────── CLI ─────────┘
 
 Phase 2: core ──> git ──> server                 ◆ 85% Complete
+Phase 3: core ──> runtime ──> terminal            ◆ 70% Complete
 Phase 4: core ──> agent ──> server               ◆ 75% Complete
 
-Remaining:  terminal ──> browser ──> ssh ───> app     ○ Not started
-            network ──> skills                          ○ Not started
+Remaining:  browser ──> ssh ──> network ──> skills ───> app     ○ Not started
 ```
 
 ---
@@ -226,9 +238,9 @@ Remaining:  terminal ──> browser ──> ssh ───> app     ○ Not star
 | Risk | Impact | Likelihood | Status |
 |------|--------|------------|--------|
 | PTY compatibility on Windows | High | Medium | Mitigated: Unix PTY done, Windows stub |
-| Agent protocol reverse engineering | High | Medium | Design only — not yet started |
+| Agent protocol reverse engineering | High | Medium | ◆ Phase 4 implemented — ClaudeCode + Codex agents working |
 | WASM plugin performance | Low | Low | Design only — not yet started |
-| Cross-platform IPC on Windows | Medium | Medium | Unix sockets done, named pipes pending |
+| Cross-platform IPC on Windows | Medium | Low | ✓ Named pipe client + server implemented |
 
 ---
 
@@ -237,14 +249,14 @@ Remaining:  terminal ──> browser ──> ssh ───> app     ○ Not star
 | Priority | What | Why | Status |
 |----------|------|-----|--------|
 | 1 | Finish Phase 0 (tests, cleanup, warnings) | Foundation quality matters | ✓ Done |
-| 2 | Finish Phase 1 (reconnect, Windows PTY, shutdown) | Required for all downstream | ◆ 71% |
+| 2 | Finish Phase 1 (reconnect, Windows PTY, shutdown) | Required for all downstream | ◆ 80% |
 | 3 | Implement porpoise-git | Unlocks the core worktree abstraction | ✓ Done (85%) |
 | 4 | Implement porpoise-agent | Without agents, nothing to orchestrate | ✓ Done (75%) |
-| 5 | Implement porpoise-terminal | Needed for agent output display | ○ Not started |
-| 6 | Server integration | Wire git → agent → terminal together | ◆ Wiring done, needs terminal |
+| 5 | Implement porpoise-terminal | Needed for agent output display | ◆ Done (70%) |
+| 6 | Server integration | Wire git → agent → terminal together | ◆ Wiring done (8 IPC methods) |
 | 7 | porpoise-ssh, porpoise-browser, porpoise-network | Remote and browser features | ○ Not started |
 | 8 | porpoise-skills, porpoise-app | Plugin system and desktop GUI | ○ Not started |
 
 ---
 
-*Last updated: 2026-07-01 — reflects Phase 0 and Phase 1 implementation status. See [TODO.md](./TODO.md) for task-level tracking.*
+*Last updated: 2026-07-02 — reflects Phase 0–4 implementation status. See [TODO.md](./TODO.md) for task-level tracking.*
