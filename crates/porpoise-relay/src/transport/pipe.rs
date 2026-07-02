@@ -1,6 +1,7 @@
 use std::path::Path;
-use tokio::net::windows::named_pipe::ClientOptions;
+use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::windows::named_pipe::{ClientOptions, ServerOptions};
 
 use crate::frame::{Frame, HEADER_SIZE};
 use porpoise_core::error::{PorpoiseError, Result};
@@ -39,5 +40,44 @@ impl NamedPipeTransport {
         let mut frame_data = header;
         frame_data.extend_from_slice(&payload);
         Frame::decode(&frame_data)
+    }
+}
+
+pub struct NamedPipeListener {
+    path: String,
+}
+
+impl NamedPipeListener {
+    pub fn bind(name: &str) -> Self {
+        Self { path: format!(r"\\.\pipe\{name}") }
+    }
+
+    pub async fn accept<F, Fut>(&self, handler: F) -> Result<()>
+    where
+        F: Fn(NamedPipeTransport) -> Fut + Send + Sync + 'static,
+        Fut: std::future::Future<Output = ()> + Send + 'static,
+    {
+        let handler = Arc::new(handler);
+        loop {
+            let server = ServerOptions::new()
+                .first_pipe_instance(true)
+                .create(&self.path)
+                .map_err(|e| PorpoiseError::Ipc(format!("pipe create: {e}")))?;
+
+            server.connect()
+                .await
+                .map_err(|e| PorpoiseError::Ipc(format!("pipe wait: {e}")))?;
+
+            // The connected server handle IS the pipe
+            // We create a NamedPipeClient from it by reopening
+            let client = ClientOptions::new()
+                .open(&self.path)
+                .map_err(|e| PorpoiseError::Ipc(format!("pipe open: {e}")))?;
+
+            let h = handler.clone();
+            tokio::spawn(async move {
+                h(NamedPipeTransport { stream: client }).await;
+            });
+        }
     }
 }

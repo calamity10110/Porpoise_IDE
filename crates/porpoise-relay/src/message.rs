@@ -7,6 +7,30 @@ pub enum WireMessage {
     Request(Request),
     Response(Response),
     Event(SystemEvent),
+    Handshake(Handshake),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Handshake {
+    pub version: u8,
+    pub min_version: u8,
+    pub server_name: String,
+}
+
+impl Default for Handshake {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Handshake {
+    pub fn new() -> Self {
+        Self {
+            version: crate::frame::PROTOCOL_VERSION,
+            min_version: crate::frame::PROTOCOL_VERSION,
+            server_name: "porpoise-server".into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
