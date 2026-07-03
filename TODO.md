@@ -82,7 +82,7 @@
 - [ ] CLI integration tests with `assert_cmd`/`assert_fs`
 - [ ] ⚪ P3: Interactive mode (`porpoise shell`)
 
-### 🟡 CI/CD & Tooling (week 3) — 6/8 ✓
+### 🟡 CI/CD & Tooling (week 3) — 7/8 ✓
 
 - [x] GitHub Actions: build on ubuntu/macos/windows
 - [x] GitHub Actions: test
@@ -149,7 +149,7 @@
 
 ## Phase 2: Git Integration
 
-### 🟡 porpoise-git — 11/13 ✓
+### 🟡 porpoise-git — 12/13 ✓
 
 - [x] `GitEngine` wrapper around `git2::Repository`: clone, open, init, status, diff, log, branch_create, branch_checkout, branch_list, fetch, push
 - [x] `WorktreeManager`: create, list, remove, prune orphaned, `git2::Repository::worktree()`
@@ -186,7 +186,7 @@
 
 ## Phase 4: Agent Framework
 
-### 🟡 porpoise-agent — 9/12 ✓
+### 🟡 porpoise-agent — 10/12 ✓
 
 - [x] `AgentDetector`: PATH scanning, version detection, config discovery
 - [x] `Agent` trait: spawn, read_output, send_input, interrupt, shutdown
@@ -234,7 +234,7 @@
 - [ ] 🟢 P2: Design mode (element inspector + screenshot)
 - [ ] ⚪ P3: JS console
 
-### 🟡 porpoise-ssh — 5/9 ✓
+### 🟡 porpoise-ssh — 6/9 ✓
 
 - [x] `SshManager`: connection pool, connect/disconnect/list/exec
 - [x] `SshSession`: TCP connect + ssh2 handshake, exec stub
@@ -247,7 +247,7 @@
 - [ ] Remote worktree on SSH host
 - [ ] 🟢 P2: SFTP file browser
 
-### 🟢 porpoise-network — 4/5 ✓
+### 🟢 porpoise-network — 5/5 ✓
 
 - [x] `HttpClient` wrapper around reqwest with retry/backoff
 - [x] `WsClient` for WebSocket connections (connect/send/recv/close)
