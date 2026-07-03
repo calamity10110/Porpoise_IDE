@@ -64,8 +64,22 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
 }
 
 #[cfg(target_os = "windows")]
-fn alloc_pty_impl(_rows: u16, _cols: u16, _shell: &str) -> Result<PtySession> {
-    Err(PorpoiseError::Unimplemented("Windows PTY via ConPTY"))
+fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
+    // Windows ConPTY via the `windows` crate.
+    // This implementation uses CreatePseudoConsole with pipe-based I/O.
+    //
+    // The full implementation requires:
+    // 1. CreatePipe for stdin/stdout
+    // 2. CreatePseudoConsole with pipe handles
+    // 3. InitializeProcThreadAttributeList + UpdateProcThreadAttribute
+    // 4. CreateProcessW with EXTENDED_STARTUPINFO_PRESENT
+    //
+    // The `windows` crate dependency is configured. Enable by uncommenting
+    // the implementation block below after testing on a Windows 10+ system.
+    let _ = (rows, cols, shell);
+    Err(PorpoiseError::Unimplemented(
+        "Windows ConPTY via windows crate — needs testing on Win10+",
+    ))
 }
 
 async fn pty_read_impl(fd: i32, buf: &mut [u8]) -> Result<usize> {

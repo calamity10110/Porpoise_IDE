@@ -5,9 +5,20 @@ edition.workspace = true
 license.workspace = true
 description = "Desktop application shell (Tauri-based)"
 
+[lib]
+name = "porpoise_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
 porpoise-server = { path = "../porpoise-server" }
 porpoise-cli = { path = "../porpoise-cli", optional = true }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tokio.workspace = true
 tracing.workspace = true
