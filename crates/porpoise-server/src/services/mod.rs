@@ -6,6 +6,7 @@ pub mod git;
 pub mod ssh_service;
 pub mod browser_service;
 pub mod skills_service;
+pub mod health;
 
 #[cfg(unix)]
 mod relay_handlers;

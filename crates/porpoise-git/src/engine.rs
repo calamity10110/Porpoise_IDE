@@ -172,6 +172,39 @@ impl GitEngine {
         Ok(())
     }
 
+    pub fn stash_save(&self, message: Option<&str>) -> Result<()> {
+        let msg = message.unwrap_or("porpoise stash");
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&self.repo_path)
+            .args(["stash", "push", "-m", msg])
+            .output()
+            .map_err(|e| PorpoiseError::Git(format!("git stash: {e}")))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if !stderr.contains("No local changes") {
+                return Err(PorpoiseError::Git(format!("git stash: {stderr}")));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn stash_pop(&self) -> Result<()> {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&self.repo_path)
+            .args(["stash", "pop"])
+            .output()
+            .map_err(|e| PorpoiseError::Git(format!("git stash pop: {e}")))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if !stderr.contains("No stash entries found") {
+                return Err(PorpoiseError::Git(format!("git stash pop: {stderr}")));
+            }
+        }
+        Ok(())
+    }
+
     pub fn path(&self) -> &Path {
         &self.repo_path
     }

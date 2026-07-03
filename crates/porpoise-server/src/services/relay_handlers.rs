@@ -1,7 +1,8 @@
 use std::sync::Arc;
+use chrono::{DateTime, Utc};
 use porpoise_relay::Router;
 
-pub fn register_all(router: &Router) {
+pub fn register_all(router: &Router, start_time: DateTime<Utc>) {
     let s = router.state();
 
     router.register("worktree_create", Arc::new(move |req, _| {
@@ -60,5 +61,11 @@ pub fn register_all(router: &Router) {
 
     router.register("skill_list", Arc::new(move |_, _| {
         Box::pin(async move { super::skills_service::handle_list().await })
+    }));
+
+    let st = start_time;
+    router.register("health", Arc::new(move |_, _| {
+        let st = st;
+        Box::pin(async move { super::health::handle_health(&st, 0).await })
     }));
 }

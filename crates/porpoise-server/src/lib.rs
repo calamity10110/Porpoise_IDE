@@ -3,6 +3,7 @@ pub mod services;
 use std::path::PathBuf;
 #[cfg(unix)]
 use std::sync::Arc;
+use chrono::{DateTime, Utc};
 use porpoise_core::bus::EventBus;
 use porpoise_core::config::AppConfig;
 use porpoise_core::state::AppState;
@@ -20,6 +21,7 @@ pub struct Daemon {
     pub server: Option<RelayServer>,
     pub socket_path: PathBuf,
     pub agent_pool: AgentPool,
+    pub start_time: DateTime<Utc>,
     #[cfg(unix)]
     pidfile_path: Option<PathBuf>,
 }
@@ -42,6 +44,7 @@ impl Daemon {
             db,
             socket_path,
             agent_pool,
+            start_time: Utc::now(),
             #[cfg(unix)]
             server: None,
             #[cfg(unix)]
@@ -54,7 +57,7 @@ impl Daemon {
         {
             self.write_pidfile()?;
             let router = Arc::new(Router::new(self.state.clone()));
-            services::register_all(&router);
+            services::register_all(&router, self.start_time);
             let server = RelayServer::bind(&self.socket_path, router).await?;
             tracing::info!("porpoise-server listening on {}", self.socket_path.display());
             self.server = Some(server);
