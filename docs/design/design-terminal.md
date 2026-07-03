@@ -28,6 +28,7 @@
 |-------|----------------|
 | `porpoise-core` | Import — `TerminalId`, `SessionId`, `TerminalEvent`, `PorpoiseError::Terminal*` |
 | `porpoise-runtime` | Import — `PtyManager` for PTY allocation and I/O |
+| `porpoise-db` | (planned) — SQLite backend for scrollback persistence |
 
 ---
 

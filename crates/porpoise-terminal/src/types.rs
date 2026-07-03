@@ -31,7 +31,7 @@ pub struct TerminalPane {
     pub y: u16,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OutputLine {
     pub text: String,
     pub is_osc: bool,

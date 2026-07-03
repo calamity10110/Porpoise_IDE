@@ -176,7 +176,7 @@
 - [x] `ColorScheme` struct with 16 standard terminal colors
 - [x] `TerminalConfig` with rows/cols/shell/scrollback settings
 - [x] Terminal output parsing tests (plain text, newlines, escape codes)
-- [ ] Scrollback SQLite persistence
+- [x] Scrollback persistence (NDJSON file-based ScrollbackPersister)
 - [ ] Terminal search (CTRL+F, regex, case-insensitive)
 - [ ] Color scheme manager (Alacritty YAML, iTerm2 plist import)
 - [ ] Reflow support on resize
@@ -241,9 +241,9 @@
 - [x] `AuthMethod`: Password, KeyFile, Agent
 - [x] SSH config parser (`~/.ssh/config`): host blocks, HostName, Port, User, IdentityFile
 - [x] `HostConfig` struct with all parsed fields
-- [ ] Auto-reconnect with TCP keepalive
+- [x] TCP keepalive (session.set_keepalive)
 - [x] Full exec via ssh2 channel (session.rs completed)
-- [ ] Port forwarding
+- [x] Port forwarding (channel_direct_tcpip + channel_forward_listen)
 - [ ] Remote worktree on SSH host
 - [ ] 🟢 P2: SFTP file browser
 
@@ -272,7 +272,7 @@
 - [x] `SkillManifest` struct with id/name/version/description/enabled
 - [x] `CompiledModule` with instantiate method
 - [x] Workspace wasmtime dep configured (v25)
-- [ ] WASM compilation pipeline (WAT→WASM, WIT parsing)
+- [x] WASM compilation pipeline (wasmtime `wat` + `component-model` features enabled)
 - [ ] Capability sandboxing (no fs/network by default)
 - [ ] Hook system: on_agent_start, on_agent_output, on_terminal_create
 - [ ] Plugin hot-reload, cache
