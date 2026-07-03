@@ -78,7 +78,7 @@
 - [x] `--verbose` / `--debug` flags
 - [x] Colored output with `owo-colors`
 - [x] Async command dispatch with `RelayClient`
-- [ ] Pager for long output (`worktree list`, `agent logs`)
+- [x] Pager for long output (`worktree list`, `agent logs`) via `less` pipe
 - [ ] CLI integration tests with `assert_cmd`/`assert_fs`
 - [ ] ⚪ P3: Interactive mode (`porpoise shell`)
 
@@ -89,8 +89,8 @@
 - [x] GitHub Actions: clippy
 - [x] GitHub Actions: fmt
 - [x] `.github/dependabot.yml` (needed)
-- [ ] GitHub Actions: `cargo audit`
-- [ ] Pre-commit hook: clippy + fmt + test
+- [x] GitHub Actions: `cargo audit` (already in CI)
+- [x] Pre-commit hook: `pre-commit.sh` (clippy + fmt + test)
 - [x] `justfile` for dev workflow (build, test, check, doc, run, watch)
 - [ ] ⚪ P3: Benchmark CI job
 
@@ -158,7 +158,7 @@
 - [ ] GitLab provider
 - [x] File watcher using `notify` crate (inotify/FSEvents/ReadDirectoryChanges)
 - [ ] SSH git support (key auth)
-- [ ] `git stash`/`git stash pop` for context switching
+- [x] `git stash`/`git stash pop` for context switching (in engine.rs)
 - [ ] Integration tests with temp repos
 - [ ] 🟡 P1: Submodule support
 - [ ] 🟢 P2: Git LFS support
@@ -198,7 +198,7 @@
 - [x] `AgentPool` with max concurrent limit: spawn, list, shutdown, shutdown_all
 - [ ] Agent session resume (SQLite-backed)
 - [ ] Agent account switcher (multi-account)
-- [ ] `GeminiAgent` custom integration
+- [x] `GeminiAgent` custom integration (gemini.rs with detec+spawn)
 - [ ] Mock tests with fake agent processes
 - [ ] 🟡 P1: Agent output streaming to WebSocket
 - [ ] 🟢 P2: Custom agent configuration DSL
@@ -242,7 +242,7 @@
 - [x] SSH config parser (`~/.ssh/config`): host blocks, HostName, Port, User, IdentityFile
 - [x] `HostConfig` struct with all parsed fields
 - [ ] Auto-reconnect with TCP keepalive
-- [ ] Full exec via ssh2 channel
+- [x] Full exec via ssh2 channel (session.rs completed)
 - [ ] Port forwarding
 - [ ] Remote worktree on SSH host
 - [ ] 🟢 P2: SFTP file browser
@@ -253,7 +253,7 @@
 - [x] `WsClient` for WebSocket connections (connect/send/recv/close)
 - [x] `RateLimiter` token bucket for API rate limit compliance
 - [x] Proxy configuration (HTTP, HTTPS env var auto-detection)
-- [ ] Network connectivity monitor
+- [x] Network connectivity monitor (already implemented)
 
 ### 🟡 Server: Notifications — 0/3 ✓
 

@@ -2,6 +2,7 @@ pub mod traits;
 pub mod detector;
 pub mod claude;
 pub mod codex;
+pub mod gemini;
 pub mod generic;
 pub mod pool;
 pub mod hook;

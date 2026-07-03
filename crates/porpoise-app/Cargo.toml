@@ -8,11 +8,6 @@ description = "Desktop application shell (Tauri-based)"
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
 porpoise-server = { path = "../porpoise-server" }
-tokio.workspace = true
-tracing.workspace = true
-
-[dependencies.porpoise-cli]
-path = "../porpoise-cli"
-optional = true
+porpoise-cli = { path = "../porpoise-cli", optional = true }
 tokio.workspace = true
 tracing.workspace = true
