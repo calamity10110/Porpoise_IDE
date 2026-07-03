@@ -3,6 +3,9 @@ pub mod terminal;
 pub mod agent;
 pub mod config;
 pub mod git;
+pub mod ssh_service;
+pub mod browser_service;
+pub mod skills_service;
 
 #[cfg(unix)]
 mod relay_handlers;

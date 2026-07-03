@@ -45,4 +45,20 @@ pub fn register_all(router: &Router) {
         let path = req.params.get("path").and_then(|v| v.as_str()).unwrap_or(".");
         Box::pin(async move { super::git::handle_clone(url, path).await })
     }));
+
+    router.register("ssh_connect", Arc::new(move |req, _| {
+        let host = req.params.get("host").and_then(|v| v.as_str()).unwrap_or("localhost");
+        let port = req.params.get("port").and_then(|v| v.as_u64()).unwrap_or(22) as u16;
+        let user = req.params.get("user").and_then(|v| v.as_str()).unwrap_or("root");
+        Box::pin(async move { super::ssh_service::handle_connect(host, port, user).await })
+    }));
+
+    router.register("browser_open", Arc::new(move |req, _| {
+        let url = req.params.get("url").and_then(|v| v.as_str()).unwrap_or("");
+        Box::pin(async move { super::browser_service::handle_open(url).await })
+    }));
+
+    router.register("skill_list", Arc::new(move |_, _| {
+        Box::pin(async move { super::skills_service::handle_list().await })
+    }));
 }

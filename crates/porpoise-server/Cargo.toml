@@ -16,10 +16,11 @@ porpoise-relay = { path = "../porpoise-relay" }
 porpoise-runtime = { path = "../porpoise-runtime" }
 porpoise-git = { path = "../porpoise-git" }
 porpoise-agent = { path = "../porpoise-agent" }
-porpoise-terminal = { path = "../porpoise-terminal", optional = true }
-porpoise-ssh = { path = "../porpoise-ssh", optional = true }
-porpoise-browser = { path = "../porpoise-browser", optional = true }
-porpoise-skills = { path = "../porpoise-skills", optional = true }
+porpoise-terminal = { path = "../porpoise-terminal" }
+porpoise-network = { path = "../porpoise-network" }
+porpoise-ssh = { path = "../porpoise-ssh" }
+porpoise-browser = { path = "../porpoise-browser" }
+porpoise-skills = { path = "../porpoise-skills" }
 tokio.workspace = true
 serde_json.workspace = true
 tracing.workspace = true

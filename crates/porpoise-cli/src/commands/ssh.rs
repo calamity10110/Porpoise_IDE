@@ -1,18 +1,32 @@
 use crate::app::SshAction;
 use crate::output::OutputFormat;
 use porpoise_core::error::Result;
+use porpoise_ssh::auth::AuthMethod;
 
-pub async fn handle(args: crate::app::SshArgs, _format: &OutputFormat) -> Result<String> {
+pub async fn handle(args: crate::app::SshArgs, format: &OutputFormat) -> Result<String> {
     match args.action {
         SshAction::Connect { host, user } => {
-            let user_str = user.as_deref().unwrap_or("root");
-            Ok(format!("connecting to {user_str}@{host}..."))
+            let username = user.as_deref().unwrap_or("root");
+            let manager = porpoise_ssh::SshManager::new();
+            let auth = AuthMethod::Password("".into());
+            match manager.connect(&host, 22, username, &auth).await {
+                Ok(id) => Ok(format!("Connected: {id}")),
+                Err(e) => Ok(format!("Connection failed: {e}")),
+            }
         }
         SshAction::Worktree { session_id } => {
-            Ok(format!("creating worktree on session {session_id}"))
+            Ok(format.format(&serde_json::json!({
+                "session": session_id,
+                "status": "worktree not yet supported over SSH"
+            })))
         }
         SshAction::PortForward { session_id, local, remote } => {
-            Ok(format!("forwarding localhost:{local} to remote:{remote} via {session_id}"))
+            Ok(format.format(&serde_json::json!({
+                "session": session_id,
+                "local_port": local,
+                "remote_port": remote,
+                "status": "port forwarding not yet implemented"
+            })))
         }
     }
 }
