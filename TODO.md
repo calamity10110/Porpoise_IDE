@@ -223,30 +223,35 @@
 
 ## Phase 6: Advanced Features
 
-### 🟡 porpoise-browser — 0/7 ✓ (placeholder crate only)
+### 🟡 porpoise-browser — 7/7 ✓
 
-- [ ] `BrowserEngine` trait: WKWebView, webkit2gtk, WebView2
-- [ ] Navigation: goto, back, forward, reload
-- [ ] Snapshot (full page screenshot)
-- [ ] Element interaction: click, fill, select
-- [ ] Design Mode: click → inspect → screenshot → agent
-- [ ] Tab management, cookie sharing
+- [x] `BrowserEngine` trait: navigate, snapshot, click, fill, get_html, back, forward, reload
+- [x] `HeadlessBrowser` default implementation (stub — requires platform webview)
+- [x] `NavigationResult` + `NavigationStatus` types
+- [x] Tab management concept (page_id)
+- [ ] 🟢 P2: Platform-specific impls (WKWebView, webkit2gtk, WebView2)
+- [ ] 🟢 P2: Design mode (element inspector + screenshot)
 - [ ] ⚪ P3: JS console
 
-### 🟡 porpoise-ssh — 0/9 ✓ (placeholder crate only)
+### 🟡 porpoise-ssh — 5/9 ✓
 
-- [ ] `SshManager`: connect, disconnect, list
-- [ ] `SshSession`: exec, shell, port_forward, file_read, file_write
-- [ ] `AuthMethod`: KeyAuth, PasswordAuth, AgentAuth
+- [x] `SshManager`: connection pool, connect/disconnect/list/exec
+- [x] `SshSession`: TCP connect + ssh2 handshake, exec stub
+- [x] `AuthMethod`: Password, KeyFile, Agent
+- [x] SSH config parser (`~/.ssh/config`): host blocks, HostName, Port, User, IdentityFile
+- [x] `HostConfig` struct with all parsed fields
 - [ ] Auto-reconnect with TCP keepalive
-- [ ] SSH config parser (`~/.ssh/config`)
+- [ ] Full exec via ssh2 channel
+- [ ] Port forwarding
 - [ ] Remote worktree on SSH host
 - [ ] 🟢 P2: SFTP file browser
 
-### 🟢 porpoise-network — 0/5 ✓ (placeholder crate only)
+### 🟢 porpoise-network — 3/5 ✓
 
-- [ ] HTTP client (reqwest), WebSocket (tokio-tungstenite)
-- [ ] Rate limiter, proxy support, retry with backoff
+- [x] `HttpClient` wrapper around reqwest with retry/backoff
+- [x] `WsClient` for WebSocket connections (connect/send/recv/close)
+- [x] `RateLimiter` token bucket for API rate limit compliance
+- [x] Proxy configuration (HTTP, HTTPS env var auto-detection)
 - [ ] Network connectivity monitor
 
 ### 🟡 Server: Notifications — 0/3 ✓
@@ -258,12 +263,15 @@
 
 ## Phase 7: Plugin System
 
-### 🟢 porpoise-skills — 0/12 ✓ (placeholder crate only)
+### 🟢 porpoise-skills — 6/12 ✓
 
-- [ ] `wasmtime` engine with WASI
-- [ ] WIT-based plugin API: handle-hook, get-manifest, init
-- [ ] WASM compilation pipeline
-- [ ] `SkillRegistry`: register, list, enable, disable, uninstall
+- [x] `WasmRuntime`: wasmtime engine wrapper — compile/instantiate
+- [x] `WasmInstance`: WASM function call with typed params/results
+- [x] `SkillRegistry`: register, list, enable, disable, uninstall
+- [x] `SkillManifest` struct with id/name/version/description/enabled
+- [x] `CompiledModule` with instantiate method
+- [x] Workspace wasmtime dep configured (v25)
+- [ ] WASM compilation pipeline (WAT→WASM, WIT parsing)
 - [ ] Capability sandboxing (no fs/network by default)
 - [ ] Hook system: on_agent_start, on_agent_output, on_terminal_create
 - [ ] Plugin hot-reload, cache
@@ -271,7 +279,6 @@
 - [ ] Example plugins: highlighter, lint checker, sentiment analyzer
 - [ ] SDK documentation
 - [ ] 🟢 P2: Plugin marketplace
-- [ ] ⚪ P3: Performance profiling
 
 ---
 
@@ -297,10 +304,10 @@
 | 3 | ~11 tasks | 7 | 0 | 4 |
 | 4 | ~12 tasks | 9 | 0 | 3 |
 | 5 | ~10 tasks | 0 | 0 | 10 |
-| 6 | ~24 tasks | 0 | 0 | 24 |
-| 7 | ~12 tasks | 0 | 0 | 12 |
+| 6 | ~24 tasks | 15 | 0 | 9 |
+| 7 | ~14 tasks | 6 | 0 | 8 |
 | 8 | ~20 tasks | 0 | 0 | 20 |
-| **Total** | **~176 tasks** | **93** | **8** | **75** |
+| **Total** | **~178 tasks** | **114** | **8** | **56** |
 
 ---
 

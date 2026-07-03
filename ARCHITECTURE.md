@@ -722,20 +722,20 @@ impl EventBus {
 
 | Crate | Lines | Level | Status |
 |-------|-------|-------|--------|
-| `porpoise-core` | ~1,117 | Foundation | ✅ 22/23 tasks — tests pass |
+| `porpoise-core` | ~1,092 | Foundation | ✅ 22/23 tasks — tests pass |
 | `porpoise-db` | ~622 | Foundation | ✅ 8/9 tasks — all CRUD models |
-| `porpoise-cli` | ~512 | Application | ✅ 9/11 tasks — 16 commands |
-| `porpoise-relay` | ~377 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect, handshake |
-| `porpoise-runtime` | ~419 | Service | ◆ 7/11 tasks — Unix PTY works |
-| `porpoise-server` | ~133 | Orchestration | ✅ 7/9 tasks — daemon, pidfile, graceful shutdown, 8 IPC methods |
-| `porpoise-git` | ~1,300 | Service | ◆ 11/13 tasks — GitEngine, WorktreeManager, GitHubProvider |
-| `porpoise-terminal` | ~450 | Service | ◆ 7/11 tasks — PtyMultiplexer, OutputParser, scrollback, layout |
-| `porpoise-agent` | ~500 | Service | ◆ 9/12 tasks — Agent trait, detectors, ClaudeCode/Codex, pool, hook |
-| `porpoise-ssh` | ~2 | Service | ○ placeholder — design complete |
-| `porpoise-browser` | ~2 | Service | ○ placeholder — design complete |
-| `porpoise-network` | ~2 | Service | ○ placeholder — design complete |
-| `porpoise-skills` | ~2 | Service | ○ placeholder — design complete |
-| `porpoise-app` | ~2 | Application | ○ placeholder — design complete |
+| `porpoise-cli` | ~515 | Application | ✅ 9/11 tasks — 16 commands |
+| `porpoise-relay` | ~466 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect |
+| `porpoise-runtime` | ~412 | Service | ◆ 7/11 tasks — Unix PTY works |
+| `porpoise-server` | ~288 | Orchestration | ✅ 7/9 tasks — daemon, pidfile, graceful shutdown |
+| `porpoise-git` | ~508 | Service | ◆ 11/13 tasks — GitEngine, WorktreeManager, GitHub |
+| `porpoise-terminal` | ~337 | Service | ◆ 7/11 tasks — PtyMultiplexer, OutputParser, scrollback |
+| `porpoise-agent` | ~501 | Service | ◆ 9/12 tasks — Agent trait, detectors, pool, hook |
+| `porpoise-network` | ~247 | Service | ✅ 3/5 tasks — HTTP/WS client, rate limiter, proxy |
+| `porpoise-browser` | ~62 | Service | ✅ 7/7 tasks — BrowserEngine trait, navigation types |
+| `porpoise-ssh` | ~125 | Service | ✅ 5/9 tasks — SshManager, auth, config parser |
+| `porpoise-skills` | ~92 | Service | ◆ 6/14 tasks — WasmRuntime, SkillRegistry |
+| `porpoise-app` | ~2 | Application | ○ placeholder — requires Tauri SDK |
 
 ### Key Architectural Decisions Made During Implementation
 

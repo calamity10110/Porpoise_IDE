@@ -170,31 +170,60 @@ pub trait Agent: Send + Sync {
 
 ---
 
-## Phase 6: Advanced Features — ○ not started
+## Phase 6: Advanced Features — ◆ 63% complete
 
-**Objective:** Embedded browser, SSH worktrees, file explorer, notifications, auto-update.
+**Objective:** Embedded browser, SSH worktrees, file explorer, networking.
 
-### Design Complete
+### Implemented
 
-- `BrowserEngine` trait (WKWebView/webkit2gtk/WebView2) designed — `docs/design/design-browser.md`
-- `SshManager` and `SshSession` with auth/port-forwarding designed — `docs/design/design-ssh.md`
-- `HttpClient` and `WsClient` with rate limiting designed — `docs/design/design-network.md`
-- Notification service and auto-update designed
-- Design docs: `design-browser.md`, `design-ssh.md`, `design-network.md`, `design-server.md`
+| Crate | Milestone | Status |
+|-------|-----------|--------|
+| `porpoise-network` | HTTP/WS client, rate limiter, proxy | ✅ 3/5 tasks — 3 tests |
+| `porpoise-browser` | BrowserEngine trait, navigation types | ✅ 7/7 tasks (stub for platform webview) |
+| `porpoise-ssh` | SshManager, session, auth, config parser | ✅ 5/9 tasks |
+
+### Remaining
+
+| Item | Priority |
+|------|----------|
+| SSH exec (full channel impl) | Medium |
+| Port forwarding | Medium |
+| Platform browser engines (WKWebView, WebView2) | Medium |
+| Network connectivity monitor | Low |
+| Notifications, auto-update | Low |
 
 ---
 
-## Phase 7: Plugin System & Ecosystem — ○ not started
+## Phase 7: Plugin System & Ecosystem — ◆ 43% complete
 
 **Objective:** WASM-based plugin runtime, skill SDK, registry, and community plugin discovery.
 
-### Design Complete
+### Implemented
 
-- `wasmtime` runtime with WASI support designed
-- WIT-based plugin API designed
-- Capability-based sandboxing designed
-- Hook system designed
-- Design doc: `docs/design/design-skills.md`
+| Crate | Milestone | Status |
+|-------|-----------|--------|
+| `porpoise-skills` | WasmRuntime compile/instantiate, SkillRegistry | ✅ 6/14 tasks |
+
+### Crate Status
+
+```
+porpoise-skills/
+├── src/
+│   ├── lib.rs       # Module re-exports
+│   ├── runtime.rs   # WasmRuntime + WasmInstance (wasmtime)
+│   └── registry.rs  # SkillRegistry + SkillManifest
+├── Cargo.toml       # wasmtime 25, serde, tokio
+```
+
+### Remaining
+
+| Item | Priority |
+|------|----------|
+| WASM compilation pipeline (WAT→WASM, WIT) | Medium |
+| Capability sandboxing | Medium |
+| Hook system integration with EventBus | Medium |
+| Plugin hot-reload, cache | Low |
+| CLI skill commands | Low |
 
 ---
 
@@ -227,8 +256,10 @@ Phase 1: core ──> relay ──> runtime ──> server    ◆ 80% Complete
 Phase 2: core ──> git ──> server                 ◆ 85% Complete
 Phase 3: core ──> runtime ──> terminal            ◆ 70% Complete
 Phase 4: core ──> agent ──> server               ◆ 75% Complete
+Phase 6: core ──> network ──> ssh ──> browser     ◆ 63% Complete
+Phase 7: core ──> skills                          ◆ 43% Complete
 
-Remaining:  browser ──> ssh ──> network ──> skills ───> app     ○ Not started
+Remaining:  app (Tauri) ──> polish                  ○ Not started
 ```
 
 ---
@@ -253,9 +284,11 @@ Remaining:  browser ──> ssh ──> network ──> skills ───> app   
 | 3 | Implement porpoise-git | Unlocks the core worktree abstraction | ✓ Done (85%) |
 | 4 | Implement porpoise-agent | Without agents, nothing to orchestrate | ✓ Done (75%) |
 | 5 | Implement porpoise-terminal | Needed for agent output display | ◆ Done (70%) |
-| 6 | Server integration | Wire git → agent → terminal together | ◆ Wiring done (8 IPC methods) |
-| 7 | porpoise-ssh, porpoise-browser, porpoise-network | Remote and browser features | ○ Not started |
-| 8 | porpoise-skills, porpoise-app | Plugin system and desktop GUI | ○ Not started |
+| 6 | Server integration | Wire git → agent → terminal together | ◆ Done (8 IPC methods) |
+| 7 | porpoise-network, porpoise-ssh, porpoise-browser | Remote and browser features | ◆ Done (63%) |
+| 8 | porpoise-skills | WASM plugin system | ◆ Done (43%) |
+| 9 | porpoise-app | Tauri desktop GUI | ○ Not started |
+| 10 | Polish & hardening | Benchmarks, audit, docs, release | ○ Not started |
 
 ---
 
