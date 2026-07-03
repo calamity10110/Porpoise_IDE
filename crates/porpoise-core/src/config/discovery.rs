@@ -3,6 +3,9 @@ use std::path::PathBuf;
 use crate::error::Result;
 use super::AppConfig;
 
+/// Discovers the configuration file path using this priority:
+/// 1. `PORPOISE_CONFIG` environment variable
+/// 2. XDG config directory (Linux/macOS) or `%APPDATA%` (Windows)
 pub fn discover_config_path() -> Result<PathBuf> {
     if let Ok(path) = std::env::var("PORPOISE_CONFIG") {
         return Ok(PathBuf::from(path));
@@ -50,6 +53,9 @@ fn home_dir() -> Result<PathBuf> {
         .map(PathBuf::from)
 }
 
+/// Loads configuration from TOML file + environment variables with `PORPOISE_` prefix.
+///
+/// Falls back to `AppConfig::default()` if no config file exists.
 pub fn load_config() -> Result<AppConfig> {
     let path = discover_config_path()?;
     if !path.exists() {

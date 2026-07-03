@@ -2,25 +2,40 @@ use tokio::sync::broadcast;
 
 use crate::types::event::SystemEvent;
 
+/// Central event bus for the Porpoise system.
+///
+/// Wraps a `tokio::sync::broadcast` channel. Components subscribe to receive
+/// typed `SystemEvent` messages. Clone is O(1) and produces an independent handle
+/// referencing the same channel.
 #[derive(Clone)]
 pub struct EventBus {
     tx: broadcast::Sender<SystemEvent>,
 }
 
 impl EventBus {
+    /// Creates a new event bus with the given channel capacity.
+    ///
+    /// Events sent after all receivers have been lagging beyond this capacity
+    /// are silently dropped — choose a capacity appropriate for your throughput.
     pub fn new(capacity: usize) -> Self {
         let (tx, _) = broadcast::channel(capacity);
         Self { tx }
     }
 
+    /// Returns a receiver that observes all events published on this bus.
     pub fn subscribe(&self) -> broadcast::Receiver<SystemEvent> {
         self.tx.subscribe()
     }
 
+    /// Publishes an event to all subscribers.
+    ///
+    /// Accepts anything that implements `Into<SystemEvent>` for ergonomic usage
+    /// with sub-event types like `WorktreeEvent`, `AgentEvent`, etc.
     pub fn publish(&self, event: impl Into<SystemEvent>) {
         let _ = self.tx.send(event.into());
     }
 
+    /// Returns a clone of the underlying `Sender`, for advanced usage.
     pub fn sender(&self) -> broadcast::Sender<SystemEvent> {
         self.tx.clone()
     }

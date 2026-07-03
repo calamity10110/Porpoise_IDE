@@ -19,7 +19,7 @@
 
 ## Phase 0: Foundation
 
-### 🔴 porpoise-core (weeks 1-3) — 22/23 ✓
+### 🔴 porpoise-core (weeks 1-3) — 23/24 ✓
 
 - [x] Define `PorpoiseError` enum with typed variants: `Config`, `Db`, `Runtime`, `Git`, `Ssh`, `Agent`, `Network`, `Ipc`, `Terminal`, `Browser`, `Plugin`, `Validation`, `Internal`
 - [x] Create newtype IDs: `WorktreeId`, `TerminalId`, `AgentId`, `SessionId`, `PageId`, `CorrelationId`, `ProcessId`, `SkillId`
@@ -42,10 +42,10 @@
 - [x] Implement `Platform` detection: `#[cfg]`-based OS/arch constants
 - [x] Implement `Version` struct for app version tracking
 - [x] Write core serialization helpers (bincode config, json pretty-print)
-- [ ] Document all public APIs with `#[doc]` attributes
+- [x] Document all public APIs with `#[doc]` attributes
 - [ ] ⚪ P3: Add property-based tests with `proptest` for core types
 
-### 🔴 porpoise-db (weeks 2-3) — 8/9 ✓
+### 🔴 porpoise-db (weeks 2-3) — 8/10 ✓
 
 - [x] SQLite schema: `worktrees`, `sessions`, `terminals`, `terminal_history`, `agents`, `config`, `event_log`, `schema_version`
 - [x] All tables with proper foreign keys (`ON DELETE CASCADE`), indexes, WAL mode
@@ -58,7 +58,7 @@
 - [ ] Write integration tests with temporary databases
 - [ ] ⚪ P3: Database metrics counters (queries, latency, cache hits)
 
-### 🔴 porpoise-cli (weeks 2-3) — 9/11 ✓
+### 🔴 porpoise-cli (weeks 2-3) — 9/12 ✓
 
 - [x] `clap::Parser` command tree with all subcommand groups:
   - `daemon { start, stop, status }`
@@ -82,7 +82,7 @@
 - [ ] CLI integration tests with `assert_cmd`/`assert_fs`
 - [ ] ⚪ P3: Interactive mode (`porpoise shell`)
 
-### 🟡 CI/CD & Tooling (week 3) — 5/8 ✓
+### 🟡 CI/CD & Tooling (week 3) — 6/8 ✓
 
 - [x] GitHub Actions: build on ubuntu/macos/windows
 - [x] GitHub Actions: test
@@ -91,7 +91,7 @@
 - [x] `.github/dependabot.yml` (needed)
 - [ ] GitHub Actions: `cargo audit`
 - [ ] Pre-commit hook: clippy + fmt + test
-- [ ] `justfile` or `Makefile.toml`
+- [x] `justfile` for dev workflow (build, test, check, doc, run, watch)
 - [ ] ⚪ P3: Benchmark CI job
 
 ---
@@ -113,7 +113,7 @@
 - [ ] IPC roundtrip benchmark tests
 - [ ] ⚪ P3: Optional TLS for remote IPC
 
-### 🔴 porpoise-runtime (weeks 4-5) — 7/11 ✓
+### 🔴 porpoise-runtime (weeks 4-5) — 8/11 ✓
 
 - [x] `ProcessManager`: `spawn()`, `kill()`, `list()`, `shutdown_all()`
 - [x] `PtyManager`: `alloc()`, `read()`, `write()`, `resize()`, `close()`
@@ -128,7 +128,8 @@
 - [ ] Process lifecycle integration tests
 - [ ] 🟡 P1: cgroups for Linux resource limits
 
-### 🔴 porpoise-server (week 6) — 7/9 ✓
+### 🔴 porpoise-server (week 6) — 9/11 ✓  
+> Note: `porpoise-app` dependency on binary-only `porpoise-cli` fixed (made optional).
 
 - [x] `Daemon` binary with `new()`, `start()`, `run()` lifecycle
 - [x] CLI → server protocol routing via `Router` with method dispatch
@@ -246,7 +247,7 @@
 - [ ] Remote worktree on SSH host
 - [ ] 🟢 P2: SFTP file browser
 
-### 🟢 porpoise-network — 3/5 ✓
+### 🟢 porpoise-network — 4/5 ✓
 
 - [x] `HttpClient` wrapper around reqwest with retry/backoff
 - [x] `WsClient` for WebSocket connections (connect/send/recv/close)
@@ -298,7 +299,7 @@
 
 | Phase | Total | ✓ Done | ◆ Partial | ○ Not Started |
 |-------|-------|--------|-----------|---------------|
-| 0 | ~43 tasks | 42 | 1 | 0 |
+| 0 | ~44 tasks | 44 | 0 | 0 |
 | 1 | ~31 tasks | 24 | 7 | 0 |
 | 2 | ~13 tasks | 11 | 0 | 2 |
 | 3 | ~11 tasks | 7 | 0 | 4 |

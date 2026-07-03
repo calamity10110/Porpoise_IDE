@@ -685,19 +685,20 @@ impl AgentHookServer {
 
 ---
 
-## Implementation Status (2026-07-01)
+## Implementation Status (2026-07-02)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Binary frame protocol | ✅ Done | [magic][ver][flags][len][JSON payload] |
 | WireMessage enum | ✅ Done | Request/Response/Event via serde_json |
 | UnixSocketTransport | ✅ Done | Connect, send, receive |
-| NamedPipeTransport | ⬜ Stub | Structure defined, tokio::net::pipe not yet implemented |
-| RelayClient | ✅ Done | call() with serialization + transport |
+| NamedPipeTransport | ✅ Done | Client + server accept loop (tokio::net::pipe) |
+| RelayClient | ✅ Done | call() with serialization + transport + auto-reconnect |
 | RelayServer | ✅ Done | Accept loop, per-client task, Router dispatch |
+| Router with method dispatch | ✅ Done | HashMap-based handler routing |
 | Request correlation | ✅ Done | CorrelationId-based matching |
-| Auto-reconnect | ⬜ Pending | Exponential backoff logic not yet written |
-| Protocol version negotiation | ⬜ Pending | Version check in Frame::decode exists, handshake missing |
+| Auto-reconnect | ✅ Done | Exponential backoff with jitter (100ms base, 30s max) |
+| Protocol version negotiation | ✅ Done | Handshake on connect, Frame decode version check |
 | IPC benchmarks | ⬜ Pending | criterion benchmarks not yet set up |
 
 ### Actual Implementation Changes

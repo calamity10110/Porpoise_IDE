@@ -1,7 +1,10 @@
 /target/
 **/*.rs.bk
 *.pdb
-graphify-out/cache/
-graphify-out/.graphify_*.json
-graphify-out/.needs_update
+**/graphify-out/cache/
+**/graphify-out/.graphify_*.json
+**/graphify-out/.needs_update
+**/graphify-out/graph.html
+**/graphify-out/graph.json
+**/graphify-out/GRAPH_REPORT.md
 .sisyphus/

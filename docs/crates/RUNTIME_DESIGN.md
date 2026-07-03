@@ -577,7 +577,7 @@ async fn shutdown(process_manager: &ProcessManager) {
 
 ---
 
-## Implementation Status (2026-07-01)
+## Implementation Status (2026-07-02)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
@@ -585,10 +585,13 @@ async fn shutdown(process_manager: &ProcessManager) {
 | PtyManager: alloc/read/write/resize/close | ✅ Done | Platform-conditional impl |
 | Unix PTY (forkpty) | ✅ Done | nix::pty::openpty() + fork() in #[cfg(unix)] |
 | Windows PTY (ConPTY) | ⬜ Stub | CreatePseudoConsole not yet implemented |
+| ProcessHandle with watch/mpsc channels | ✅ Done | status watch + command mpsc |
+| ProcessPool with max limit | ✅ Done | Max process count enforcement |
 | HealthChecker | ✅ Done | Periodic kill(pid, 0) liveness checks |
 | Signal handling (SIGTERM/SIGINT) | ✅ Done | Graceful shutdown via tokio::signal |
 | ResourceLimits | ✅ Done | RLIMIT_NOFILE via setrlimit |
 | WorktreeProcessManager | ⬜ Not started | Will bridge process spawning with worktree directories |
+| Process lifecycle integration tests | ⬜ Not started | Mock processes needed |
 | cgroups integration | ⬜ Not started | Linux-only resource control |
 
 ### Actual Implementation Details

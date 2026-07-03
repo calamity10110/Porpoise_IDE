@@ -3,6 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use super::id::*;
 
+/// Top-level event enum for all system events.
+///
+/// Match on variants to react to domain-specific events published on the
+/// `EventBus`. Each variant wraps a sub-event enum with detailed payloads.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum SystemEvent {
     Worktree(WorktreeEvent),
@@ -14,6 +18,7 @@ pub enum SystemEvent {
     System(SystemEventKind),
 }
 
+/// Events related to worktree lifecycle (create, delete, status change).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum WorktreeEvent {
     Created {
@@ -38,6 +43,7 @@ pub enum WorktreeEvent {
     },
 }
 
+/// Events related to terminal lifecycle (create, output, resize, close).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum TerminalEvent {
     Created {
@@ -64,6 +70,7 @@ pub enum TerminalEvent {
     },
 }
 
+/// Events related to agent lifecycle (spawn, output, status, exit).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum AgentEvent {
     Spawned {
@@ -95,6 +102,7 @@ pub enum AgentEvent {
     },
 }
 
+/// Classification of agent output (thinking, code, tool call, etc.).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum OutputKind {
     Thinking,
@@ -105,6 +113,7 @@ pub enum OutputKind {
     Error,
 }
 
+/// Possible states in the agent lifecycle.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum AgentStatusKind {
     Spawning,
@@ -116,6 +125,7 @@ pub enum AgentStatusKind {
     Killed,
 }
 
+/// Events related to git operations (clone, status, branch, fetch).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum GitEvent {
     CloneStarted { repo: String },
@@ -127,6 +137,7 @@ pub enum GitEvent {
     FetchCompleted { repo: PathBuf },
 }
 
+/// Events related to SSH connections (connect, disconnect, reconnect, port-forward).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum SshEvent {
     Connected { host: String },
@@ -136,6 +147,7 @@ pub enum SshEvent {
     PortForwardStopped { host: String, local_port: u16 },
 }
 
+/// Events related to the embedded browser (page load, snapshot, click).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum BrowserEvent {
     PageLoaded { page_id: PageId, url: String },
@@ -143,6 +155,7 @@ pub enum BrowserEvent {
     ElementClicked { page_id: PageId, selector: String },
 }
 
+/// System-level events (startup, shutdown, config reload, errors).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum SystemEventKind {
     Startup,
@@ -153,6 +166,7 @@ pub enum SystemEventKind {
     Notification { title: String, body: String, severity: NotificationSeverity },
 }
 
+/// Severity level for user-facing notifications.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NotificationSeverity {
     Info,
@@ -160,6 +174,7 @@ pub enum NotificationSeverity {
     Error,
 }
 
+/// Possible states in the worktree lifecycle.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum WorktreeStatus {
     Idle,

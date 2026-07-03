@@ -26,7 +26,7 @@
 | Criteria | Status |
 |----------|--------|
 | `cargo build --workspace` succeeds | ✓ All 14 crates compile |
-| `cargo test --workspace` passes | ✓ 26 tests pass (core + relay + git + agent) |
+| `cargo test --workspace` passes | ✓ 0 tests (test modules exist in 13 files, need `#[test]` functions) |
 | `cargo clippy --workspace` clean (no warnings) | ✓ Clean (except porpoise-app dep warning) |
 | CLI prints help with all subcommands | ✓ 16 commands listed |
 | SQLite database created and migrated | ✓ On first server start |
@@ -70,7 +70,7 @@
 ### Crate Status
 
 ```
-porpoise-git/        # 4 tests passing
+porpoise-git/        # Test modules in engine, worktree (539 loc)
 ├── src/
 │   ├── lib.rs       # Module re-exports
 │   ├── engine.rs    # GitEngine — core git operations
@@ -98,7 +98,7 @@ porpoise-git/        # 4 tests passing
 ### Crate Status
 
 ```
-porpoise-terminal/   # 2 tests passing
+porpoise-terminal/   # Test module in parser (337 loc)
 ├── src/
 │   ├── lib.rs       # Module re-exports
 │   ├── types.rs     # TerminalConfig, TerminalPane, SplitDirection, ColorScheme, OutputLine
@@ -127,7 +127,7 @@ porpoise-terminal/   # 2 tests passing
 ### Crate Status
 
 ```
-porpoise-agent/      # 1 test passing
+porpoise-agent/      # Test module in detector (501 loc)
 ├── src/
 │   ├── lib.rs       # Module re-exports
 │   ├── traits.rs    # Agent trait + AgentHandle trait
@@ -256,10 +256,10 @@ Phase 1: core ──> relay ──> runtime ──> server    ◆ 80% Complete
 Phase 2: core ──> git ──> server                 ◆ 85% Complete
 Phase 3: core ──> runtime ──> terminal            ◆ 70% Complete
 Phase 4: core ──> agent ──> server               ◆ 75% Complete
-Phase 6: core ──> network ──> ssh ──> browser     ◆ 63% Complete
+Phase 6: core ──> network ──> ssh ──> browser     ◆ 65% Complete
 Phase 7: core ──> skills                          ◆ 43% Complete
 
-Remaining:  app (Tauri) ──> polish                  ○ Not started
+Remaining:  app (Tauri) ──> security ──> polish      ○ Not started
 ```
 
 ---

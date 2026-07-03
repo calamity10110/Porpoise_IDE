@@ -1,8 +1,14 @@
 use std::path::PathBuf;
 use thiserror::Error;
 
+/// Convenience alias for `Result<T, PorpoiseError>` throughout the Porpoise system.
 pub type Result<T> = std::result::Result<T, PorpoiseError>;
 
+/// Top-level error type for all Porpoise operations.
+///
+/// Each variant wraps a specific error domain. Use `match` or the `#[error]` Display
+/// impl for user-facing messages. Domain crates implement `From<T>` for their
+/// respective error types.
 #[derive(Error, Debug)]
 pub enum PorpoiseError {
     // Configuration
@@ -100,6 +106,7 @@ pub enum PorpoiseError {
 }
 
 impl PorpoiseError {
+    /// Constructs an `InvalidId` error for the given type name and raw value.
     pub fn invalid_id(type_name: &'static str, value: impl std::fmt::Display) -> Self {
         Self::InvalidId {
             type_name,

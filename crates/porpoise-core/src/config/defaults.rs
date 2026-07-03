@@ -1,11 +1,16 @@
 use super::AppConfig;
 
 impl AppConfig {
+    /// Returns the default Unix domain socket path based on platform conventions.
     pub fn default_socket_path() -> Result<std::path::PathBuf, crate::error::PorpoiseError> {
         let data_dir = Self::default_data_dir()?;
         Ok(data_dir.join("porpoise.sock"))
     }
 
+    /// Returns the default application data directory per platform:
+    /// - Linux: `$XDG_DATA_HOME/porpoise` or `~/.local/share/porpoise`
+    /// - macOS: `~/Library/Application Support/porpoise`
+    /// - Windows: `%LOCALAPPDATA%/porpoise`
     pub fn default_data_dir() -> Result<std::path::PathBuf, crate::error::PorpoiseError> {
         #[cfg(target_os = "linux")]
         {

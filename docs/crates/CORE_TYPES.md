@@ -644,14 +644,14 @@ pub enum CapabilityScope {
 
 ---
 
-## Implementation Status (2026-07-01)
+## Implementation Status (2026-07-02)
 
-The core types in this document are fully **implemented in `crates/porpoise-core/src/`** (18/23 tasks done).
+The core types in this document are fully **implemented in `crates/porpoise-core/src/`** (22/24 tasks done, ~1,092 lines across 17 files).
 
 ### Implemented
 - ✅ `PorpoiseError` enum with 30+ typed variants across all domains
 - ✅ 8 newtype IDs: `WorktreeId`, `TerminalId`, `AgentId`, `SessionId`, `PageId`, `CorrelationId`, `ProcessId`, `SkillId`
-- ✅ UUID v7 generation via `uuid::Uuid::now_v7()`
+- ✅ UUID v7 generation via `uuid::Uuid::now_v7()` (macro-generated)
 - ✅ `AppConfig` hierarchy with all sub-configs + Default impls
 - ✅ `SystemEvent` enum with 7 variant families + sub-events
 - ✅ `EventBus` (tokio broadcast::channel) with tests
@@ -659,11 +659,11 @@ The core types in this document are fully **implemented in `crates/porpoise-core
 - ✅ `Capabilities` struct for permission model
 - ✅ `EventHandler` and `Command` traits
 - ✅ Config file discovery (XDG/AppData/env) + TOML loading
+- ✅ `Platform` detection constants (`#[cfg]`-based OS/arch)
+- ✅ `Version` struct for app version tracking
+- ✅ Serialization helpers (bincode config, json pretty-print)
 
 ### Not Yet Implemented
-- ⬜ `Platform` detection constants
-- ⬜ `Version` struct
-- ⬜ Serialization helpers
 - ⬜ Full `#[doc]` on all public APIs
 - ⬜ Property-based tests with `proptest`
 

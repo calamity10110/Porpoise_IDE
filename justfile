@@ -1,41 +1,68 @@
-default: build
+# Porpoise development commands
+# Usage: just <command>
 
-# Build everything
+# Build all crates
 build:
     cargo build --workspace
 
-# Build in release mode
-release:
+# Build release
+build-release:
     cargo build --release --workspace
 
 # Run all tests
 test:
     cargo test --workspace
 
-# Lint
+# Run clippy lints
 clippy:
-    cargo clippy --workspace -- -D warnings
+    cargo clippy --all-targets -- -D warnings
 
-# Format
+# Check formatting
 fmt:
     cargo fmt --check
 
-fix:
+# Fix formatting
+fmt-fix:
     cargo fmt
-    cargo clippy --fix --allow-dirty
 
-# Build documentation
+# Build docs
 doc:
     cargo doc --no-deps
 
-# Run the CLI
-cli *args:
-    cargo run --release -p porpoise-cli -- {{args}}
+# Full CI check (build + test + clippy + fmt)
+check: build test clippy fmt
 
-# Run the server
-server:
-    cargo run --release -p porpoise-server
+# Run a specific crate
+run *args:
+    cargo run -p {{args}}
+
+# Build specific crate
+build-p *crate:
+    cargo build -p {{crate}}
+
+# Run tests for specific crate
+test-p *crate:
+    cargo test -p {{crate}}
 
 # Clean build artifacts
 clean:
     cargo clean
+
+# Audit dependencies
+audit:
+    cargo audit
+
+# Watch mode for development
+watch:
+    cargo watch -x check
+
+# Generate knowledge graph
+graphify:
+    /graphify .
+
+# Show outdated dependencies
+outdated:
+    cargo outdated
+
+default:
+    @just --list

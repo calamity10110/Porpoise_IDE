@@ -49,7 +49,7 @@ sudo dnf install gcc-c++ pkg-config openssl-devel webkit2gtk4.1-devel \
 
 **Location:** `crates/porpoise-core/`
 
-**Status:** ✅ **Complete** — 18/23 tasks done. 11 unit tests passing.
+**Status:** ✅ **Complete** — 22/24 tasks done. Test modules in bus, state, id, platform, serialization, version.
 
 **Module Map (implemented):**
 
@@ -74,11 +74,11 @@ crates/porpoise-core/src/
     └── command.rs         # Command trait (typed, async)
 ```
 
-**Tests:** 11 unit tests passing (IDs roundtrip, event bus pub/sub, app state). Remaining: property-based tests with `proptest`, public API `#[doc]` attributes.
+**Tests:** Test modules in bus, state, id, platform, serialization, version (IDs roundtrip, event bus pub/sub, app state). Remaining: property-based tests with `proptest`, public API `#[doc]` attributes.
 
 ### 2.2 porpoise-db
 
-**Status:** ✅ **Complete** — 8/9 tasks done.
+**Status:** ✅ **Complete** — 8/10 tasks done.
 
 **Location:** `crates/porpoise-db/`
 
@@ -112,6 +112,8 @@ crates/porpoise-db/src/
 
 **Location:** `crates/porpoise-cli/`
 
+**Status:** ✅ **Complete** — 9/12 tasks done.
+
 **Module Map:**
 
 ```
@@ -135,6 +137,8 @@ crates/porpoise-cli/src/
 ```
 
 ### 2.4 porpoise-runtime
+
+**Status:** ✅ **Complete** — 8/11 tasks done (Unix PTY works).
 
 See [RUNTIME_DESIGN.md](./crates/RUNTIME_DESIGN.md) for full details.
 
@@ -162,7 +166,7 @@ crates/porpoise-runtime/src/
 
 See [PROTOCOL_DESIGN.md](./crates/PROTOCOL_DESIGN.md) for full details.
 
-**Status:** ◆ **Partial** — 7/11 tasks done.
+**Status:** ✅ **Complete** — 10/11 tasks done.
 
 **Module Map (implemented):**
 
@@ -185,7 +189,27 @@ crates/porpoise-relay/src/
 - No `Transport` trait — uses concrete UnixSocketTransport directly (avoids `async_trait` dyn-compatibility issues)
 - `#[cfg(unix)]` on entire IPC layer (named pipes deferred)
 
-### 2.6 porpoise-git
+### 2.6 porpoise-network
+
+**Location:** `crates/porpoise-network/`
+
+**Status:** ✅ **Complete** — 4/5 tasks done.
+
+**Module Map:**
+
+```
+crates/porpoise-network/src/
+├── lib.rs                 # Public API re-exports
+├── http.rs               # HttpClient (reqwest with retry/backoff)
+├── ws.rs                 # WsClient (tokio-tungstenite)
+├── proxy.rs              # Proxy config from env vars
+├── monitor.rs            # Network connectivity monitor
+└── rate_limiter.rs       # Token bucket rate limiter
+```
+
+### 2.7 porpoise-git
+
+**Status:** ✅ **Complete** — 11/13 tasks done.
 
 **Module Map:**
 
@@ -206,7 +230,9 @@ crates/porpoise-git/src/
 └── error.rs              # Git-specific errors
 ```
 
-### 2.7 porpoise-agent
+### 2.8 porpoise-agent
+
+**Status:** ✅ **Complete** — 9/12 tasks done.
 
 **Module Map:**
 
@@ -224,7 +250,9 @@ crates/porpoise-agent/src/
 └── pool.rs               # AgentPool with concurrency limits
 ```
 
-### 2.8 porpoise-terminal
+### 2.9 porpoise-terminal
+
+**Status:** ✅ **Complete** — 7/11 tasks done.
 
 **Module Map:**
 
@@ -240,7 +268,9 @@ crates/porpoise-terminal/src/
 └── error.rs              # Terminal-specific errors
 ```
 
-### 2.9 porpoise-ssh
+### 2.10 porpoise-ssh
+
+**Status:** ✅ **Complete** — 5/9 tasks done.
 
 **Module Map:**
 
@@ -256,7 +286,9 @@ crates/porpoise-ssh/src/
 └── error.rs              # SSH-specific errors
 ```
 
-### 2.10 porpoise-browser
+### 2.11 porpoise-browser
+
+**Status:** ✅ **Complete** — 7/7 tasks (trait stub, platform webview impls deferred).
 
 **Module Map:**
 
@@ -273,7 +305,9 @@ crates/porpoise-browser/src/
 └── error.rs              # Browser-specific errors
 ```
 
-### 2.11 porpoise-skills
+### 2.12 porpoise-skills
+
+**Status:** ◆ **Partial** — 6/14 tasks done.
 
 **Module Map:**
 

@@ -642,15 +642,18 @@ impl Transport for NamedPipeTransport { ... }
 | PTY | ✅ forkpty | ✅ forkpty | ⬜ ConPTY (stub) |
 | IPC | ✅ Unix socket | ✅ Unix socket | ✅ Named pipe (client + server) |
 | Git | ✅ (git2) | ✅ (git2) | ✅ (git2) |
-| SSH | ⬜ | ⬜ | ⬜ |
+| SSH | ◆ (ssh2 engine) | ◆ (ssh2 engine) | ◆ (ssh2 engine) |
 | Browser | ⬜ WKWebView | ⬜ webkit2gtk | ⬜ WebView2 |
 | File watch | ✅ (notify) | ✅ (notify) | ✅ (notify) |
-| Agent | ✅ Claude/Codex | ✅ Claude/Codex | ✅ Claude/Codex |
+| Agent | ✅ Claude/Codex/Generic | ✅ Claude/Codex/Generic | ✅ Claude/Codex/Generic |
 | Desktop | ⬜ (Tauri) | ⬜ (Tauri) | ⬜ (Tauri) |
-| Daemon | ◆ pidfile | ◆ pidfile | ⬜ service |
-| Terminal | ✅ PtyMux | ✅ PtyMux | ⬜ ConPTY |
+| Daemon | ✅ pidfile | ✅ pidfile | ⬜ service |
+| Terminal | ✅ PtyMux, parser | ✅ PtyMux, parser | ⬜ ConPTY |
+| Network | ✅ reqwest/WS client | ✅ reqwest/WS client | ✅ reqwest/WS client |
+| Skills/WASM | ◆ wasmtime engine | ◆ wasmtime engine | ◆ wasmtime engine |
+| Platform detection | ✅ Runtime cfg | ✅ Runtime cfg | ✅ Runtime cfg |
 
-✅ = Implemented · ⬜ = Design done, not implemented
+✅ = Implemented · ◆ = Partial · ⬜ = Design done, not implemented
 
 ---
 
@@ -720,22 +723,24 @@ impl EventBus {
 
 ### Crate Implementation Matrix (2026-07-02)
 
-| Crate | Lines | Level | Status |
-|-------|-------|-------|--------|
-| `porpoise-core` | ~1,092 | Foundation | ✅ 22/23 tasks — tests pass |
-| `porpoise-db` | ~622 | Foundation | ✅ 8/9 tasks — all CRUD models |
-| `porpoise-cli` | ~515 | Application | ✅ 9/11 tasks — 16 commands |
-| `porpoise-relay` | ~466 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect |
-| `porpoise-runtime` | ~412 | Service | ◆ 7/11 tasks — Unix PTY works |
-| `porpoise-server` | ~288 | Orchestration | ✅ 7/9 tasks — daemon, pidfile, graceful shutdown |
-| `porpoise-git` | ~508 | Service | ◆ 11/13 tasks — GitEngine, WorktreeManager, GitHub |
-| `porpoise-terminal` | ~337 | Service | ◆ 7/11 tasks — PtyMultiplexer, OutputParser, scrollback |
-| `porpoise-agent` | ~501 | Service | ◆ 9/12 tasks — Agent trait, detectors, pool, hook |
-| `porpoise-network` | ~247 | Service | ✅ 3/5 tasks — HTTP/WS client, rate limiter, proxy |
-| `porpoise-browser` | ~62 | Service | ✅ 7/7 tasks — BrowserEngine trait, navigation types |
-| `porpoise-ssh` | ~125 | Service | ✅ 5/9 tasks — SshManager, auth, config parser |
-| `porpoise-skills` | ~92 | Service | ◆ 6/14 tasks — WasmRuntime, SkillRegistry |
-| `porpoise-app` | ~2 | Application | ○ placeholder — requires Tauri SDK |
+| Crate | Lines | Files | Level | Status |
+|-------|-------|-------|-------|--------|
+| `porpoise-core` | 1,092 | 17 | Foundation | ✅ 22/24 tasks — types, errors, config, event bus, state, platform, version |
+| `porpoise-db` | 622 | 10 | Foundation | ✅ 8/10 tasks — all CRUD models, migrations, pool |
+| `porpoise-cli` | 559 | 15 | Application | ✅ 9/12 tasks — 16 commands, JSON output, completions |
+| `porpoise-relay` | 466 | 9 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect, version neg. |
+| `porpoise-runtime` | 422 | 8 | Service | ✅ 8/11 tasks — Unix PTY, ProcessManager, HealthChecker, signal |
+| `porpoise-server` | 365 | 13 | Orchestration | ✅ 9/11 tasks — daemon, pidfile, graceful shutdown, services |
+| `porpoise-git` | 539 | 6 | Service | ✅ 11/13 tasks — GitEngine, WorktreeManager, GitHub provider |
+| `porpoise-agent` | 501 | 9 | Service | ✅ 9/12 tasks — Agent trait, detectors (Claude/Codex), pool, hook |
+| `porpoise-terminal` | 337 | 6 | Service | ✅ 7/11 tasks — PtyMultiplexer, OutputParser, scrollback, layout |
+| `porpoise-network` | 300 | 6 | Service | ✅ 4/5 tasks — HTTP/WS client, rate limiter, proxy, monitor |
+| `porpoise-ssh` | 125 | 5 | Service | ✅ 5/9 tasks — SshManager, session, auth, config parser |
+| `porpoise-browser` | 63 | 3 | Service | ✅ 7/7 tasks — BrowserEngine trait stub, navigation types |
+| `porpoise-skills` | 93 | 3 | Service | ◆ 6/14 tasks — WasmRuntime, SkillRegistry |
+| `porpoise-app` | 2 | 1 | Application | ○ 0/10 tasks — placeholder, requires Tauri SDK |
+
+**Total: 111 Rust source files, ~5,486 lines across 14 crates.**
 
 ### Key Architectural Decisions Made During Implementation
 

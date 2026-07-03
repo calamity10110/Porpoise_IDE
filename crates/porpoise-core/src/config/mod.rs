@@ -4,6 +4,11 @@ pub mod discovery;
 use std::path::PathBuf;
 use serde::Deserialize;
 
+/// Top-level application configuration, deserialized from TOML + env vars.
+///
+/// Each sub-config field corresponds to a `[section]` in the config file or
+/// `PORPOISE_SECTION_KEY` environment variable. All sub-configs implement
+/// `Default` so missing sections are handled gracefully.
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct AppConfig {
     #[serde(default)]
@@ -24,6 +29,7 @@ pub struct AppConfig {
     pub browser: BrowserConfig,
 }
 
+/// Core application settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoreConfig {
     pub data_dir: Option<PathBuf>,
@@ -39,6 +45,7 @@ impl Default for CoreConfig {
     }
 }
 
+/// CLI-specific settings (output format, pager, color).
 #[derive(Debug, Clone, Deserialize)]
 pub struct CliConfig {
     pub default_output_format: OutputFormat,
@@ -56,6 +63,7 @@ impl Default for CliConfig {
     }
 }
 
+/// Supported CLI output formats.
 #[derive(Debug, Clone, Deserialize)]
 pub enum OutputFormat {
     Plain,
@@ -64,6 +72,7 @@ pub enum OutputFormat {
     Yaml,
 }
 
+/// Color output preference.
 #[derive(Debug, Clone, Deserialize)]
 pub enum ColorChoice {
     Auto,
@@ -71,6 +80,7 @@ pub enum ColorChoice {
     Never,
 }
 
+/// Database connection settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct DbConfig {
     pub url: Option<String>,
@@ -90,6 +100,7 @@ impl Default for DbConfig {
     }
 }
 
+/// Runtime/process manager settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RuntimeConfig {
     pub max_concurrent_processes: u32,
@@ -109,6 +120,7 @@ impl Default for RuntimeConfig {
     }
 }
 
+/// Agent integration settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct AgentConfig {
     pub default_shell: String,
@@ -128,6 +140,7 @@ impl Default for AgentConfig {
     }
 }
 
+/// Git integration settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct GitConfig {
     pub default_branch: String,
@@ -145,6 +158,7 @@ impl Default for GitConfig {
     }
 }
 
+/// SSH connection settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct SshConfig {
     pub connect_timeout_secs: u64,
@@ -162,6 +176,7 @@ impl Default for SshConfig {
     }
 }
 
+/// Embedded browser settings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct BrowserConfig {
     pub default_width: u32,
