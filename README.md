@@ -227,7 +227,7 @@ Claude Code · Codex · Grok · Cursor · GitHub Copilot · OpenCode · MiMo Cod
 | 7 | Plugin System | ✅ 93% — 13/14 tasks (726 loc, WASM pipeline, hooks, hot-reload) |
 | 8 | Polish & Release | ○ Not started |
 
-**Total: 134 Rust files, ~9,945 lines across 14 workspace crates. Builds clean on Windows, macOS, Linux. Passes `cargo clippy -- -D warnings`.**
+**Total: 134 Rust files, ~9,553 lines across 14 workspace crates. 86 tests pass. Builds clean on Windows. Passes `cargo clippy -- -D warnings`.**
 
 ---
 
