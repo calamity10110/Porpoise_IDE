@@ -1,10 +1,11 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::{collections::HashMap, sync::Arc};
 
-use porpoise_core::error::{PorpoiseError, Result};
-use porpoise_core::types::id::TerminalId;
-use porpoise_core::bus::EventBus;
+use porpoise_core::{
+    bus::EventBus,
+    error::{PorpoiseError, Result},
+    types::id::TerminalId,
+};
+use tokio::sync::RwLock;
 
 #[derive(Debug)]
 pub struct PtySession {
@@ -23,13 +24,20 @@ impl PtySession {
 
 #[cfg(not(target_os = "windows"))]
 fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
-    use nix::pty::{self, Winsize};
-    use nix::unistd::{self, ForkResult};
     use std::os::unix::io::AsRawFd;
 
-    let winsize = Winsize { ws_row: rows, ws_col: cols, ws_xpixel: 0, ws_ypixel: 0 };
-    let (ptym, ptys) = pty::openpty(&winsize, None)
-        .map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
+    use nix::{
+        pty::{self, Winsize},
+        unistd::{self, ForkResult},
+    };
+
+    let winsize = Winsize {
+        ws_row: rows,
+        ws_col: cols,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
+    let (ptym, ptys) = pty::openpty(&winsize, None).map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
 
     let master_fd = ptym.as_raw_fd();
     let slave_fd = ptys.as_raw_fd();
@@ -55,7 +63,9 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
                 libc::dup2(slave_fd, 1);
                 libc::dup2(slave_fd, 2);
             }
-            if slave_fd > 2 { unistd::close(slave_fd).ok(); }
+            if slave_fd > 2 {
+                unistd::close(slave_fd).ok();
+            }
             unistd::execvp(shell, &[shell]).ok();
             std::process::exit(1);
         }
@@ -65,30 +75,21 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
 
 #[cfg(target_os = "windows")]
 fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
-    // Windows ConPTY via the `windows` crate.
-    // This implementation uses CreatePseudoConsole with pipe-based I/O.
-    //
-    // The full implementation requires:
-    // 1. CreatePipe for stdin/stdout
-    // 2. CreatePseudoConsole with pipe handles
-    // 3. InitializeProcThreadAttributeList + UpdateProcThreadAttribute
-    // 4. CreateProcessW with EXTENDED_STARTUPINFO_PRESENT
-    //
-    // The `windows` crate dependency is configured. Enable by uncommenting
-    // the implementation block below after testing on a Windows 10+ system.
     let _ = (rows, cols, shell);
     Err(PorpoiseError::Unimplemented(
-        "Windows ConPTY via windows crate — needs testing on Win10+",
+        "Windows ConPTY via windows crate — needs proper implementation on Win10+",
     ))
 }
-
 async fn pty_read_impl(fd: i32, buf: &mut [u8]) -> Result<usize> {
     #[cfg(not(target_os = "windows"))]
     {
         use std::os::unix::io::FromRawFd;
         let std_file = unsafe { std::fs::File::from_raw_fd(fd) };
         let mut file = tokio::fs::File::from_std(std_file);
-        let n = file.read(buf).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
+        let n = file
+            .read(buf)
+            .await
+            .map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
         std::mem::forget(file);
         Ok(n)
     }
@@ -105,7 +106,9 @@ async fn pty_write_impl(fd: i32, data: &[u8]) -> Result<()> {
         use std::os::unix::io::FromRawFd;
         let std_file = unsafe { std::fs::File::from_raw_fd(fd) };
         let mut file = tokio::fs::File::from_std(std_file);
-        file.write_all(data).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
+        file.write_all(data)
+            .await
+            .map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
         std::mem::forget(file);
         Ok(())
     }
@@ -119,9 +122,18 @@ async fn pty_write_impl(fd: i32, data: &[u8]) -> Result<()> {
 fn pty_resize_impl(fd: i32, rows: u16, cols: u16) -> Result<()> {
     #[cfg(not(target_os = "windows"))]
     {
-        let ws = nix::pty::Winsize { ws_row: rows, ws_col: cols, ws_xpixel: 0, ws_ypixel: 0 };
+        let ws = nix::pty::Winsize {
+            ws_row: rows,
+            ws_col: cols,
+            ws_xpixel: 0,
+            ws_ypixel: 0,
+        };
         let res = unsafe { libc::ioctl(fd, libc::TIOCSWINSZ, &ws) };
-        if res != 0 { Err(PorpoiseError::PtyError("resize failed".into())) } else { Ok(()) }
+        if res != 0 {
+            Err(PorpoiseError::PtyError("resize failed".into()))
+        } else {
+            Ok(())
+        }
     }
     #[cfg(target_os = "windows")]
     {
@@ -137,7 +149,10 @@ pub struct PtyManager {
 
 impl PtyManager {
     pub fn new(event_bus: EventBus) -> Self {
-        Self { sessions: Arc::new(RwLock::new(HashMap::new())), _event_bus: event_bus }
+        Self {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            _event_bus: event_bus,
+        }
     }
 
     pub async fn alloc(&self, rows: u16, cols: u16, shell: &str) -> Result<TerminalId> {
@@ -149,19 +164,25 @@ impl PtyManager {
 
     pub async fn read(&self, id: TerminalId, buf: &mut [u8]) -> Result<usize> {
         let sessions = self.sessions.read().await;
-        let session = sessions.get(&id).ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
+        let session = sessions
+            .get(&id)
+            .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
         pty_read_impl(session.fd, buf).await
     }
 
     pub async fn write(&self, id: TerminalId, data: &[u8]) -> Result<()> {
         let sessions = self.sessions.read().await;
-        let session = sessions.get(&id).ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
+        let session = sessions
+            .get(&id)
+            .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
         pty_write_impl(session.fd, data).await
     }
 
     pub async fn resize(&self, id: TerminalId, rows: u16, cols: u16) -> Result<()> {
         let sessions = self.sessions.read().await;
-        let session = sessions.get(&id).ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
+        let session = sessions
+            .get(&id)
+            .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
         pty_resize_impl(session.fd, rows, cols)
     }
 
