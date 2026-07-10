@@ -16,6 +16,7 @@ tracing.workspace = true
 chrono.workspace = true
 async-trait.workspace = true
 libc.workspace = true
+rusqlite.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

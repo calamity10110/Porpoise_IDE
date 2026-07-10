@@ -1,6 +1,7 @@
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
+
 use porpoise_core::types::id::AgentId;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AgentKind {

@@ -1,6 +1,10 @@
-use porpoise_core::bus::EventBus;
-use porpoise_core::types::event::{AgentEvent, SystemEvent, OutputKind};
-use porpoise_core::types::id::AgentId;
+use porpoise_core::{
+    bus::EventBus,
+    types::{
+        event::{AgentEvent, OutputKind, SystemEvent},
+        id::AgentId,
+    },
+};
 
 pub struct HookServer {
     event_bus: EventBus,
@@ -17,12 +21,10 @@ impl HookServer {
         } else {
             OutputKind::Text
         };
-        self.event_bus.publish(SystemEvent::Agent(
-            AgentEvent::Output {
-                id: AgentId::new(),
-                text: text.to_string(),
-                kind,
-            }
-        ));
+        self.event_bus.publish(SystemEvent::Agent(AgentEvent::Output {
+            id: AgentId::new(),
+            text: text.to_string(),
+            kind,
+        }));
     }
 }

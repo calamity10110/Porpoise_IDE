@@ -1,5 +1,5 @@
-use std::env;
-use std::process::Command;
+use std::{env, process::Command};
+
 use crate::types::{AgentKind, AgentManifest};
 
 pub struct AgentDetector;
@@ -7,20 +7,34 @@ pub struct AgentDetector;
 impl AgentDetector {
     pub fn detect_all() -> Vec<AgentManifest> {
         let agents = vec![
-            ("Claude Code", "claude", AgentKind::ClaudeCode, &["--version"] as &[&str]),
+            (
+                "Claude Code",
+                "claude",
+                AgentKind::ClaudeCode,
+                &["--version"] as &[&str],
+            ),
             ("OpenAI Codex", "codex", AgentKind::Codex, &["--version"]),
             ("Google Gemini", "gemini", AgentKind::Gemini, &["--version"]),
         ];
 
-        agents.into_iter().map(|(name, binary, kind, version_args)| {
-            let detected = Self::binary_in_path(binary);
-            let version = if detected {
-                Self::get_version(binary, version_args)
-            } else {
-                None
-            };
-            AgentManifest { name: name.to_string(), binary: binary.to_string(), kind, detected, version }
-        }).collect()
+        agents
+            .into_iter()
+            .map(|(name, binary, kind, version_args)| {
+                let detected = Self::binary_in_path(binary);
+                let version = if detected {
+                    Self::get_version(binary, version_args)
+                } else {
+                    None
+                };
+                AgentManifest {
+                    name: name.to_string(),
+                    binary: binary.to_string(),
+                    kind,
+                    detected,
+                    version,
+                }
+            })
+            .collect()
     }
 
     pub fn binary_in_path(binary: &str) -> bool {
@@ -28,7 +42,9 @@ impl AgentDetector {
             .and_then(|path| {
                 env::split_paths(&path).find_map(|dir| {
                     let full = dir.join(binary);
-                    if full.is_file() { Some(true) } else {
+                    if full.is_file() {
+                        Some(true)
+                    } else {
                         let full_exe = dir.join(format!("{}.exe", binary));
                         if full_exe.is_file() { Some(true) } else { None }
                     }
@@ -38,10 +54,14 @@ impl AgentDetector {
     }
 
     fn get_version(binary: &str, args: &[&str]) -> Option<String> {
-        Command::new(binary).args(args).output().ok()
+        Command::new(binary)
+            .args(args)
+            .output()
+            .ok()
             .and_then(|out| {
                 if out.status.success() {
-                    String::from_utf8(out.stdout).ok()
+                    String::from_utf8(out.stdout)
+                        .ok()
                         .or_else(|| String::from_utf8(out.stderr).ok())
                 } else {
                     None

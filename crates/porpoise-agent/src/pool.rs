@@ -1,14 +1,18 @@
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
+use std::{collections::HashMap, path::Path, sync::Arc};
+
+use porpoise_core::{
+    error::{PorpoiseError, Result},
+    types::id::AgentId,
+};
 use tokio::sync::RwLock;
-use porpoise_core::error::{PorpoiseError, Result};
-use porpoise_core::types::id::AgentId;
-use crate::traits::{Agent, AgentHandle};
-use crate::types::{AgentInfo, AgentKind, AgentStatus};
-use crate::claude::ClaudeCodeAgent;
-use crate::codex::CodexAgent;
-use crate::generic::GenericAgent;
+
+use crate::{
+    claude::ClaudeCodeAgent,
+    codex::CodexAgent,
+    generic::GenericAgent,
+    traits::{Agent, AgentHandle},
+    types::{AgentInfo, AgentKind, AgentStatus},
+};
 
 struct AgentEntry {
     #[allow(dead_code)]
@@ -24,15 +28,19 @@ pub struct AgentPool {
 
 impl AgentPool {
     pub fn new(max_size: usize) -> Self {
-        Self { agents: Arc::new(RwLock::new(HashMap::new())), max_size }
+        Self {
+            agents: Arc::new(RwLock::new(HashMap::new())),
+            max_size,
+        }
     }
 
     pub async fn spawn(&self, kind: AgentKind, worktree: &Path) -> Result<AgentId> {
         let count = self.agents.read().await.len();
         if count >= self.max_size {
-            return Err(PorpoiseError::ResourceLimit(
-                format!("max agents ({}) reached", self.max_size),
-            ));
+            return Err(PorpoiseError::ResourceLimit(format!(
+                "max agents ({}) reached",
+                self.max_size
+            )));
         }
         let agent: Box<dyn Agent> = match &kind {
             AgentKind::ClaudeCode => Box::new(ClaudeCodeAgent::new()),
@@ -50,7 +58,14 @@ impl AgentPool {
             status: AgentStatus::Running,
             worktree_path: Some(worktree.to_path_buf()),
         };
-        self.agents.write().await.insert(id, AgentEntry { agent, handle: Some(handle), info });
+        self.agents.write().await.insert(
+            id,
+            AgentEntry {
+                agent,
+                handle: Some(handle),
+                info,
+            },
+        );
         Ok(id)
     }
 
@@ -61,9 +76,10 @@ impl AgentPool {
     pub async fn shutdown(&self, id: AgentId) -> Result<()> {
         let mut agents = self.agents.write().await;
         if let Some(mut entry) = agents.remove(&id)
-            && let Some(mut handle) = entry.handle.take() {
-                handle.shutdown().await?;
-            }
+            && let Some(mut handle) = entry.handle.take()
+        {
+            handle.shutdown().await?;
+        }
         Ok(())
     }
 

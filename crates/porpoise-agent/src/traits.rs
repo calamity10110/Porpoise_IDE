@@ -1,6 +1,8 @@
-use async_trait::async_trait;
 use std::path::Path;
+
+use async_trait::async_trait;
 use porpoise_core::error::Result;
+
 use crate::types::{AgentKind, AgentOutput};
 
 #[async_trait]

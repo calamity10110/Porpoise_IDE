@@ -1,16 +1,21 @@
-pub mod traits;
-pub mod detector;
+pub mod account;
 pub mod claude;
 pub mod codex;
+pub mod detector;
 pub mod gemini;
 pub mod generic;
-pub mod pool;
 pub mod hook;
+pub mod pool;
+pub mod resume;
+pub mod traits;
 pub mod types;
+pub mod usage;
 
-pub use traits::{Agent, AgentHandle};
+pub use account::AccountSwitcher;
 pub use detector::AgentDetector;
-pub use pool::AgentPool;
 pub use hook::HookServer;
+pub use pool::AgentPool;
+pub use resume::{SessionRecord, SessionStatus, SessionStore};
+pub use traits::{Agent, AgentHandle};
 pub use types::*;
-
+pub use usage::{TokenUsage, TokenUsageMonitor, UsageSummary};
