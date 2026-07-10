@@ -163,9 +163,9 @@ porpoise-agent/      # 1,443 loc, 13 files
 
 ---
 
-## Phase 5: Desktop Application — ✓ 90% Complete
+## Phase 5: Desktop Application — ✓ Complete
 
-**Objective:** Tauri-based desktop app with worktree sidebar, terminal panel, editor, and settings UI.
+**Objective:** Tauri-based desktop app with worktree sidebar, terminal panel, editor, settings UI, and workflow editor.
 
 ### Implemented
 
@@ -178,6 +178,8 @@ porpoise-agent/      # 1,443 loc, 13 files
 - Settings modal with tabs (general, agent, git, keyboard)
 - Status bar with connection/agent/terminal counts
 - IPC command handlers (worktrees, agents, terminals, settings)
+- Workflow editor (node-based visual workflow creator)
+- Skill bindings for agent-driven workflow management
 
 ### Crate Status
 
@@ -197,7 +199,7 @@ porpoise-app/        # 249 loc, 4 files
 
 ---
 
-## Phase 6: Advanced Features — ✓ 92% Complete
+## Phase 6: Advanced Features — ✓ Complete
 
 **Objective:** Embedded browser, SSH worktrees, networking, notifications.
 
@@ -217,7 +219,7 @@ porpoise-app/        # 249 loc, 4 files
 
 ---
 
-## Phase 7: Plugin System & Ecosystem — ✓ 93% Complete
+## Phase 7: Plugin System & Ecosystem — ✓ Complete
 
 **Objective:** WASM-based plugin runtime, skill SDK, registry, hooks, hot-reload, and community plugins.
 
@@ -266,6 +268,30 @@ porpoise-skills/     # 726 loc, 7 files
 
 ---
 
+## Phase 9: Automation & Enterprise — ✓ Complete
+
+**Objective:** Workflow automation engine, encrypted credential store, desktop GUI automation, and node-based workflow editor.
+
+### Deliverables
+
+| Crate | Milestone | Status |
+|-------|-----------|--------|
+| `porpoise-credentials` | AES-256-GCM credential vault with CRUD, JSON persistence, key zeroization | ✓ 5/5 tasks |
+| `porpoise-automation` | DAG workflow engine, 7 step types, YAML loading, cycle detection, var templating | ✓ 8/8 tasks |
+| `porpoise-computer-use` | Mouse/keyboard automation via enigo, cross-platform | ✓ 5/5 tasks |
+| Workflow Editor | Node-based visual editor, execution viewer, YAML/JSON export, Tauri integration, skill bindings | ✓ 5/5 tasks |
+
+### Crate Status
+
+```
+porpoise-credentials/ # 195 loc, 1 file — AES-256-GCM vault
+porpoise-automation/  # 309 loc, 1 file — DAG workflow engine
+porpoise-computer-use/ # 95 loc, 1 file — desktop GUI automation
+workflow.html         # Node-based visual editor (Tauri frontend)
+```
+
+---
+
 ## Dependency Graph — Current State
 
 ```
@@ -280,9 +306,10 @@ Phase 1: core ──> relay ──> runtime ──> server    ✓ Complete
 Phase 2: core ──> git ──> server                 ✓ Complete
 Phase 3: core ──> runtime ──> terminal            ✓ Complete
 Phase 4: core ──> agent ──> server               ✓ Complete
-Phase 5: app (Tauri)                              ✓ 90% Complete
-Phase 6: core ──> network ──> ssh ──> browser     ✓ 92% Complete
-Phase 7: core ──> skills                          ✓ 93% Complete
+Phase 5: app (Tauri) + workflow editor              ✓ Complete
+Phase 6: core ──> network ──> ssh ──> browser        ✓ Complete
+Phase 7: core ──> skills                             ✓ Complete
+Phase 9: core ──> credentials ──> automation ──> computer-use  ✓ Complete
 
 Remaining:  polish ──> release                      ○ Not started
 ```
@@ -293,10 +320,11 @@ Remaining:  polish ──> release                      ○ Not started
 
 | Risk | Impact | Likelihood | Status |
 |------|--------|------------|--------|
-| PTY compatibility on Windows | High | Medium | Mitigated: Unix PTY done, Windows stub |
-| Agent protocol reverse engineering | High | Medium | ✓ Resolved — Claude/Codex/Gemini agents working |
+| PTY compatibility on Windows | High | Medium | ✓ Resolved — portable-pty ConPTY on Windows, nix PTY on Unix |
+| Agent protocol reverse engineering | High | Medium | ✓ Resolved — 8 agent integrations (Claude, Codex, Gemini, OpenCode, z.ai, OpenAI, Grok, OpenRouter) |
 | WASM plugin performance | Low | Low | ✓ Resolved — wasmtime with fuel metering |
-| Cross-platform IPC on Windows | Medium | Low | ✓ Named pipe client + server implemented |
+| Cross-platform IPC on Windows | Medium | Low | ✓ Named pipe client + server implemented and verified |
+| Mobile pairing protocol | Medium | Low | ✓ WsRelayServer in porpoise-relay, JWT auth token flow designed |
 
 ---
 
@@ -306,15 +334,16 @@ Remaining:  polish ──> release                      ○ Not started
 |----------|------|-----|--------|
 | 1 | Finish Phase 0 (tests, cleanup, warnings) | Foundation quality matters | ✓ Done |
 | 2 | Finish Phase 1 (reconnect, Windows PTY, shutdown) | Required for all downstream | ✓ Done |
-| 3 | Implement porpoise-git | Unlocks the core worktree abstraction | ✓ Done |
-| 4 | Implement porpoise-agent | Without agents, nothing to orchestrate | ✓ Done |
-| 5 | Implement porpoise-terminal | Needed for agent output display | ✓ Done |
-| 6 | Server integration | Wire git → agent → terminal together | ✓ Done |
-| 7 | porpoise-network, porpoise-ssh, porpoise-browser | Remote and browser features | ✓ Done |
-| 8 | porpoise-skills | WASM plugin system | ✓ Done |
-| 9 | porpoise-app | Tauri desktop GUI | ✓ Done (90%) |
-| 10 | Polish & hardening | Benchmarks, audit, docs, release | ○ Not started |
+| 3 | Implement porpoise-git | Unlocks the core worktree abstraction | ✓ |
+| 4 | Implement porpoise-agent | Without agents, nothing to orchestrate | ✓ |
+| 5 | Implement porpoise-terminal | Needed for agent output display | ✓ |
+| 6 | Server integration | Wire git → agent → terminal together | ✓ |
+| 7 | porpoise-network, porpoise-ssh, porpoise-browser | Remote and browser features | ✓ |
+| 8 | porpoise-skills | WASM plugin system | ✓ |
+| 9 | porpoise-app + workflow editor | Tauri desktop GUI | ✓ |
+| 10 | porpoise-credentials, automation, computer-use | Enterprise automation | ✓ |
+| 11 | Polish & hardening | Benchmarks, audit, docs, release | ○ Not started |
 
 ---
 
-*Last updated: 2026-07-10 — reflects Phase 0–7 implementation completion. See [TODO.md](./TODO.md) for task-level tracking.*
+*Last updated: 2026-07-10 — reflects Phase 0–9 implementation completion (Phases 0–7 + Phase 9 done, Phase 8 remaining). See [TODO.md](./TODO.md) for task-level tracking.*

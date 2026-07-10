@@ -319,17 +319,17 @@
 
 | Phase | Total | Done | Partial | Not Started |
 |-------|-------|------|---------|-------------|
-| 0 | ~44 tasks | 44 | 0 | 0 |
-| 1 | ~31 tasks | 31 | 0 | 0 |
-| 2 | ~13 tasks | 13 | 0 | 0 |
-| 3 | ~11 tasks | 11 | 0 | 0 |
-| 4 | ~13 tasks | 13 | 0 | 0 |
-| 5 | ~10 tasks | 10 | 0 | 0 |
+| 0 | ~55 tasks | 50 | 0 | 5 |
+| 1 | ~33 tasks | 29 | 0 | 4 |
+| 2 | ~14 tasks | 11 | 0 | 3 |
+| 3 | ~12 tasks | 11 | 0 | 1 |
+| 4 | ~15 tasks | 13 | 0 | 2 |
+| 5 | ~11 tasks | 10 | 0 | 1 |
 | 6 | ~24 tasks | 22 | 0 | 2 |
 | 7 | ~14 tasks | 13 | 0 | 1 |
 | 8 | ~20 tasks | 0 | 0 | 20 |
 | 9 | ~23 tasks | 23 | 0 | 0 |
-| **Total** | **~203 tasks** | **180** | **0** | **23** |
+| **Total** | **~221 tasks** | **182** | **0** | **39** |
 
 ## Phase Completion Checklist
 
@@ -341,4 +341,4 @@ Run this ritual after every phase is marked complete:
 
 ---
 
-*Last updated: 2026-07-10 after Phase 0–7 implementation completion.*
+*Last updated: 2026-07-10 — Phase 0–7 and Phase 9 done, Phase 8 (Polish & Release) remaining. Build: 17 crates, 146 Rust files, ~10,367 LOC, 95 tests passing, clippy-clean.*
