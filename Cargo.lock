@@ -3920,6 +3920,7 @@ version = "0.1.0"
 dependencies = [
  "porpoise-cli",
  "porpoise-core",
+ "porpoise-relay",
  "porpoise-server",
  "serde",
  "serde_json",

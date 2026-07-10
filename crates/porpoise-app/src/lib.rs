@@ -1,10 +1,9 @@
 // porpoise-app crate - Tauri desktop application
 
-use tauri::{
-    Manager,
-    menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder},
-};
+use porpoise_relay::RelayClient;
+use tauri::Manager;
+use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
 
 mod commands;
 
@@ -18,6 +17,16 @@ pub fn run() {
 
             let tray = build_tray_icon(app)?;
             app.manage(tray);
+
+            let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
+            let socket_path = porpoise_core::config::AppConfig::default_data_dir()
+                .unwrap_or_else(|_| std::env::temp_dir())
+                .join("porpoise.sock");
+            if let Ok(client) = rt.block_on(RelayClient::connect(&socket_path)) {
+                app.manage(client);
+            } else {
+                tracing::warn!("Failed to connect to daemon at {:?}", socket_path);
+            }
 
             Ok(())
         })

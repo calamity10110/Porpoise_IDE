@@ -1,4 +1,6 @@
+use porpoise_relay::RelayClient;
 use serde::{Deserialize, Serialize};
+use tauri::State;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WorktreeInfo {
@@ -57,59 +59,67 @@ impl Default for Settings {
 }
 
 #[tauri::command]
-pub async fn list_worktrees() -> Result<Vec<WorktreeInfo>, String> {
-    Ok(Vec::new())
+pub async fn list_worktrees(relay: State<'_, RelayClient>) -> Result<Vec<WorktreeInfo>, String> {
+    let body = relay.call("worktree_list", serde_json::json!({})).await.map_err(|e| e.to_string())?;
+    serde_json::from_value(body).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn create_worktree(name: String, _agent: Option<String>) -> Result<WorktreeInfo, String> {
-    Ok(WorktreeInfo {
-        name,
-        path: String::new(),
-        branch: "main".into(),
-    })
+pub async fn create_worktree(name: String, agent: Option<String>, relay: State<'_, RelayClient>) -> Result<WorktreeInfo, String> {
+    let body = relay.call("worktree_create", serde_json::json!({"name": name, "agent": agent})).await.map_err(|e| e.to_string())?;
+    serde_json::from_value(body).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn remove_worktree(_name: String) -> Result<(), String> {
+pub async fn remove_worktree(name: String, relay: State<'_, RelayClient>) -> Result<(), String> {
+    relay.call("worktree_rm", serde_json::json!({"name": name})).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn list_agents() -> Result<Vec<AgentInfo>, String> {
-    Ok(Vec::new())
+pub async fn list_agents(relay: State<'_, RelayClient>) -> Result<Vec<AgentInfo>, String> {
+    let body = relay.call("agent_list", serde_json::json!({})).await.map_err(|e| e.to_string())?;
+    serde_json::from_value(body).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn list_terminals() -> Result<Vec<TerminalInfo>, String> {
-    Ok(Vec::new())
+pub async fn list_terminals(relay: State<'_, RelayClient>) -> Result<Vec<TerminalInfo>, String> {
+    let body = relay.call("terminal_list", serde_json::json!({})).await.map_err(|e| e.to_string())?;
+    serde_json::from_value(body).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn get_status() -> Result<SystemStatus, String> {
+pub async fn get_status(relay: State<'_, RelayClient>) -> Result<SystemStatus, String> {
+    let version = env!("CARGO_PKG_VERSION").to_string();
+    let body = relay.call("health", serde_json::json!({})).await.map_err(|e| e.to_string())?;
+    let uptime = body.get("uptime_seconds").and_then(|v| v.as_u64()).unwrap_or(0);
+    let count = body.get("process_count").and_then(|v| v.as_u64()).unwrap_or(0);
     Ok(SystemStatus {
-        version: env!("CARGO_PKG_VERSION").into(),
-        uptime_seconds: 0,
+        version,
+        uptime_seconds: uptime,
         worktree_count: 0,
-        agent_count: 0,
+        agent_count: count as usize,
         terminal_count: 0,
     })
 }
 
 #[tauri::command]
-pub async fn get_settings() -> Result<Settings, String> {
-    Ok(Settings::default())
+pub async fn get_settings(relay: State<'_, RelayClient>) -> Result<Settings, String> {
+    let body = relay.call("config_get", serde_json::json!({"key": "app"})).await.map_err(|e| e.to_string())?;
+    let theme = body.get("theme").and_then(|v| v.as_str()).unwrap_or("dark").to_string();
+    let default_agent = body.get("default_agent").and_then(|v| v.as_str()).unwrap_or("claude").to_string();
+    Ok(Settings { theme, default_agent, ..Settings::default() })
 }
 
 #[tauri::command]
-pub async fn save_settings(_settings: Settings) -> Result<(), String> {
+pub async fn save_settings(settings: Settings, relay: State<'_, RelayClient>) -> Result<(), String> {
+    relay.call("config_set", serde_json::json!({"key": "app", "value": serde_json::to_value(&settings).unwrap()})).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn open_terminal_panel(app: tauri::AppHandle, worktree_id: String) -> Result<(), String> {
-    let _ = app;
-    let _ = worktree_id;
+pub async fn open_terminal_panel(_app: tauri::AppHandle, worktree_id: String, relay: State<'_, RelayClient>) -> Result<(), String> {
+    relay.call("terminal_create", serde_json::json!({"worktree_id": worktree_id})).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
