@@ -1,40 +1,31 @@
 use porpoise_core::error::Result;
 
-use crate::{app::WorktreeAction, output::OutputFormat};
+use crate::{app::WorktreeAction, daemon, output::OutputFormat};
 
 pub async fn handle(args: crate::app::WorktreeArgs, format: &OutputFormat) -> Result<String> {
     match args.action {
-        WorktreeAction::Create {
-            name,
-            repo,
-            agent,
-            prompt,
-        } => {
-            // Would call RelayClient here in production
-            Ok(format.format(&serde_json::json!({
-                "id": "wt_placeholder",
-                "name": name,
-                "repo": repo,
-                "agent": agent,
-                "prompt": prompt,
-                "status": "created"
-            })))
+        WorktreeAction::Create { name, repo, agent, prompt } => {
+            let body = daemon::call("worktree_create", serde_json::json!({
+                "name": name, "repo": repo, "agent": agent, "prompt": prompt
+            })).await?;
+            Ok(format.format(&body))
         }
-        WorktreeAction::List => Ok(format.format(&serde_json::json!({
-            "worktrees": []
-        }))),
-        WorktreeAction::Show { name } => Ok(format.format(&serde_json::json!({
-            "name": name,
-            "status": "unknown",
-            "message": "not yet connected to daemon"
-        }))),
-        WorktreeAction::Rm { name } => Ok(format!("worktree {name} removed")),
+        WorktreeAction::List => {
+            let body = daemon::call("worktree_list", serde_json::json!({})).await?;
+            Ok(format.format(&body))
+        }
+        WorktreeAction::Show { name } => {
+            let body = daemon::call("worktree_list", serde_json::json!({})).await?;
+            Ok(format.format(&serde_json::json!({ "name": name, "worktrees": body })))
+        }
+        WorktreeAction::Rm { name } => {
+            daemon::call("worktree_rm", serde_json::json!({"name": name})).await?;
+            Ok(format!("worktree {name} removed"))
+        }
         WorktreeAction::Prune { dry_run } => {
-            if dry_run {
-                Ok("dry run: would prune 0 orphan worktrees".into())
-            } else {
-                Ok("pruned 0 orphan worktrees".into())
-            }
+            let _ = dry_run;
+            daemon::call("worktree_prune", serde_json::json!({"dry_run": dry_run})).await?;
+            Ok(format!("prune completed (dry_run={dry_run})"))
         }
     }
 }

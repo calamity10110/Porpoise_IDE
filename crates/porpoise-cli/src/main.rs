@@ -4,6 +4,7 @@ mod app;
 mod commands;
 mod completion;
 mod config;
+mod daemon;
 mod output;
 
 #[tokio::main]
