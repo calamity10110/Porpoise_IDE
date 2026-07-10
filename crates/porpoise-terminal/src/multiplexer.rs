@@ -1,10 +1,12 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use porpoise_core::bus::EventBus;
-use porpoise_core::error::Result;
-use porpoise_core::types::id::{TerminalId, SessionId};
+use std::{collections::HashMap, sync::Arc};
+
+use porpoise_core::{
+    bus::EventBus,
+    error::Result,
+    types::id::{SessionId, TerminalId},
+};
 use porpoise_runtime::PtyManager;
+use tokio::sync::RwLock;
 
 pub struct PtyMultiplexer {
     pty_manager: Arc<PtyManager>,
@@ -19,15 +21,19 @@ struct SessionInfo {
 
 impl PtyMultiplexer {
     pub fn new(pty_manager: Arc<PtyManager>, event_bus: EventBus) -> Self {
-        Self { pty_manager, sessions: Arc::new(RwLock::new(HashMap::new())), event_bus }
+        Self {
+            pty_manager,
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            event_bus,
+        }
     }
 
     pub async fn alloc_terminal(&self, session_id: SessionId, rows: u16, cols: u16, shell: &str) -> Result<TerminalId> {
         let id = self.pty_manager.alloc(rows, cols, shell).await?;
         let mut sessions = self.sessions.write().await;
-        let entry = sessions.entry(session_id).or_insert(SessionInfo {
-            terminals: Vec::new(),
-        });
+        let entry = sessions
+            .entry(session_id)
+            .or_insert(SessionInfo { terminals: Vec::new() });
         entry.terminals.push(id);
         Ok(id)
     }
@@ -49,7 +55,10 @@ impl PtyMultiplexer {
     }
 
     pub async fn session_terminals(&self, session_id: SessionId) -> Vec<TerminalId> {
-        self.sessions.read().await.get(&session_id)
+        self.sessions
+            .read()
+            .await
+            .get(&session_id)
             .map(|s| s.terminals.clone())
             .unwrap_or_default()
     }

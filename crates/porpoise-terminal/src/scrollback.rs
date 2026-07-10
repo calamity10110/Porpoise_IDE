@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
+
 use chrono::Utc;
+
 use crate::types::OutputLine;
 
 pub struct ScrollbackBuffer {
@@ -9,7 +11,10 @@ pub struct ScrollbackBuffer {
 
 impl ScrollbackBuffer {
     pub fn new(max_lines: usize) -> Self {
-        Self { lines: VecDeque::with_capacity(max_lines.min(1000)), max_lines }
+        Self {
+            lines: VecDeque::with_capacity(max_lines.min(1000)),
+            max_lines,
+        }
     }
 
     pub fn push(&mut self, text: String, is_osc: bool) {
@@ -29,13 +34,36 @@ impl ScrollbackBuffer {
     }
 
     pub fn search(&self, query: &str, case_sensitive: bool) -> Vec<&OutputLine> {
-        self.lines.iter().filter(|l| {
-            if case_sensitive {
-                l.text.contains(query)
+        self.lines
+            .iter()
+            .filter(|l| {
+                if case_sensitive {
+                    l.text.contains(query)
+                } else {
+                    l.text.to_lowercase().contains(&query.to_lowercase())
+                }
+            })
+            .collect()
+    }
+
+    pub fn search_regex(&self, pattern: &regex::Regex) -> Vec<&OutputLine> {
+        self.lines.iter().filter(|l| pattern.is_match(&l.text)).collect()
+    }
+
+    pub fn search_advanced(&self, query: &str, case_sensitive: bool, use_regex: bool) -> Vec<&OutputLine> {
+        if use_regex {
+            let pattern = if case_sensitive {
+                regex::Regex::new(query)
             } else {
-                l.text.to_lowercase().contains(&query.to_lowercase())
+                regex::RegexBuilder::new(query).case_insensitive(true).build()
+            };
+            match pattern {
+                Ok(re) => self.search_regex(&re),
+                Err(_) => Vec::new(),
             }
-        }).collect()
+        } else {
+            self.search(query, case_sensitive)
+        }
     }
 
     pub fn clear(&mut self) {

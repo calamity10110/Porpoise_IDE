@@ -1,13 +1,19 @@
-pub mod types;
-pub mod scrollback;
-pub mod persist;
 pub mod layout;
 pub mod multiplexer;
 pub mod parser;
+pub mod persist;
+pub mod reflow;
+pub mod scrollback;
+pub mod sqlite_scrollback;
+pub mod theme;
+pub mod types;
 
-pub use types::*;
-pub use scrollback::ScrollbackBuffer;
-pub use persist::ScrollbackPersister;
 pub use layout::TerminalLayout;
 pub use multiplexer::PtyMultiplexer;
 pub use parser::OutputParser;
+pub use persist::ScrollbackPersister;
+pub use reflow::reflow_lines;
+pub use scrollback::ScrollbackBuffer;
+pub use sqlite_scrollback::SqliteScrollbackStore;
+pub use theme::*;
+pub use types::*;

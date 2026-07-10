@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+
 use porpoise_core::types::id::TerminalId;
-use crate::types::{TerminalPane, SplitDirection};
+
+use crate::types::{SplitDirection, TerminalPane};
 
 pub struct TerminalLayout {
     panes: HashMap<TerminalId, TerminalPane>,
@@ -11,7 +13,12 @@ pub struct TerminalLayout {
 
 impl TerminalLayout {
     pub fn new(rows: u16, cols: u16) -> Self {
-        Self { panes: HashMap::new(), root_pane: None, total_rows: rows, total_cols: cols }
+        Self {
+            panes: HashMap::new(),
+            root_pane: None,
+            total_rows: rows,
+            total_cols: cols,
+        }
     }
 
     pub fn add_pane(&mut self, pane: TerminalPane) {

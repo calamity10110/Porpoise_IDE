@@ -1,5 +1,5 @@
+use porpoise_core::types::id::{SessionId, TerminalId};
 use serde::{Deserialize, Serialize};
-use porpoise_core::types::id::{TerminalId, SessionId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TerminalConfig {
@@ -11,7 +11,12 @@ pub struct TerminalConfig {
 
 impl Default for TerminalConfig {
     fn default() -> Self {
-        Self { rows: 24, cols: 80, shell: "bash".into(), scrollback_lines: 10_000 }
+        Self {
+            rows: 24,
+            cols: 80,
+            shell: "bash".into(),
+            scrollback_lines: 10_000,
+        }
     }
 }
 

@@ -19,18 +19,22 @@ impl OutputParser {
         let mut i = 0;
         while i < data.len() {
             if data[i] == 0x1b {
-                if i + 1 < data.len() && data[i + 1] == b'['
-                    && let Some((parsed, consumed)) = Self::parse_csi(&data[i..]) {
-                        results.push(parsed);
-                        i += consumed;
-                        continue;
-                    }
-                if i + 1 < data.len() && data[i + 1] == b']'
-                    && let Some((parsed, consumed)) = Self::parse_osc(&data[i..]) {
-                        results.push(parsed);
-                        i += consumed;
-                        continue;
-                    }
+                if i + 1 < data.len()
+                    && data[i + 1] == b'['
+                    && let Some((parsed, consumed)) = Self::parse_csi(&data[i..])
+                {
+                    results.push(parsed);
+                    i += consumed;
+                    continue;
+                }
+                if i + 1 < data.len()
+                    && data[i + 1] == b']'
+                    && let Some((parsed, consumed)) = Self::parse_osc(&data[i..])
+                {
+                    results.push(parsed);
+                    i += consumed;
+                    continue;
+                }
                 results.push(ParsedOutput::Unknown(vec![data[i]]));
                 i += 1;
             } else if data[i] == 0x07 {
@@ -51,9 +55,7 @@ impl OutputParser {
                     i += 1;
                 }
                 if i > start {
-                    results.push(ParsedOutput::Text(
-                        String::from_utf8_lossy(&data[start..i]).to_string()
-                    ));
+                    results.push(ParsedOutput::Text(String::from_utf8_lossy(&data[start..i]).to_string()));
                 } else {
                     results.push(ParsedOutput::Unknown(vec![data[i]]));
                     i += 1;

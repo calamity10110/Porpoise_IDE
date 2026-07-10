@@ -1,4 +1,5 @@
 use porpoise_core::error::{PorpoiseError, Result};
+
 use crate::types::OutputLine;
 
 /// Batches scrollback lines and persists them to the database.
@@ -20,7 +21,11 @@ impl ScrollbackPersister {
     /// When `storage_path` is `Some`, lines are appended as NDJSON. This is the
     /// fallback when no database pool is available.
     pub fn new(batch_size: usize, storage_path: Option<std::path::PathBuf>) -> Self {
-        Self { buffer: Vec::with_capacity(batch_size), batch_size, storage_path }
+        Self {
+            buffer: Vec::with_capacity(batch_size),
+            batch_size,
+            storage_path,
+        }
     }
 
     /// Push a line into the buffer, auto-flushing when the batch is full.
@@ -47,8 +52,7 @@ impl ScrollbackPersister {
     fn flush_to_file(&self, path: &std::path::Path) -> Result<()> {
         use std::io::Write;
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| PorpoiseError::Terminal(format!("mkdir: {e}")))?;
+            std::fs::create_dir_all(parent).map_err(|e| PorpoiseError::Terminal(format!("mkdir: {e}")))?;
         }
         let mut file = std::fs::OpenOptions::new()
             .create(true)
@@ -56,24 +60,23 @@ impl ScrollbackPersister {
             .open(path)
             .map_err(|e| PorpoiseError::Terminal(format!("open: {e}")))?;
         for line in &self.buffer {
-            let json = serde_json::to_string(line)
-                .map_err(|e| PorpoiseError::Terminal(format!("serialize: {e}")))?;
-            writeln!(file, "{json}")
-                .map_err(|e| PorpoiseError::Terminal(format!("write: {e}")))?;
+            let json = serde_json::to_string(line).map_err(|e| PorpoiseError::Terminal(format!("serialize: {e}")))?;
+            writeln!(file, "{json}").map_err(|e| PorpoiseError::Terminal(format!("write: {e}")))?;
         }
         Ok(())
     }
 
     /// Load persisted scrollback lines from a file.
     pub fn load_from_file(path: &std::path::Path) -> Result<Vec<OutputLine>> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| PorpoiseError::Terminal(format!("read: {e}")))?;
+        let content = std::fs::read_to_string(path).map_err(|e| PorpoiseError::Terminal(format!("read: {e}")))?;
         let mut lines = Vec::new();
         for line in content.lines() {
             let trimmed = line.trim();
-            if trimmed.is_empty() { continue; }
-            let parsed: OutputLine = serde_json::from_str(trimmed)
-                .map_err(|e| PorpoiseError::Terminal(format!("parse: {e}")))?;
+            if trimmed.is_empty() {
+                continue;
+            }
+            let parsed: OutputLine =
+                serde_json::from_str(trimmed).map_err(|e| PorpoiseError::Terminal(format!("parse: {e}")))?;
             lines.push(parsed);
         }
         Ok(lines)
