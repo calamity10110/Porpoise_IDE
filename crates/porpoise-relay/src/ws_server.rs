@@ -59,7 +59,7 @@ async fn handle_ws(
         let frame = Frame::new(FrameFlags::EVENT, payload);
         let msg = serde_json::to_string(&frame.encode().map_err(|e| PorpoiseError::Ipc(format!("encode: {e}")))?)
             .map_err(|e| PorpoiseError::Ipc(format!("serialize: {e}")))?;
-        let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg.into())).await;
+        let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await;
     }
 
     loop {
@@ -80,7 +80,7 @@ async fn handle_ws(
                             let resp_frame = Frame::new(FrameFlags::RESPONSE, payload);
                             let encoded = resp_frame.encode().map_err(|e| PorpoiseError::Ipc(format!("encode: {e}")))?;
                             if let Ok(msg) = serde_json::to_string(&encoded) {
-                                let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg.into())).await;
+                                let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await;
                             }
                         }
                     }

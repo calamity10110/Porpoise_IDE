@@ -1,0 +1,22 @@
+# Porpoise cross-compilation configuration
+# Enables building for ARM targets (Raspberry Pi) and optimized release builds
+
+[target.aarch64-unknown-linux-gnu]
+# Raspberry Pi 3/4/5 (64-bit), AWS Graviton, Apple M-series via Linux VM
+linker = "aarch64-linux-gnu-gcc"
+
+[target.armv7-unknown-linux-gnueabihf]
+# Raspberry Pi 2/3/Zero 2 W (32-bit)
+linker = "arm-linux-gnueabihf-gcc"
+
+[target.aarch64-apple-darwin]
+# Apple Silicon (macOS native)
+linker = "aarch64-apple-darwin-ld"
+
+[profile.release]
+# Optimized for size on ARM targets
+opt-level = "s"   # Optimize for binary size
+lto = true
+codegen-units = 1
+strip = "symbols"
+panic = "abort"
