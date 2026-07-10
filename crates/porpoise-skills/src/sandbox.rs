@@ -1,6 +1,8 @@
-use porpoise_core::error::{PorpoiseError, Result};
-use porpoise_core::types::capabilities::Capabilities;
-use wasmtime::{Engine, Linker, Store, Module};
+use porpoise_core::{
+    error::{PorpoiseError, Result},
+    types::capabilities::Capabilities,
+};
+use wasmtime::{Engine, Linker, Module, Store};
 
 /// Sandboxed WASM runtime that enforces capability-based permissions.
 ///
@@ -17,8 +19,7 @@ impl SandboxedRuntime {
         // Create engine with fuel metering for CPU limits
         let mut config = wasmtime::Config::default();
         config.consume_fuel(true);
-        let engine = Engine::new(&config)
-            .map_err(|e| PorpoiseError::Wasm(format!("engine: {e}")))?;
+        let engine = Engine::new(&config).map_err(|e| PorpoiseError::Wasm(format!("engine: {e}")))?;
         Ok(Self { engine })
     }
 
@@ -29,24 +30,20 @@ impl SandboxedRuntime {
     /// - `network`: outbound connections are blocked unless explicitly allowed
     /// - `process`: process spawning is blocked unless explicitly allowed
     /// - `ssh`: SSH connections are blocked unless explicitly allowed
-    pub fn instantiate(
-        &self,
-        wasm_bytes: &[u8],
-        capabilities: &Capabilities,
-        fuel: u64,
-    ) -> Result<SandboxedInstance> {
-        let module = Module::new(&self.engine, wasm_bytes)
-            .map_err(|e| PorpoiseError::Wasm(format!("compile: {e}")))?;
+    pub fn instantiate(&self, wasm_bytes: &[u8], capabilities: &Capabilities, fuel: u64) -> Result<SandboxedInstance> {
+        let module = Module::new(&self.engine, wasm_bytes).map_err(|e| PorpoiseError::Wasm(format!("compile: {e}")))?;
 
         let mut store = Store::new(&self.engine, ());
-        store.set_fuel(fuel)
+        store
+            .set_fuel(fuel)
             .map_err(|e| PorpoiseError::Wasm(format!("fuel: {e}")))?;
 
         // Create a linker with no default host functions — capabilities
         // explicitly whitelist what's available.
         let linker: Linker<()> = Linker::new(&self.engine);
 
-        let instance = linker.instantiate(&mut store, &module)
+        let instance = linker
+            .instantiate(&mut store, &module)
             .map_err(|e| PorpoiseError::Wasm(format!("instantiate: {e}")))?;
 
         Ok(SandboxedInstance {
@@ -87,7 +84,9 @@ impl SandboxedInstance {
             self.check_capability(cap)?;
         }
 
-        let func = self.instance.get_func(&mut self.store, name)
+        let func = self
+            .instance
+            .get_func(&mut self.store, name)
             .ok_or_else(|| PorpoiseError::Wasm(format!("func '{name}' not found")))?;
 
         let ty = func.ty(&self.store);
@@ -117,5 +116,4 @@ impl SandboxedInstance {
         }
         Ok(())
     }
-
 }
