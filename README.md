@@ -213,6 +213,92 @@ Claude Code · Codex · Grok · Cursor · GitHub Copilot · OpenCode · MiMo Cod
 
 ---
 
+## Automation & Workflow Engine
+
+Porpoise includes a complete enterprise automation system with workflow orchestration, web/desktop automation, and encrypted credential management.
+
+### Workflow Editor (Desktop)
+The Tauri app includes a node-based workflow editor for visually creating automation pipelines. Launch it from the desktop app's toolbar or open `frontend/workflow.html`.
+
+**Features:**
+- Drag-and-drop node-based workflow creation
+- 7 step types: AgentCall, WebAction, ComputerAction, ApiCall, CredentialLookup, Delay, Condition
+- Real-time execution viewer with status indicators
+- YAML/JSON export and import
+- Workflow templates saved to local storage
+
+### Creating a Workflow (CLI)
+```bash
+# Run a workflow from a YAML definition file
+porpoise workflow run ./deploy.yaml
+
+# List workflow templates
+porpoise workflow list
+
+# Validate a workflow definition
+porpoise workflow validate ./backup.yaml
+```
+
+### Workflow YAML Example
+```yaml
+id: daily-backup
+name: Daily Database Backup
+env:
+  DB_HOST: ${DB_HOST}
+steps:
+  - type: CredentialLookup
+    id: get-db-pass
+    credential_name: db-password
+    output_var: DB_PASS
+    depends_on: []
+  - type: AgentCall
+    id: run-backup
+    agent_kind: opencode
+    prompt: "Run pg_dump on ${DB_HOST} with credentials from vault"
+    depends_on: [get-db-pass]
+  - type: WebAction
+    id: notify-slack
+    url: https://hooks.slack.com/services/xxx
+    action:
+      type: Navigate
+    depends_on: [run-backup]
+```
+
+### Encrypted Credential Management
+```bash
+# Store a credential
+porpoise credential store --name github-token --type api_key --value ghp_xxxx
+
+# Retrieve a credential (decrypted at read time)
+porpoise credential get github-token
+
+# List stored credentials
+porpoise credential list --type api_key
+```
+
+Credentials are encrypted at rest using AES-256-GCM and stored in `~/.config/porpoise/credentials.json`. The master key is derived from the user's system keychain.
+
+### Desktop GUI Automation
+```rust
+use porpoise_computer_use::{ComputerUse, ClickButton, AutomationAction};
+
+let mut cu = ComputerUse::new()?;
+cu.mouse_move(500, 300)?;        // Move mouse to position
+cu.mouse_click(ClickButton::Left)?; // Click
+cu.type_text("Hello, world!")?;  // Type text
+cu.key_press("enter")?;          // Press Enter key
+```
+
+### Agent Skill Integration
+Workflows are available as skills that agents can invoke:
+```bash
+porpoise skill run workflow-creator    # Launch the workflow editor
+porpoise skill run workflow-viewer     # View current execution state
+porpoise skill run credential-manager  # Manage credentials
+```
+
+---
+
 ## Project Status
 
 | Phase | Component | Status |

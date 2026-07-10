@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Porpoise Workflow Editor</title>
+<style>
+:root {
+  --bg: #1a1b26; --bg2: #24283b; --bg3: #2f334d;
+  --fg: #c0caf5; --fg2: #565f89;
+  --accent: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+  --orange: #e0af68; --purple: #bb9af7; --cyan: #7dcfff;
+  --border: #2a2e44;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: system-ui,sans-serif; background:var(--bg); color:var(--fg); height:100vh; overflow:hidden; }
+
+.app { display:flex; height:100vh; }
+.sidebar { width:260px; min-width:200px; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; }
+.sidebar h2 { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--fg2); padding:12px 16px; border-bottom:1px solid var(--border); }
+.node-palette { flex:1; overflow-y:auto; padding:8px; }
+.palette-item { padding:8px 12px; margin:4px 0; background:var(--bg3); border:1px solid var(--border); border-radius:6px; cursor:grab; font-size:13px; display:flex; align-items:center; gap:8px; transition:all .2s; }
+.palette-item:hover { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+.palette-item .icon { font-size:16px; }
+
+.main { flex:1; display:flex; flex-direction:column; }
+.toolbar { height:40px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 12px; gap:8px; }
+.toolbar button { background:var(--bg3); border:1px solid var(--border); color:var(--fg); padding:4px 12px; border-radius:4px; cursor:pointer; font-size:12px; }
+.toolbar button:hover { background:var(--accent); color:var(--bg); }
+.toolbar .sep { width:1px; height:24px; background:var(--border); margin:0 4px; }
+.toolbar .status { margin-left:auto; font-size:11px; color:var(--fg2); }
+
+.canvas-area { flex:1; position:relative; overflow:hidden; background: var(--bg); }
+.canvas-area svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.canvas-area svg path { stroke:var(--fg2); stroke-width:2; fill:none; pointer-events:stroke; cursor:pointer; }
+.canvas-area svg path:hover { stroke:var(--accent); stroke-width:3; }
+.canvas-area svg path.completed { stroke:var(--green); }
+.canvas-area svg path.running { stroke:var(--orange); stroke-dasharray:5,3; }
+.canvas-area svg path.failed { stroke:var(--red); }
+
+.node { position:absolute; min-width:180px; background:var(--bg2); border:2px solid var(--border); border-radius:8px; cursor:move; user-select:none; z-index:1; transition:border-color .2s; }
+.node:hover { border-color:var(--accent); z-index:2; }
+.node.selected { border-color:var(--accent); box-shadow:0 0 10px rgba(122,162,247,.3); }
+.node.completed { border-color:var(--green); }
+.node.running { border-color:var(--orange); }
+.node.failed { border-color:var(--red); }
+.node-header { padding:8px 12px; border-radius:6px 6px 0 0; font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px; }
+.node-header.agent { background:#3b4261; }
+.node-header.web { background:#1e3a5f; }
+.node-header.computer { background:#3a2e5f; }
+.node-header.api { background:#2e5f3a; }
+.node-header.delay { background:#5f5a2e; }
+.node-header.credential { background:#5f2e3a; }
+.node-header.condition { background:#5f3a2e; }
+.node-body { padding:8px 12px; font-size:11px; color:var(--fg2); }
+.node-body .field { margin:4px 0; display:flex; gap:4px; }
+.node-body .field label { color:var(--fg2); min-width:50px; }
+.node-body .field input, .node-body .field textarea, .node-body .field select { background:var(--bg); border:1px solid var(--border); color:var(--fg); padding:2px 6px; border-radius:3px; font-size:11px; flex:1; }
+.node-body .field textarea { resize:vertical; min-height:40px; }
+.node-port { position:absolute; width:12px; height:12px; background:var(--fg2); border:2px solid var(--bg); border-radius:50%; z-index:3; cursor:crosshair; }
+.node-port:hover { background:var(--accent); transform:scale(1.3); }
+.node-port.output { bottom:-6px; left:50%; transform:translateX(-50%); }
+.node-port.input { top:-6px; left:50%; transform:translateX(-50%); }
+.node-port.output:hover { background:var(--green); }
+.node-port.input:hover { background:var(--cyan); }
+
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.status-dot.idle { background:var(--fg2); }
+.status-dot.running { background:var(--orange); animation:pulse 1s infinite; }
+.status-dot.completed { background:var(--green); }
+.status-dot.failed { background:var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.properties-panel { width:300px; background:var(--bg2); border-left:1px solid var(--border); display:none; flex-direction:column; overflow-y:auto; }
+.properties-panel.active { display:flex; }
+.properties-panel h3 { padding:12px; font-size:12px; border-bottom:1px solid var(--border); }
+.prop-field { padding:8px 12px; }
+.prop-field label { display:block; font-size:11px; color:var(--fg2); margin-bottom:4px; }
+.prop-field input, .prop-field textarea, .prop-field select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--fg); padding:4px 8px; border-radius:4px; font-size:12px; }
+.prop-field textarea { min-height:60px; resize:vertical; font-family:monospace; }
+
+.workflow-list { padding:8px; }
+.workflow-item { padding:8px 12px; margin:4px 0; background:var(--bg3); border-radius:4px; cursor:pointer; font-size:12px; }
+.workflow-item:hover { background:var(--accent); color:var(--bg); }
+
+.execution-log { position:fixed; bottom:0; right:0; width:400px; max-height:200px; background:var(--bg2); border:1px solid var(--border); border-radius:8px 0 0 0; overflow-y:auto; display:none; z-index:100; }
+.execution-log.active { display:block; }
+.execution-log .log-header { padding:8px 12px; font-size:11px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; }
+.execution-log .log-entry { padding:4px 12px; font-size:11px; font-family:monospace; border-bottom:1px solid var(--border); }
+.execution-log .log-entry.info { color:var(--fg); }
+.execution-log .log-entry.success { color:var(--green); }
+.execution-log .log-entry.error { color:var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Workflow Nodes</h2>
+    <div class="node-palette" id="palette">
+      <div class="palette-item" draggable="true" data-type="AgentCall"><span class="icon">🤖</span> Agent Call</div>
+      <div class="palette-item" draggable="true" data-type="WebAction"><span class="icon">🌐</span> Web Action</div>
+      <div class="palette-item" draggable="true" data-type="ComputerAction"><span class="icon">🖥️</span> Computer Action</div>
+      <div class="palette-item" draggable="true" data-type="ApiCall"><span class="icon">📡</span> API Call</div>
+      <div class="palette-item" draggable="true" data-type="CredentialLookup"><span class="icon">🔑</span> Credential Lookup</div>
+      <div class="palette-item" draggable="true" data-type="Delay"><span class="icon">⏱️</span> Delay</div>
+      <div class="palette-item" draggable="true" data-type="Condition"><span class="icon">🔀</span> Condition</div>
+    </div>
+    <h2>My Workflows</h2>
+    <div class="workflow-list" id="workflow-list"></div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="toolbar">
+      <button onclick="newWorkflow()">+ New</button>
+      <button onclick="exportYaml()">Export YAML</button>
+      <button onclick="importYaml()">Import YAML</button>
+      <div class="sep"></div>
+      <button onclick="autoLayout()">Auto Layout</button>
+      <button onclick="runWorkflow()">▶ Run</button>
+      <button onclick="toggleLog()">📋 Log</button>
+      <div class="sep"></div>
+      <button onclick="deleteSelected()">🗑 Delete</button>
+      <span class="status" id="status-bar">Ready</span>
+    </div>
+    <div class="canvas-area" id="canvas" ondrop="handleDrop(event)" ondragover="event.preventDefault()">
+      <svg id="svg-lines"><defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--fg2)"/></marker></defs></svg>
+    </div>
+  </div>
+
+  <!-- Properties Panel -->
+  <div class="properties-panel" id="properties">
+    <h3>Node Properties</h3>
+    <div id="prop-fields"></div>
+  </div>
+
+  <!-- Execution Log -->
+  <div class="execution-log" id="log">
+    <div class="log-header"><span>Execution Log</span><button onclick="toggleLog()" style="background:none;border:none;color:var(--fg2);cursor:pointer">✕</button></div>
+    <div id="log-entries"></div>
+  </div>
+</div>
+
+<script>
+// ===== State =====
+let nodes = [];
+let edges = [];
+let selectedNode = null;
+let nextId = 1;
+let connecting = null;
+let nodeCounter = { AgentCall:0, WebAction:0, ComputerAction:0, ApiCall:0, CredentialLookup:0, Delay:0, Condition:0 };
+const workflows = JSON.parse(localStorage.getItem('porpoise_workflows') || '[]');
+
+// ===== Node Types =====
+const nodeDefaults = {
+  AgentCall: { agent_kind:'claude', prompt:'', timeout_secs:300 },
+  WebAction: { url:'https://', action:{type:'Navigate'} },
+  ComputerAction: { action:{type:'MouseClick',button:'Left'} },
+  ApiCall: { url:'', method:'GET', headers:{}, body:'' },
+  CredentialLookup: { credential_name:'', output_var:'' },
+  Delay: { duration_secs:5 },
+  Condition: { expression:'', if_true:[], if_false:[] }
+};
+
+const nodeColors = { AgentCall:'agent', WebAction:'web', ComputerAction:'computer', ApiCall:'api', Delay:'delay', CredentialLookup:'credential', Condition:'condition' };
+const nodeIcons = { AgentCall:'🤖', WebAction:'🌐', ComputerAction:'🖥️', ApiCall:'📡', Delay:'⏱️', CredentialLookup:'🔑', Condition:'🔀' };
+
+// ===== Core Functions =====
+function createNode(type, x, y) {
+  nodeCounter[type] = (nodeCounter[type]||0) + 1;
+  const id = `${type.toLowerCase()}-${nodeCounter[type]}`;
+  const n = { id, type, x: x||100, y: y||100, config:{...nodeDefaults[type]}, status:'idle' };
+  nodes.push(n);
+  render();
+  return n;
+}
+
+function addEdge(from, to) {
+  if (from === to) return;
+  if (edges.some(e => e.from === from && e.to === to)) return;
+  edges.push({ from, to, status:'idle' });
+  render();
+}
+
+function deleteNode(id) {
+  nodes = nodes.filter(n => n.id !== id);
+  edges = edges.filter(e => e.from !== id && e.to !== id);
+  if (selectedNode && selectedNode.id === id) { selectedNode = null; showProperties(null); }
+  render();
+}
+
+function deleteSelected() {
+  if (selectedNode) deleteNode(selectedNode.id);
+}
+
+// ===== Rendering =====
+function render() {
+  const canvas = document.getElementById('canvas');
+  const svg = document.getElementById('svg-lines');
+
+  // Remove old nodes
+  canvas.querySelectorAll('.node').forEach(el => el.remove());
+
+  // Draw edges
+  let svgContent = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="var(--fg2)"/></marker></defs>';
+  edges.forEach(e => {
+    const fromNode = nodes.find(n => n.id === e.from);
+    const toNode = nodes.find(n => n.id === e.to);
+    if (!fromNode || !toNode) return;
+    const fx = fromNode.x + 90, fy = fromNode.y + 60;
+    const tx = toNode.x + 90, ty = toNode.y;
+    const mid = (fy + ty) / 2;
+    const path = `M${fx},${fy} C${fx},${mid} ${tx},${mid} ${tx},${ty}`;
+    const cls = e.status === 'completed' ? 'completed' : e.status === 'running' ? 'running' : e.status === 'failed' ? 'failed' : '';
+    svgContent += `<path d="${path}" class="${cls}" marker-end="url(#arrowhead)" onclick="selectEdge('${e.from}→${e.to}')"/>`;
+  });
+  svg.innerHTML = svgContent;
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const div = document.createElement('div');
+    div.className = `node ${n.status}` + (selectedNode?.id === n.id ? ' selected' : '');
+    div.style.left = n.x + 'px';
+    div.style.top = n.y + 'px';
+    div.dataset.id = n.id;
+
+    const header = nodeColors[n.type] || 'agent';
+    div.innerHTML = `
+      <div class="node-header ${header}">
+        <span class="status-dot ${n.status}"></span>
+        ${nodeIcons[n.type]||'📋'} ${n.id}
+      </div>
+      <div class="node-body">
+        ${getNodeSummary(n)}
+      </div>
+      <div class="node-port output" title="Connect to next step"></div>
+      <div class="node-port input" title="Connect from previous step"></div>
+    `;
+
+    // Make draggable
+    let dragging = false, startX, startY, startMX, startMY;
+    div.querySelector('.node-header').onmousedown = e => {
+      if (e.target.classList.contains('node-port')) return;
+      dragging = true; startX = e.clientX; startY = e.clientY;
+      startMX = n.x; startMY = n.y;
+      e.preventDefault();
+    };
+
+    // Port connections
+    div.querySelector('.node-port.output').onmousedown = e => {
+      e.stopPropagation();
+      connecting = { node: n.id, el: div, type:'output' };
+      div.style.borderColor = 'var(--green)';
+    };
+    div.querySelector('.node-port.input').onmousedown = e => {
+      e.stopPropagation();
+      connecting = { node: n.id, el: div, type:'input' };
+      div.style.borderColor = 'var(--cyan)';
+    };
+
+    div.onclick = e => {
+      if (e.target.classList.contains('node-port')) return;
+      selectedNode = n; render(); showProperties(n);
+    };
+
+    canvas.appendChild(div);
+  });
+
+  // Mouse move/up for dragging & connecting
+  canvas.onmousemove = e => {
+    if (dragging && selectedNode) {
+      // Find actual node object, not just selectedNode
+      const node = nodes.find(n => n.id === selectedNode.id);
+      if (!node) return;
+      node.x = startMX + (e.clientX - startX);
+      node.y = startMY + (e.clientY - startY);
+      const el = canvas.querySelector(`[data-id="${node.id}"]`);
+      if (el) { el.style.left = node.x + 'px'; el.style.top = node.y + 'px'; }
+      updateLines();
+    }
+  };
+
+  canvas.onmouseup = e => {
+    if (connecting) {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (el) {
+        const port = el.closest('.node-port');
+        if (port) {
+          const nodeEl = port.closest('.node');
+          if (nodeEl) {
+            const targetId = nodeEl.dataset.id;
+            if (connecting.type === 'output') addEdge(connecting.node, targetId);
+            else addEdge(targetId, connecting.node);
+          }
+        }
+      }
+      document.querySelectorAll('.node').forEach(el => el.style.borderColor = '');
+      connecting = null;
+    }
+    dragging = false;
+  };
+
+  updateStatusBar();
+}
+
+function getNodeSummary(n) {
+  switch (n.type) {
+    case 'AgentCall': return `<span>🤖 ${n.config.agent_kind} — "${(n.config.prompt||'').substring(0,30)}"</span>`;
+    case 'WebAction': return `<span>🌐 ${n.config.action.type} — ${(n.config.url||'').substring(0,40)}</span>`;
+    case 'ComputerAction': return `<span>🖱️ ${n.config.action.type}</span>`;
+    case 'ApiCall': return `<span>📡 ${n.config.method} ${(n.config.url||'').substring(0,30)}</span>`;
+    case 'CredentialLookup': return `<span>🔑 ${n.config.credential_name}</span>`;
+    case 'Delay': return `<span>⏱️ ${n.config.duration_secs}s</span>`;
+    case 'Condition': return `<span>🔀 ${(n.config.expression||'').substring(0,30)}</span>`;
+    default: return '';
+  }
+}
+
+function updateLines() {
+  const svg = document.getElementById('svg-lines');
+  let svgContent = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="var(--fg2)"/></marker></defs>';
+  edges.forEach(e => {
+    const from = nodes.find(n => n.id === e.from);
+    const to = nodes.find(n => n.id === e.to);
+    if (!from || !to) return;
+    const fx = from.x + 90, fy = from.y + 60;
+    const tx = to.x + 90, ty = to.y;
+    svgContent += `<path d="${fx},${fy} C${fx},${(fy+ty)/2} ${tx},${(fy+ty)/2} ${tx},${ty}" marker-end="url(#arrowhead)"/>`;
+  });
+  svg.innerHTML = svgContent;
+}
+
+function updateStatusBar() {
+  const running = nodes.filter(n => n.status === 'running').length;
+  const completed = nodes.filter(n => n.status === 'completed').length;
+  const failed = nodes.filter(n => n.status === 'failed').length;
+  document.getElementById('status-bar').textContent = `${nodes.length} nodes · ${edges.length} edges · ${running} running · ${completed} done${failed ? ' · '+failed+' failed' : ''}`;
+}
+
+// ===== Properties Panel =====
+function showProperties(node) {
+  const panel = document.getElementById('properties');
+  const fields = document.getElementById('prop-fields');
+  if (!node) { panel.classList.remove('active'); return; }
+  panel.classList.add('active');
+
+  let html = `<div class="prop-field"><label>ID</label><input value="${node.id}" disabled/></div>`;
+  html += `<div class="prop-field"><label>Type</label><input value="${node.type}" disabled/></div>`;
+
+  const c = node.config;
+  switch (node.type) {
+    case 'AgentCall':
+      html += propInput('agent_kind', c.agent_kind, 'Agent Kind');
+      html += propTextarea('prompt', c.prompt, 'Prompt');
+      html += propInput('timeout_secs', c.timeout_secs, 'Timeout (s)');
+      break;
+    case 'WebAction':
+      html += propInput('url', c.url, 'URL');
+      html += propSelect('action.type', c.action?.type||'Navigate', 'Action', ['Navigate','Click','Fill','Select','Extract','Screenshot','WaitForSelector']);
+      if (c.action?.selector !== undefined || ['Click','Fill','Select','Extract','WaitForSelector'].includes(c.action?.type))
+        html += propInput('action.selector', c.action?.selector||'', 'Selector');
+      if (c.action?.value !== undefined || ['Fill','Select'].includes(c.action?.type))
+        html += propInput('action.value', c.action?.value||'', 'Value');
+      break;
+    case 'ComputerAction':
+      html += propSelect('action.type', c.action?.type||'MouseClick', 'Action', ['MouseClick','MouseMove','TypeText','KeyPress','Wait']);
+      if (c.action?.x !== undefined) html += propInput('action.x', c.action.x, 'X');
+      if (c.action?.y !== undefined) html += propInput('action.y', c.action.y, 'Y');
+      if (c.action?.text !== undefined) html += propInput('action.text', c.action.text, 'Text');
+      if (c.action?.key !== undefined) html += propInput('action.key', c.action.key, 'Key');
+      break;
+    case 'ApiCall':
+      html += propInput('url', c.url, 'URL');
+      html += propSelect('method', c.method, 'Method', ['GET','POST','PUT','DELETE','PATCH']);
+      html += propTextarea('body', c.body||'', 'Body');
+      break;
+    case 'CredentialLookup':
+      html += propInput('credential_name', c.credential_name, 'Credential Name');
+      html += propInput('output_var', c.output_var, 'Output Variable');
+      break;
+    case 'Delay':
+      html += propInput('duration_secs', c.duration_secs, 'Duration (s)');
+      break;
+    case 'Condition':
+      html += propInput('expression', c.expression||'', 'Expression');
+      break;
+  }
+  fields.innerHTML = html;
+
+  // Bind change handlers
+  fields.querySelectorAll('input,textarea,select').forEach(el => {
+    el.onchange = () => updateNodeConfig(node, el.dataset.key, el.value, el.type);
+  });
+}
+
+function propInput(key, value, label) {
+  return `<div class="prop-field"><label>${label}</label><input data-key="${key}" value="${value??''}"/></div>`;
+}
+function propTextarea(key, value, label) {
+  return `<div class="prop-field"><label>${label}</label><textarea data-key="${key}">${value||''}</textarea></div>`;
+}
+function propSelect(key, value, label, options) {
+  const opts = options.map(o => `<option ${o===value?'selected':''}>${o}</option>`).join('');
+  return `<div class="prop-field"><label>${label}</label><select data-key="${key}">${opts}</select></div>`;
+}
+
+function updateNodeConfig(node, key, value, type) {
+  const keys = key.split('.');
+  let obj = node.config;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (!obj[keys[i]]) obj[keys[i]] = {};
+    obj = obj[keys[i]];
+  }
+  obj[keys[keys.length-1]] = type === 'number' ? Number(value) : value;
+  render();
+}
+
+// ===== Workflow Operations =====
+function getWorkflowDef() {
+  return {
+    id: `wf-${Date.now()}`,
+    name: document.querySelector('.sidebar h2')?.textContent?.replace('Workflow Nodes','')?.trim() || 'Untitled',
+    description: '',
+    env: {},
+    steps: nodes.map(n => {
+      const step = { type: n.type, id: n.id, depends_on: edges.filter(e => e.to === n.id).map(e => e.from), ...n.config };
+      // Handle nested action objects correctly
+      if (n.config.action) step.action = n.config.action;
+      if (n.config.headers) step.headers = n.config.headers;
+      return step;
+    })
+  };
+}
+
+function exportYaml() {
+  const wf = getWorkflowDef();
+  const yaml = toYaml(wf);
+  const blob = new Blob([yaml], {type:'text/yaml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${wf.name || 'workflow'}.yaml`;
+  a.click();
+}
+
+function toYaml(obj, indent) {
+  if (typeof obj === 'string' && obj.includes('\n')) return `|\n${obj.split('\n').map(l=>'  '+l).join('\n')}\n`;
+  if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return '{}';
+    return '\n' + keys.map(k => {
+      const v = toYaml(obj[k], indent + 2);
+      return ' '.repeat(indent) + k + ': ' + v;
+    }).join('\n');
+  }
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return '[]';
+    return '\n' + obj.map(v => {
+      const vv = toYaml(v, indent + 2);
+      return ' '.repeat(indent) + '- ' + vv.trimStart();
+    }).join('\n');
+  }
+  return String(obj);
+}
+
+function importYaml() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.yaml,.yml,.json';
+  input.onchange = async e => {
+    const text = await e.target.files[0].text();
+    try {
+      const data = JSON.parse(text);
+      loadWorkflow(data);
+    } catch {
+      // Simple YAML parsing (for common cases)
+      alert('Import supports JSON format. For YAML, use the CLI tool.');
+    }
+  };
+  input.click();
+}
+
+function loadWorkflow(data) {
+  nodes = []; edges = [];
+  nextId = 1;
+  if (data.steps) {
+    data.steps.forEach((step, i) => {
+      const n = { id: step.id || `${step.type.toLowerCase()}-${i+1}`, type: step.type, x: 100 + (i%3)*220, y: 50 + Math.floor(i/3)*150, config: {}, status: 'idle' };
+      // Merge defaults with loaded config
+      const defaults = nodeDefaults[step.type] || {};
+      n.config = { ...defaults, ...step };
+      delete n.config.type; delete n.config.id; delete n.config.depends_on;
+      nodes.push(n);
+    });
+    data.steps.forEach(step => {
+      if (step.depends_on) step.depends_on.forEach(dep => addEdge(dep, step.id));
+    });
+  }
+  render();
+  document.getElementById('status-bar').textContent = `Loaded: ${data.name || 'Untitled'}`;
+}
+
+function saveWorkflow() {
+  const wf = getWorkflowDef();
+  const existing = workflows.findIndex(w => w.id === wf.id);
+  if (existing >= 0) workflows[existing] = wf;
+  else workflows.push(wf);
+  localStorage.setItem('porpoise_workflows', JSON.stringify(workflows));
+  renderWorkflowList();
+}
+
+function newWorkflow() {
+  if (nodes.length > 0 && !confirm('Clear current workflow?')) return;
+  nodes = []; edges = []; selectedNode = null;
+  nodeCounter = { AgentCall:0, WebAction:0, ComputerAction:0, ApiCall:0, CredentialLookup:0, Delay:0, Condition:0 };
+  showProperties(null);
+  render();
+}
+
+function autoLayout() {
+  nodes.forEach((n, i) => {
+    n.x = 100 + (i % 3) * 220;
+    n.y = 50 + Math.floor(i / 3) * 150;
+  });
+  render();
+}
+
+// ===== Execution =====
+async function runWorkflow() {
+  if (nodes.length === 0) return;
+  nodes.forEach(n => n.status = 'idle');
+  edges.forEach(e => e.status = 'idle');
+  render();
+  addLog('info', 'Workflow started');
+
+  const order = topologicalSort();
+  for (const id of order) {
+    const node = nodes.find(n => n.id === id);
+    if (!node) continue;
+    node.status = 'running';
+    render();
+    addLog('info', `Running ${node.id} (${node.type})`);
+    await sleep(500);
+    node.status = Math.random() > 0.1 ? 'completed' : 'failed';
+    edges.filter(e => e.from === id).forEach(e => e.status = node.status);
+    addLog(node.status === 'completed' ? 'success' : 'error', `${node.id}: ${node.status}`);
+    render();
+  }
+  addLog('info', 'Workflow completed');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function topologicalSort() {
+  const visited = {}, result = [];
+  function visit(id) {
+    if (visited[id]) return;
+    visited[id] = true;
+    edges.filter(e => e.to === id).forEach(e => visit(e.from));
+    result.push(id);
+  }
+  nodes.forEach(n => visit(n.id));
+  return result;
+}
+
+function addLog(type, msg) {
+  const el = document.getElementById('log-entries');
+  el.innerHTML += `<div class="log-entry ${type}">${new Date().toLocaleTimeString()} — ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function toggleLog() { document.getElementById('log').classList.toggle('active'); }
+
+// ===== Drag & Drop from Palette =====
+function handleDrop(e) {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('text/plain');
+  if (type) {
+    const rect = document.getElementById('canvas').getBoundingClientRect();
+    createNode(type, e.clientX - rect.left - 90, e.clientY - rect.top - 30);
+  }
+}
+
+document.querySelectorAll('.palette-item').forEach(el => {
+  el.ondragstart = e => e.dataTransfer.setData('text/plain', e.target.dataset.type);
+});
+
+function renderWorkflowList() {
+  const list = document.getElementById('workflow-list');
+  list.innerHTML = workflows.map(w => `<div class="workflow-item" onclick="loadWorkflow(workflows.find(x=>x.id==='${w.id}'))">📋 ${w.name||'Untitled'}</div>`).join('');
+}
+
+// ===== Tauri Integration =====
+if (window.__TAURI__) {
+  window.__TAURI__.invoke('list_worktrees').then(r => console.log('Connected to daemon', r)).catch(() => {});
+}
+
+// ===== Init =====
+renderWorkflowList();
+addLog('info', 'Workflow Editor ready');
+</script>
+</body>
+</html>

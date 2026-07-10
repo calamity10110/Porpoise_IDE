@@ -41,6 +41,7 @@ pub fn run() {
             commands::save_settings,
             commands::open_terminal_panel,
             commands::open_settings_window,
+            commands::open_workflow_editor,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

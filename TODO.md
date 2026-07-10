@@ -276,6 +276,43 @@
 | Documentation | ○ User guide, migration guide |
 | Release | ○ v1.0, brew, winget, cargo-binstall |
 
+## Phase 9: Automation & Enterprise Features — ✅ 100% Complete
+
+### porpoise-credentials — 5/5 ✓
+
+- [x] AES-256-GCM encrypted credential storage
+- [x] CRUD operations (store, get, get_by_name, list, delete, list_by_type)
+- [x] JSON file persistence with key zeroization on drop
+- [x] Per-type credential organization (api_key, password, token)
+- [x] Unit tests (store/retrieve, persistence, delete, list)
+
+### porpoise-automation — 8/8 ✓
+
+- [x] DAG-based workflow engine with topological sort
+- [x] 7 step types: AgentCall, WebAction, ComputerAction, ApiCall, CredentialLookup, Delay, Condition
+- [x] YAML workflow definition loading
+- [x] Variable templating (${var_name})
+- [x] Cycle detection in dependency graph
+- [x] Step execution with result collection
+- [x] WebSocket relay server for mobile connectivity
+- [x] Unit tests (parse, topo sort, execution, cycle detection)
+
+### porpoise-computer-use — 5/5 ✓
+
+- [x] Mouse automation (move, click, double-click)
+- [x] Keyboard automation (type text, press keys)
+- [x] Cross-platform via enigo crate (Windows, macOS, Linux)
+- [x] Declarative AutomationAction enum
+- [x] Integration with workflow engine
+
+### Workflow Editor — 5/5 ✓
+
+- [x] Node-based visual workflow creator (drag-and-drop)
+- [x] Real-time process viewer (execution status display)
+- [x] Workflow YAML/JSON export/import
+- [x] Tauri app integration as frontend route
+- [x] Agent skill bindings for workflow management
+
 ---
 
 ## Summary
@@ -287,13 +324,12 @@
 | 2 | ~13 tasks | 13 | 0 | 0 |
 | 3 | ~11 tasks | 11 | 0 | 0 |
 | 4 | ~13 tasks | 13 | 0 | 0 |
-| 5 | ~10 tasks | 9 | 0 | 1 |
+| 5 | ~10 tasks | 10 | 0 | 0 |
 | 6 | ~24 tasks | 22 | 0 | 2 |
 | 7 | ~14 tasks | 13 | 0 | 1 |
 | 8 | ~20 tasks | 0 | 0 | 20 |
-| **Total** | **~180 tasks** | **156** | **0** | **24** |
-
----
+| 9 | ~23 tasks | 23 | 0 | 0 |
+| **Total** | **~203 tasks** | **180** | **0** | **23** |
 
 ## Phase Completion Checklist
 

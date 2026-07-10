@@ -132,3 +132,13 @@ pub async fn open_settings_window(app: tauri::AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+pub async fn open_workflow_editor(app: tauri::AppHandle) -> Result<(), String> {
+    tauri::WebviewWindowBuilder::new(&app, "workflow", tauri::WebviewUrl::App("workflow.html".into()))
+        .title("Workflow Editor")
+        .inner_size(1200.0, 800.0)
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}

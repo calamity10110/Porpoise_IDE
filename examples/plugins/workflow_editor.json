@@ -1,0 +1,15 @@
+{
+  "id": "workflow-creator",
+  "name": "Workflow Creator",
+  "version": "0.1.0",
+  "description": "Node-based visual workflow editor. Create, edit, and execute automation pipelines with drag-and-drop nodes for AgentCall, WebAction, ComputerAction, ApiCall, CredentialLookup, Delay, and Condition steps.",
+  "entry": "workflow.html",
+  "capabilities": {
+    "fs_read": [],
+    "fs_write": [],
+    "network": [],
+    "process": []
+  },
+  "hooks": ["on_agent_start"],
+  "fuel_limit": 1000000
+}

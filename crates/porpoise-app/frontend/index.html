@@ -197,6 +197,7 @@
         <button class="toolbar-btn" onclick="splitVertical()">Split V</button>
         <button class="toolbar-btn" onclick="toggleEditor()">Editor</button>
         <button class="toolbar-btn" onclick="showSettings()">Settings</button>
+        <button class="toolbar-btn" onclick="openWorkflowEditor()">Workflows</button>
       </div>
 
       <div class="terminal-area" id="terminal-area">
@@ -313,6 +314,16 @@
     function updateTerminalCount() {
       const count = document.querySelectorAll('.terminal-pane').length;
       document.getElementById('terminal-count').textContent = count + ' terminal' + (count > 1 ? 's' : '');
+    }
+
+    function openWorkflowEditor() {
+      if (window.__TAURI__) {
+        window.__TAURI__.invoke('open_workflow_editor').catch(e => {
+          window.open('workflow.html', '_blank');
+        });
+      } else {
+        window.open('workflow.html', '_blank');
+      }
     }
 
     document.addEventListener('keydown', (e) => {
