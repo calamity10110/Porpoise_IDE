@@ -308,12 +308,13 @@ porpoise skill run credential-manager  # Manage credentials
 | 2 | Git Integration | ✅ Complete — 13 tasks (745 loc) |
 | 3 | Terminal Engine | ✅ Complete — 11 tasks (953 loc) |
 | 4 | Agent Framework | ✅ Complete — 13 tasks (1,443 loc) |
-| 5 | Desktop Application | ✅ 90% — 9/10 tasks (249 loc + Tauri frontend) |
+| 5 | Desktop Application | ✅ Complete — 10 tasks (277 loc + Tauri frontend) |
 | 6 | Advanced Features | ✅ 92% — 22/24 tasks (network, ssh, browser, notifications) |
-| 7 | Plugin System | ✅ 93% — 13/14 tasks (726 loc, WASM pipeline, hooks, hot-reload) |
+| 7 | Plugin System | ✅ 93% — 13/14 tasks (727 loc, WASM pipeline, hooks, hot-reload) |
 | 8 | Polish & Release | ○ Not started |
+| 9 | Automation & Enterprise | ✅ Complete — 23 tasks (automation 309 loc, credentials 195 loc, computer-use 95 loc, workflow editor) |
 
-**Total: 134 Rust files, ~9,553 lines across 14 workspace crates. 86 tests pass. Builds clean on Windows. Passes `cargo clippy -- -D warnings`.**
+**Total: 146 Rust files, ~10,367 lines across 17 workspace crates. 95+ tests pass. Builds clean on Windows. Passes `cargo clippy -- -D warnings`.**
 
 ---
 
@@ -335,7 +336,10 @@ porpoise/
 │   ├── porpoise-server/     # Background daemon
 │   ├── porpoise-app/        # Desktop app (Tauri)
 │   ├── porpoise-agent/      # Agent integration
-│   └── porpoise-skills/     # WASM plugin runtime
+│   ├── porpoise-skills/     # WASM plugin runtime
+│   ├── porpoise-automation/ # Workflow automation engine
+│   ├── porpoise-credentials/ # Encrypted credential storage
+│   └── porpoise-computer-use/ # Desktop GUI automation
 ├── docs/
 ├── tests/
 └── Cargo.toml               # Workspace manifest

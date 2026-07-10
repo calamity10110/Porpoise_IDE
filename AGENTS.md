@@ -148,7 +148,10 @@ porpoise/                    # Cargo workspace root
 │   ├── porpoise-server/     # Background daemon
 │   ├── porpoise-app/        # Desktop application (Tauri)
 │   ├── porpoise-agent/      # Agent integration protocols
-│   └── porpoise-skills/     # WASM plugin runtime (wasmtime)
+│   ├── porpoise-skills/     # WASM plugin runtime (wasmtime)
+│   ├── porpoise-automation/ # Workflow automation engine
+│   ├── porpoise-credentials/ # Encrypted credential storage
+│   └── porpoise-computer-use/ # Desktop GUI automation
 ├── docs/
 │   ├── architecture/
 │   ├── crates/              # Crate design documents

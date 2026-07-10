@@ -71,6 +71,9 @@ porpoise-core (foundation types, traits, errors)
 ├── porpoise-ssh ────────────── depends on: core, network
 ├── porpoise-browser ────────── depends on: core, network
 ├── porpoise-skills ─────────── depends on: core
+├── porpoise-automation ─────── depends on: core, agent, browser, credentials
+├── porpoise-credentials ────── depends on: core
+├── porpoise-computer-use ───── depends on: core
 │
 ├── porpoise-server ─────────── depends on: runtime, git, terminal, agent, ssh,
 │                               browser, skills, db, relay, network
@@ -675,6 +678,9 @@ impl Transport for NamedPipeTransport { ... }
 | `porpoise-app` | Desktop application | `tauri`, `porpoise-cli` |
 | `porpoise-agent` | Agent integration protocols | `porpoise-core`, `porpoise-runtime` |
 | `porpoise-skills` | WASM plugin runtime | `wasmtime`, `porpoise-core` |
+| `porpoise-automation` | Workflow automation engine | `serde_yaml`, `tokio`, `porpoise-agent`, `porpoise-browser`, `porpoise-credentials` |
+| `porpoise-credentials` | Encrypted credential storage | `aes-gcm`, `rand`, `zeroize`, `porpoise-core` |
+| `porpoise-computer-use` | Desktop GUI automation | `enigo`, `porpoise-core` |
 
 ---
 
@@ -738,9 +744,12 @@ impl EventBus {
 | `porpoise-ssh` | 471 | 7 | Service | ✅ 8/9 tasks — SshManager, session, auth, config, keepalive, exec, port forwarding, remote worktree |
 | `porpoise-browser` | 80 | 3 | Service | ✅ 7/7 tasks — BrowserEngine trait stub, navigation types |
 | `porpoise-skills` | 726 | 7 | Service | ✅ 13/14 tasks — WasmRuntime, SkillRegistry, sandbox, pipeline, hooks, hot-reload |
-| `porpoise-app` | 249 | 4 | Application | ✅ 9/10 tasks — Tauri 2.x, menu bar, tray, keyboard shortcuts, frontend UI |
+| `porpoise-app` | 277 | 4 | Application | ✅ 10/10 tasks — Tauri 2.x, menu bar, tray, keyboard shortcuts, frontend UI, workflow editor |
+| `porpoise-automation` | 309 | 1 | Service | ✅ 8/8 tasks — Workflow engine, YAML defs, topo sort, cycle detection |
+| `porpoise-credentials` | 195 | 1 | Security | ✅ 5/5 tasks — AES-256-GCM vault, CRUD, persistence |
+| `porpoise-computer-use` | 95 | 1 | Service | ✅ 5/5 tasks — Mouse/keyboard automation, cross-platform |
 
-**Total: 134 Rust source files, ~9,945 lines across 14 crates.**
+**Total: 146 Rust source files, ~10,367 lines across 17 crates.**
 
 ### Key Architectural Decisions Made During Implementation
 
