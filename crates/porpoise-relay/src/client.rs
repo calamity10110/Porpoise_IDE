@@ -27,15 +27,15 @@ pub struct RelayClient {
 }
 
 impl RelayClient {
-    pub async fn connect(path: &PathBuf) -> Result<Self> {
+    pub async fn connect(path: &std::path::Path) -> Result<Self> {
         let transport = Self::connect_with_retry(path, false).await?;
         Ok(Self {
-            socket_path: path.clone(),
+            socket_path: path.to_path_buf(),
             transport: Mutex::new(transport),
         })
     }
 
-    async fn connect_with_retry(path: &PathBuf, retry: bool) -> Result<InnerTransport> {
+    async fn connect_with_retry(path: &std::path::Path, retry: bool) -> Result<InnerTransport> {
         if retry {
             let mut delay = BASE_DELAY_MS;
             loop {

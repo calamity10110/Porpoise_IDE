@@ -27,7 +27,7 @@ pub struct RelayServer {
 
 impl RelayServer {
     #[cfg(unix)]
-    pub async fn bind(path: &PathBuf, router: Arc<Router>) -> Result<Self> {
+    pub async fn bind(path: &std::path::Path, router: Arc<Router>) -> Result<Self> {
         if path.exists() {
             tokio::fs::remove_file(path).await.ok();
         }
@@ -43,10 +43,10 @@ impl RelayServer {
     }
 
     #[cfg(windows)]
-    pub async fn bind(path: &PathBuf, router: Arc<Router>) -> Result<Self> {
+    pub async fn bind(path: &std::path::Path, router: Arc<Router>) -> Result<Self> {
         let pipe_name = path.to_str().unwrap_or("porpoise");
         let listener = NamedPipeListener::bind(pipe_name);
-        Ok(Self { listener, router, _socket_path: path.clone() })
+        Ok(Self { listener, router, _socket_path: path.to_path_buf() })
     }
 
     pub async fn run(&self) -> Result<()> {

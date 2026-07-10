@@ -185,19 +185,50 @@ fn pty_resize_impl(fd: i32, rows: u16, cols: u16) -> Result<()> {
 
 pub struct PtyManager {
     sessions: Arc<RwLock<HashMap<TerminalId, PtySession>>>,
-    _event_bus: EventBus,
+    event_bus: EventBus,
 }
 
 impl PtyManager {
     pub fn new(event_bus: EventBus) -> Self {
-        Self { sessions: Arc::new(RwLock::new(HashMap::new())), _event_bus: event_bus }
+        Self { sessions: Arc::new(RwLock::new(HashMap::new())), event_bus }
     }
 
     pub async fn alloc(&self, rows: u16, cols: u16, shell: &str) -> Result<TerminalId> {
         let session = alloc_pty_impl(rows, cols, shell)?;
         let id = session.id;
         self.sessions.write().await.insert(id, session);
+        self.spawn_read_loop(id);
         Ok(id)
+    }
+
+    /// Spawns a background tokio task that reads PTY output and publishes
+    /// `TerminalEvent::Output` on the EventBus. The loop exits when the
+    /// PTY session is closed (removed from sessions map).
+    pub fn spawn_read_loop(&self, id: TerminalId) {
+        let sessions = self.sessions.clone();
+        let event_bus = self.event_bus.clone();
+        tokio::spawn(async move {
+            let mut buf = vec![0u8; 4096];
+            loop {
+                let fd = {
+                    let guard = sessions.read().await;
+                    guard.get(&id).map(|s| s.fd)
+                };
+                let n = match fd {
+                    Some(fd) => pty_read_impl(fd, &mut buf).await.ok().unwrap_or(0),
+                    None => break,
+                };
+                if n > 0 {
+                    let data = buf[..n].to_vec();
+                    let timestamp = chrono::Utc::now().timestamp();
+                    event_bus.publish(porpoise_core::types::event::SystemEvent::Terminal(
+                        porpoise_core::types::event::TerminalEvent::Output { id, data, timestamp },
+                    ));
+                } else {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+            }
+        });
     }
 
     pub async fn read(&self, id: TerminalId, buf: &mut [u8]) -> Result<usize> {

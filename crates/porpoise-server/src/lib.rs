@@ -1,30 +1,26 @@
 pub mod services;
 
-use std::path::PathBuf;
-#[cfg(unix)]
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use porpoise_agent::AgentPool;
 use porpoise_core::{bus::EventBus, config::AppConfig, error::Result, state::AppState};
 use porpoise_db::DbPool;
-#[cfg(unix)]
 use porpoise_relay::{RelayServer, Router};
+use porpoise_runtime::PtyManager;
 
 pub struct Daemon {
     pub state: AppState,
     pub db: DbPool,
-    #[cfg(unix)]
     pub server: Option<RelayServer>,
-    pub socket_path: PathBuf,
+    pub socket_path: std::path::PathBuf,
     pub agent_pool: AgentPool,
     pub start_time: DateTime<Utc>,
-    #[cfg(unix)]
-    pidfile_path: Option<PathBuf>,
+    pidfile_path: Option<std::path::PathBuf>,
 }
 
 impl Daemon {
-    pub async fn new(config: AppConfig, db_path: PathBuf) -> Result<Self> {
+    pub async fn new(config: AppConfig, db_path: std::path::PathBuf) -> Result<Self> {
         let event_bus = EventBus::new(config.core.event_bus_capacity);
         let state = AppState::new(config.clone(), event_bus.clone());
         let db = DbPool::open(&db_path)?;
@@ -44,49 +40,34 @@ impl Daemon {
             socket_path,
             agent_pool,
             start_time: Utc::now(),
-            #[cfg(unix)]
             server: None,
-            #[cfg(unix)]
             pidfile_path: None,
         })
     }
 
     pub async fn start(&mut self) -> Result<()> {
-        #[cfg(unix)]
-        {
-            self.write_pidfile()?;
-            let mut router = Router::new(self.state.clone());
-            services::register_all(&mut router, self.start_time);
-            let router = Arc::new(router);
-            let server = RelayServer::bind(&self.socket_path, router).await?;
-            tracing::info!("porpoise-server listening on {}", self.socket_path.display());
-            self.server = Some(server);
-        }
-        #[cfg(not(unix))]
-        {
-            tracing::info!("porpoise-server started (IPC relay not available on this platform)");
-        }
+        self.write_pidfile()?;
+        let mut router = Router::new(self.state.clone());
+        let pty_manager = Arc::new(PtyManager::new(self.state.event_bus().clone()));
+        services::register_all(&mut router, self.start_time, pty_manager);
+        let router = Arc::new(router);
+        let server = RelayServer::bind(&self.socket_path, router).await?;
+        tracing::info!("porpoise-server listening on {}", self.socket_path.display());
+        self.server = Some(server);
         Ok(())
     }
 
     pub async fn run(&self) -> Result<()> {
-        #[cfg(unix)]
-        {
-            if let Some(ref server) = self.server {
-                tokio::select! {
-                    result = server.run() => result,
-                    _ = Self::shutdown_signal() => {
-                        tracing::info!("shutdown signal received");
-                        self.shutdown().await;
-                        Ok(())
-                    }
+        if let Some(ref server) = self.server {
+            tokio::select! {
+                result = server.run() => result,
+                _ = Self::shutdown_signal() => {
+                    tracing::info!("shutdown signal received");
+                    self.shutdown().await;
+                    Ok(())
                 }
-            } else {
-                Self::idle_loop().await
             }
-        }
-        #[cfg(not(unix))]
-        {
+        } else {
             Self::idle_loop().await
         }
     }
@@ -128,19 +109,21 @@ impl Daemon {
         }
     }
 
-    #[cfg(unix)]
     fn write_pidfile(&mut self) -> Result<()> {
         let path = self.socket_path.with_extension("pid");
         let pid = std::process::id();
         if path.exists() {
-            let old_pid = std::fs::read_to_string(&path)
-                .ok()
-                .and_then(|s| s.trim().parse::<u32>().ok());
-            if let Some(old) = old_pid {
-                if unsafe { libc::kill(old as i32, 0) == 0 } {
-                    return Err(porpoise_core::error::PorpoiseError::Runtime(format!(
-                        "daemon already running (PID {old})"
-                    )));
+            #[cfg(unix)]
+            {
+                let old_pid = std::fs::read_to_string(&path)
+                    .ok()
+                    .and_then(|s| s.trim().parse::<u32>().ok());
+                if let Some(old) = old_pid {
+                    if unsafe { libc::kill(old as i32, 0) == 0 } {
+                        return Err(porpoise_core::error::PorpoiseError::Runtime(format!(
+                            "daemon already running (PID {old})"
+                        )));
+                    }
                 }
             }
         }
@@ -150,7 +133,7 @@ impl Daemon {
         Ok(())
     }
 
-    #[cfg(unix)]
+    #[allow(dead_code)]
     fn cleanup_pidfile(&self) {
         if let Some(ref path) = self.pidfile_path {
             std::fs::remove_file(path).ok();

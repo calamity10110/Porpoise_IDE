@@ -9,9 +9,5 @@ pub mod ssh_service;
 pub mod terminal;
 pub mod worktree;
 
-#[cfg(unix)]
 mod relay_handlers;
-
-pub use notifications::NotificationService;
-#[cfg(unix)]
 pub use relay_handlers::register_all;
