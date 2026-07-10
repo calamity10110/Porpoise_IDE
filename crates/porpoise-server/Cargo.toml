@@ -31,3 +31,6 @@ chrono.workspace = true
 libc.workspace = true
 rusqlite.workspace = true
 notify-rust = "4"
+
+[dev-dependencies]
+tempfile.workspace = true

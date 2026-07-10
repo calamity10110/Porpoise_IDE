@@ -4,17 +4,26 @@ use porpoise_core::error::{PorpoiseError, Result};
 use tokio::sync::Mutex;
 
 use crate::{
-    frame::{Frame, FrameFlags, PROTOCOL_MAGIC},
+    frame::{Frame, FrameFlags},
     message::{Request, WireMessage},
-    transport::unix::UnixSocketTransport,
 };
+
+#[cfg(unix)]
+use crate::transport::unix::UnixSocketTransport;
+#[cfg(windows)]
+use crate::transport::pipe::NamedPipeTransport;
 
 const BASE_DELAY_MS: u64 = 100;
 const MAX_DELAY_MS: u64 = 30_000;
 
+#[cfg(unix)]
+type InnerTransport = UnixSocketTransport;
+#[cfg(windows)]
+type InnerTransport = NamedPipeTransport;
+
 pub struct RelayClient {
     socket_path: PathBuf,
-    transport: Mutex<UnixSocketTransport>,
+    transport: Mutex<InnerTransport>,
 }
 
 impl RelayClient {
@@ -26,11 +35,11 @@ impl RelayClient {
         })
     }
 
-    async fn connect_with_retry(path: &PathBuf, retry: bool) -> Result<UnixSocketTransport> {
+    async fn connect_with_retry(path: &PathBuf, retry: bool) -> Result<InnerTransport> {
         if retry {
             let mut delay = BASE_DELAY_MS;
             loop {
-                match UnixSocketTransport::connect(path).await {
+                match InnerTransport::connect(path).await {
                     Ok(t) => return Ok(t),
                     Err(e) => {
                         tracing::warn!("reconnect failed (retry in {delay}ms): {e}");
@@ -40,7 +49,7 @@ impl RelayClient {
                 }
             }
         } else {
-            UnixSocketTransport::connect(path).await
+            InnerTransport::connect(path).await
         }
     }
 
