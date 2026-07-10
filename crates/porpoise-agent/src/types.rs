@@ -8,6 +8,11 @@ pub enum AgentKind {
     ClaudeCode,
     Codex,
     Gemini,
+    OpenCode,
+    ZAI,
+    OpenAI,
+    Grok,
+    OpenRouter,
     Custom(String),
 }
 
@@ -17,6 +22,11 @@ impl std::fmt::Display for AgentKind {
             AgentKind::ClaudeCode => write!(f, "claude"),
             AgentKind::Codex => write!(f, "codex"),
             AgentKind::Gemini => write!(f, "gemini"),
+            AgentKind::OpenCode => write!(f, "opencode"),
+            AgentKind::ZAI => write!(f, "z"),
+            AgentKind::OpenAI => write!(f, "openai"),
+            AgentKind::Grok => write!(f, "grok"),
+            AgentKind::OpenRouter => write!(f, "openrouter"),
             AgentKind::Custom(name) => write!(f, "{name}"),
         }
     }

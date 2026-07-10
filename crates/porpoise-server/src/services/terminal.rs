@@ -1,6 +1,4 @@
-use porpoise_core::error::Result;
-use porpoise_core::state::AppState;
-use porpoise_core::types::id::TerminalId;
+use porpoise_core::{error::Result, state::AppState, types::id::TerminalId};
 
 pub async fn handle_create(_state: &AppState) -> Result<serde_json::Value> {
     let id = TerminalId::new();

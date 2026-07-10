@@ -1,6 +1,7 @@
-use std::io::Read;
-use std::sync::Mutex;
+use std::{io::Read, sync::Mutex};
+
 use porpoise_core::error::{PorpoiseError, Result};
+
 use crate::auth::AuthMethod;
 
 pub struct SshSession {
@@ -15,16 +16,26 @@ pub struct SshSession {
 impl SshSession {
     pub async fn connect(host: &str, port: u16, username: &str, auth: &AuthMethod) -> Result<Self> {
         let addr = format!("{}:{}", host, port);
-        let tcp = tokio::net::TcpStream::connect(&addr).await
-            .map_err(|e| PorpoiseError::SshConnect { host: host.into(), reason: e.to_string() })?;
-        let tcp_std = tcp.into_std()
-            .map_err(|e| PorpoiseError::SshConnect { host: host.into(), reason: e.to_string() })?;
+        let tcp = tokio::net::TcpStream::connect(&addr)
+            .await
+            .map_err(|e| PorpoiseError::SshConnect {
+                host: host.into(),
+                reason: e.to_string(),
+            })?;
+        let tcp_std = tcp.into_std().map_err(|e| PorpoiseError::SshConnect {
+            host: host.into(),
+            reason: e.to_string(),
+        })?;
 
-        let mut sess = ssh2::Session::new()
-            .map_err(|e| PorpoiseError::SshConnect { host: host.into(), reason: e.to_string() })?;
+        let mut sess = ssh2::Session::new().map_err(|e| PorpoiseError::SshConnect {
+            host: host.into(),
+            reason: e.to_string(),
+        })?;
         sess.set_tcp_stream(tcp_std);
-        sess.handshake()
-            .map_err(|e| PorpoiseError::SshConnect { host: host.into(), reason: e.to_string() })?;
+        sess.handshake().map_err(|e| PorpoiseError::SshConnect {
+            host: host.into(),
+            reason: e.to_string(),
+        })?;
 
         match auth {
             AuthMethod::Password(password) => {
@@ -54,23 +65,20 @@ impl SshSession {
     /// Stderr is merged into the returned string. Non-zero exit codes are
     /// returned as an `SshConnect` error with the exit code in the message.
     pub fn exec(&self, command: &str) -> Result<String> {
-        let session = self.session.lock()
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("lock: {e}"),
-            })?;
+        let session = self.session.lock().map_err(|e| PorpoiseError::SshConnect {
+            host: self.host.clone(),
+            reason: format!("lock: {e}"),
+        })?;
 
-        let mut channel = session.channel_session()
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("channel: {e}"),
-            })?;
+        let mut channel = session.channel_session().map_err(|e| PorpoiseError::SshConnect {
+            host: self.host.clone(),
+            reason: format!("channel: {e}"),
+        })?;
 
-        channel.exec(command)
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("exec: {e}"),
-            })?;
+        channel.exec(command).map_err(|e| PorpoiseError::SshConnect {
+            host: self.host.clone(),
+            reason: format!("exec: {e}"),
+        })?;
 
         let mut output = String::new();
         loop {
@@ -85,10 +93,12 @@ impl SshSession {
                     }
                     break;
                 }
-                Err(e) => return Err(PorpoiseError::SshConnect {
-                    host: self.host.clone(),
-                    reason: format!("read: {e}"),
-                }),
+                Err(e) => {
+                    return Err(PorpoiseError::SshConnect {
+                        host: self.host.clone(),
+                        reason: format!("read: {e}"),
+                    });
+                }
             }
         }
 
@@ -115,11 +125,10 @@ impl SshSession {
     /// When `want_reply` is true, the keepalive messages request an acknowledgment
     /// from the server, allowing detection of dead connections within two intervals.
     pub fn set_keepalive(&self, want_reply: bool, interval_secs: u32) -> Result<()> {
-        let session = self.session.lock()
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("lock: {e}"),
-            })?;
+        let session = self.session.lock().map_err(|e| PorpoiseError::SshConnect {
+            host: self.host.clone(),
+            reason: format!("lock: {e}"),
+        })?;
         session.set_keepalive(want_reply, interval_secs);
         Ok(())
     }
@@ -129,12 +138,12 @@ impl SshSession {
     /// Communication from client to SSH server is encrypted; from server to target
     /// host travels in cleartext. Returns the raw `ssh2::Channel` for read/write.
     pub fn port_forward(&self, target_host: &str, target_port: u16) -> Result<ssh2::Channel> {
-        let session = self.session.lock()
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("lock: {e}"),
-            })?;
-        session.channel_direct_tcpip(target_host, target_port, None)
+        let session = self.session.lock().map_err(|e| PorpoiseError::SshConnect {
+            host: self.host.clone(),
+            reason: format!("lock: {e}"),
+        })?;
+        session
+            .channel_direct_tcpip(target_host, target_port, None)
             .map_err(|e| PorpoiseError::SshConnect {
                 host: format!("{target_host}:{target_port}"),
                 reason: format!("port forward: {e}"),
@@ -146,16 +155,17 @@ impl SshSession {
     /// Returns a `ssh2::Listener` and the actual port assigned. New connections
     /// are accepted via `listener.accept()`.
     pub fn forward_listen(&self, remote_port: u16, host: Option<&str>) -> Result<(ssh2::Listener, u16)> {
-        let session = self.session.lock()
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("lock: {e}"),
-            })?;
-        let (listener, port) = session.channel_forward_listen(remote_port, host, None)
-            .map_err(|e| PorpoiseError::SshConnect {
-                host: self.host.clone(),
-                reason: format!("forward listen: {e}"),
-            })?;
+        let session = self.session.lock().map_err(|e| PorpoiseError::SshConnect {
+            host: self.host.clone(),
+            reason: format!("lock: {e}"),
+        })?;
+        let (listener, port) =
+            session
+                .channel_forward_listen(remote_port, host, None)
+                .map_err(|e| PorpoiseError::SshConnect {
+                    host: self.host.clone(),
+                    reason: format!("forward listen: {e}"),
+                })?;
         Ok((listener, port))
     }
 }

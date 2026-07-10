@@ -1,5 +1,5 @@
+use porpoise_browser::{BrowserEngine, HeadlessBrowser};
 use porpoise_core::error::Result;
-use porpoise_browser::{HeadlessBrowser, BrowserEngine};
 
 pub async fn handle_open(url: &str) -> Result<serde_json::Value> {
     let engine = HeadlessBrowser;

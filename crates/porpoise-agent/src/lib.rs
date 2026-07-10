@@ -1,8 +1,5 @@
 pub mod account;
-pub mod claude;
-pub mod codex;
 pub mod detector;
-pub mod gemini;
 pub mod generic;
 pub mod hook;
 pub mod pool;

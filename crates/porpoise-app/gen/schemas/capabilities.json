@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Capability for the main window","local":true,"windows":["main"],"permissions":["core:default","opener:default"]}}
+{"default":{"identifier":"default","description":"Capability for the main window","local":true,"windows":["main","settings"],"permissions":["core:default","core:window:allow-create","core:window:allow-show","core:window:allow-hide","core:window:allow-set-focus","core:window:allow-close","core:menu:default","core:tray:default","opener:default"]}}

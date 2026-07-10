@@ -10,18 +10,30 @@ use crate::{
 
 pub struct GenericAgent {
     binary: String,
+    kind: AgentKind,
 }
 
 impl GenericAgent {
     pub fn new(binary: impl Into<String>) -> Self {
-        Self { binary: binary.into() }
+        let binary = binary.into();
+        Self {
+            kind: AgentKind::Custom(binary.clone()),
+            binary,
+        }
+    }
+
+    pub fn with_kind(binary: impl Into<String>, kind: AgentKind) -> Self {
+        Self {
+            binary: binary.into(),
+            kind,
+        }
     }
 }
 
 #[async_trait]
 impl Agent for GenericAgent {
     fn kind(&self) -> AgentKind {
-        AgentKind::Custom(self.binary.clone())
+        self.kind.clone()
     }
     fn binary_name(&self) -> &str {
         &self.binary

@@ -1,10 +1,9 @@
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::RwLock;
-use tokio::time::sleep;
+use std::{sync::Arc, time::Duration};
+
 use porpoise_core::error::{PorpoiseError, Result};
-use crate::auth::AuthMethod;
-use crate::session::SshSession;
+use tokio::{sync::RwLock, time::sleep};
+
+use crate::{auth::AuthMethod, session::SshSession};
 
 /// Configuration for SSH auto-reconnect behavior.
 pub struct ReconnectConfig {
@@ -78,7 +77,7 @@ impl AutoReconnectSession {
         if let Some(ref session) = *guard {
             match session.exec(command) {
                 Ok(output) => return Ok(output),
-                Err(e) => {
+                Err(_e) => {
                     drop(guard);
                     self.connected.store(false, std::sync::atomic::Ordering::Relaxed);
                     self.reconnect().await?;

@@ -3,16 +3,13 @@ pub mod services;
 use std::path::PathBuf;
 #[cfg(unix)]
 use std::sync::Arc;
-use chrono::{DateTime, Utc};
-use porpoise_core::bus::EventBus;
-use porpoise_core::config::AppConfig;
-use porpoise_core::state::AppState;
-use porpoise_core::error::Result;
-use porpoise_db::DbPool;
 
+use chrono::{DateTime, Utc};
+use porpoise_agent::AgentPool;
+use porpoise_core::{bus::EventBus, config::AppConfig, error::Result, state::AppState};
+use porpoise_db::DbPool;
 #[cfg(unix)]
 use porpoise_relay::{RelayServer, Router};
-use porpoise_agent::AgentPool;
 
 pub struct Daemon {
     pub state: AppState,
@@ -33,7 +30,9 @@ impl Daemon {
         let db = DbPool::open(&db_path)?;
         porpoise_db::migration::run_migrations(&db)?;
 
-        let socket_path = config.core.data_dir
+        let socket_path = config
+            .core
+            .data_dir
             .unwrap_or_else(std::env::temp_dir)
             .join("porpoise.sock");
 
@@ -56,8 +55,9 @@ impl Daemon {
         #[cfg(unix)]
         {
             self.write_pidfile()?;
-            let router = Arc::new(Router::new(self.state.clone()));
-            services::register_all(&router, self.start_time);
+            let mut router = Router::new(self.state.clone());
+            services::register_all(&mut router, self.start_time);
+            let router = Arc::new(router);
             let server = RelayServer::bind(&self.socket_path, router).await?;
             tracing::info!("porpoise-server listening on {}", self.socket_path.display());
             self.server = Some(server);
@@ -114,7 +114,7 @@ impl Daemon {
     async fn shutdown_signal() {
         #[cfg(unix)]
         {
-            use tokio::signal::unix::{signal, SignalKind};
+            use tokio::signal::unix::{SignalKind, signal};
             let mut term = signal(SignalKind::terminate()).expect("sigterm");
             let mut int = signal(SignalKind::interrupt()).expect("sigint");
             tokio::select! {
@@ -138,7 +138,9 @@ impl Daemon {
                 .and_then(|s| s.trim().parse::<u32>().ok());
             if let Some(old) = old_pid {
                 if unsafe { libc::kill(old as i32, 0) == 0 } {
-                    return Err(porpoise_core::error::PorpoiseError::Runtime(format!("daemon already running (PID {old})")));
+                    return Err(porpoise_core::error::PorpoiseError::Runtime(format!(
+                        "daemon already running (PID {old})"
+                    )));
                 }
             }
         }
@@ -155,4 +157,3 @@ impl Daemon {
         }
     }
 }
-

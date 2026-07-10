@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
-use tokio::sync::{mpsc, watch};
-
 use porpoise_core::types::id::ProcessId;
+use tokio::sync::{mpsc, watch};
 
 use super::{ProcessCommand, ProcessKind, ProcessStatus};
 

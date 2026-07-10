@@ -1,7 +1,11 @@
 use std::path::PathBuf;
+
 use porpoise_core::error::Result;
-use crate::auth::AuthMethod;
-use crate::reconnect::{AutoReconnectSession, ReconnectConfig};
+
+use crate::{
+    auth::AuthMethod,
+    reconnect::{AutoReconnectSession, ReconnectConfig},
+};
 
 /// Details about a remote git worktree created over SSH.
 pub struct RemoteWorktree {
@@ -40,16 +44,14 @@ impl SshWorktreeManager {
     /// Creates a new git worktree on the remote host.
     ///
     /// Runs `git worktree add <path> <branch>` over SSH.
-    pub async fn create_worktree(
-        &self,
-        repo_path: &str,
-        branch: &str,
-        worktree_path: &str,
-    ) -> Result<RemoteWorktree> {
-        let _output = self.session.exec(&format!(
-            "cd {} && git worktree add -B {} {}",
-            repo_path, branch, worktree_path
-        )).await?;
+    pub async fn create_worktree(&self, repo_path: &str, branch: &str, worktree_path: &str) -> Result<RemoteWorktree> {
+        let _output = self
+            .session
+            .exec(&format!(
+                "cd {} && git worktree add -B {} {}",
+                repo_path, branch, worktree_path
+            ))
+            .await?;
 
         Ok(RemoteWorktree {
             name: branch.to_string(),
@@ -61,12 +63,13 @@ impl SshWorktreeManager {
 
     /// Lists worktrees on the remote host.
     pub async fn list_worktrees(&self, repo_path: &str) -> Result<Vec<String>> {
-        let output = self.session.exec(&format!(
-            "cd {} && git worktree list --porcelain",
-            repo_path
-        )).await?;
+        let output = self
+            .session
+            .exec(&format!("cd {} && git worktree list --porcelain", repo_path))
+            .await?;
 
-        Ok(output.lines()
+        Ok(output
+            .lines()
             .filter(|l| l.starts_with("worktree "))
             .map(|l| l.trim_start_matches("worktree ").to_string())
             .collect())
@@ -74,10 +77,9 @@ impl SshWorktreeManager {
 
     /// Removes a worktree on the remote host.
     pub async fn remove_worktree(&self, repo_path: &str, worktree_path: &str) -> Result<()> {
-        self.session.exec(&format!(
-            "cd {} && git worktree remove {}",
-            repo_path, worktree_path
-        )).await?;
+        self.session
+            .exec(&format!("cd {} && git worktree remove {}", repo_path, worktree_path))
+            .await?;
         Ok(())
     }
 

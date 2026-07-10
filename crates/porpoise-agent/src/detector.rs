@@ -7,14 +7,14 @@ pub struct AgentDetector;
 impl AgentDetector {
     pub fn detect_all() -> Vec<AgentManifest> {
         let agents = vec![
-            (
-                "Claude Code",
-                "claude",
-                AgentKind::ClaudeCode,
-                &["--version"] as &[&str],
-            ),
+            ("Claude Code", "claude", AgentKind::ClaudeCode, &["--version"] as &[&str]),
             ("OpenAI Codex", "codex", AgentKind::Codex, &["--version"]),
             ("Google Gemini", "gemini", AgentKind::Gemini, &["--version"]),
+            ("OpenCode", "opencode", AgentKind::OpenCode, &["--version"]),
+            ("z.ai", "z", AgentKind::ZAI, &["--version"]),
+            ("OpenAI API Agent", "openai", AgentKind::OpenAI, &["--version"]),
+            ("Grok", "grok", AgentKind::Grok, &["--version"]),
+            ("OpenRouter", "openrouter", AgentKind::OpenRouter, &["--version"]),
         ];
 
         agents
@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn test_detect_all() {
         let manifests = AgentDetector::detect_all();
-        assert!(manifests.len() == 3);
+        assert!(manifests.len() == 8);
         for m in &manifests {
             assert!(!m.name.is_empty());
             assert!(!m.binary.is_empty());

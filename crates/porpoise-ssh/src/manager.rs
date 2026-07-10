@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::{collections::HashMap, sync::Arc};
+
 use porpoise_core::error::{PorpoiseError, Result};
-use crate::session::SshSession;
-use crate::auth::AuthMethod;
+use tokio::sync::RwLock;
+
+use crate::{auth::AuthMethod, session::SshSession};
 
 pub struct SshManager {
     sessions: Arc<RwLock<HashMap<String, SshSession>>>,
@@ -17,7 +17,9 @@ impl Default for SshManager {
 
 impl SshManager {
     pub fn new() -> Self {
-        Self { sessions: Arc::new(RwLock::new(HashMap::new())) }
+        Self {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     pub async fn connect(&self, host: &str, port: u16, username: &str, auth: &AuthMethod) -> Result<String> {
@@ -39,7 +41,8 @@ impl SshManager {
     pub async fn exec(&self, id: &str, command: &str) -> Result<String> {
         let sessions = self.sessions.read().await;
         let session = sessions.get(id).ok_or_else(|| PorpoiseError::SshConnect {
-            host: id.into(), reason: "session not found".into()
+            host: id.into(),
+            reason: "session not found".into(),
         })?;
         session.exec(command)
     }

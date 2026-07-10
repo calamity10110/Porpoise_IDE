@@ -1,0 +1,16 @@
+{
+  "id": "sentiment-analyzer",
+  "name": "Sentiment Analyzer",
+  "version": "0.1.0",
+  "description": "Analyzes sentiment of agent output text",
+  "entry": "sentiment_analyzer.wat",
+  "capabilities": {
+    "fs_read": [],
+    "fs_write": [],
+    "network": [],
+    "process": [],
+    "ssh": []
+  },
+  "hooks": ["on_agent_output"],
+  "fuel_limit": 1000000
+}

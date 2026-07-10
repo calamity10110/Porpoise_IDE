@@ -28,9 +28,7 @@ impl ResourceLimits {
                 };
                 let res = unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &rlim) };
                 if res != 0 {
-                    return Err(PorpoiseError::Runtime(
-                        format!("failed to set RLIMIT_NOFILE to {fds}"),
-                    ));
+                    return Err(PorpoiseError::Runtime(format!("failed to set RLIMIT_NOFILE to {fds}")));
                 }
             }
         }

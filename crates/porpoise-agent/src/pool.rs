@@ -7,8 +7,6 @@ use porpoise_core::{
 use tokio::sync::RwLock;
 
 use crate::{
-    claude::ClaudeCodeAgent,
-    codex::CodexAgent,
     generic::GenericAgent,
     traits::{Agent, AgentHandle},
     types::{AgentInfo, AgentKind, AgentStatus},
@@ -43,10 +41,15 @@ impl AgentPool {
             )));
         }
         let agent: Box<dyn Agent> = match &kind {
-            AgentKind::ClaudeCode => Box::new(ClaudeCodeAgent::new()),
-            AgentKind::Codex => Box::new(CodexAgent::new()),
+            AgentKind::ClaudeCode => Box::new(GenericAgent::with_kind("claude", AgentKind::ClaudeCode)),
+            AgentKind::Codex => Box::new(GenericAgent::with_kind("codex", AgentKind::Codex)),
+            AgentKind::Gemini => Box::new(GenericAgent::with_kind("gemini", AgentKind::Gemini)),
+            AgentKind::OpenCode => Box::new(GenericAgent::with_kind("opencode", AgentKind::OpenCode)),
+            AgentKind::ZAI => Box::new(GenericAgent::with_kind("z", AgentKind::ZAI)),
+            AgentKind::OpenAI => Box::new(GenericAgent::with_kind("openai", AgentKind::OpenAI)),
+            AgentKind::Grok => Box::new(GenericAgent::with_kind("grok", AgentKind::Grok)),
+            AgentKind::OpenRouter => Box::new(GenericAgent::with_kind("openrouter", AgentKind::OpenRouter)),
             AgentKind::Custom(name) => Box::new(GenericAgent::new(name)),
-            _ => return Err(PorpoiseError::Agent(format!("unsupported agent: {kind}"))),
         };
         let handle = agent.spawn(worktree).await?;
         let pid = handle.pid();

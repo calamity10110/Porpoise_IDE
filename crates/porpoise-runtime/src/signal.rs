@@ -1,17 +1,14 @@
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use crate::process::ProcessManager;
 
 pub async fn setup_signal_handlers(_process_manager: Arc<ProcessManager>) {
     #[cfg(unix)]
     {
-        use tokio::signal::unix::{signal, SignalKind};
+        use tokio::signal::unix::{SignalKind, signal};
 
-        let mut term = signal(SignalKind::terminate())
-            .expect("failed to register SIGTERM handler");
-        let mut int = signal(SignalKind::interrupt())
-            .expect("failed to register SIGINT handler");
+        let mut term = signal(SignalKind::terminate()).expect("failed to register SIGTERM handler");
+        let mut int = signal(SignalKind::interrupt()).expect("failed to register SIGINT handler");
 
         tokio::select! {
             _ = term.recv() => {

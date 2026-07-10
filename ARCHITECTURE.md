@@ -721,26 +721,26 @@ impl EventBus {
 
 ## 15. Implementation Status
 
-### Crate Implementation Matrix (2026-07-02)
+### Crate Implementation Matrix (2026-07-10)
 
 | Crate | Lines | Files | Level | Status |
 |-------|-------|-------|-------|--------|
-| `porpoise-core` | 1,092 | 17 | Foundation | ✅ 22/24 tasks — types, errors, config, event bus, state, platform, version |
-| `porpoise-db` | 622 | 10 | Foundation | ✅ 8/10 tasks — all CRUD models, migrations, pool |
-| `porpoise-cli` | 559 | 15 | Application | ✅ 9/12 tasks — 16 commands, JSON output, completions |
-| `porpoise-relay` | 466 | 9 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect, version neg. |
-| `porpoise-runtime` | 422 | 8 | Service | ✅ 8/11 tasks — Unix PTY, ProcessManager, HealthChecker, signal |
-| `porpoise-server` | 365 | 13 | Orchestration | ✅ 9/11 tasks — daemon, pidfile, graceful shutdown, services |
-| `porpoise-git` | 539 | 6 | Service | ✅ 11/13 tasks — GitEngine, WorktreeManager, GitHub provider |
-| `porpoise-agent` | 501 | 9 | Service | ✅ 9/12 tasks — Agent trait, detectors (Claude/Codex), pool, hook |
-| `porpoise-terminal` | 337 | 6 | Service | ✅ 7/11 tasks — PtyMultiplexer, OutputParser, scrollback, layout |
-| `porpoise-network` | 300 | 6 | Service | ✅ 4/5 tasks — HTTP/WS client, rate limiter, proxy, monitor |
-| `porpoise-ssh` | 125 | 5 | Service | ✅ 5/9 tasks — SshManager, session, auth, config parser |
-| `porpoise-browser` | 63 | 3 | Service | ✅ 7/7 tasks — BrowserEngine trait stub, navigation types |
-| `porpoise-skills` | 93 | 3 | Service | ◆ 6/14 tasks — WasmRuntime, SkillRegistry |
-| `porpoise-app` | 2 | 1 | Application | ○ 0/10 tasks — placeholder, requires Tauri SDK |
+| `porpoise-core` | 1,277 | 17 | Foundation | ✅ 23/24 tasks — types, errors, config, event bus, state, platform, version |
+| `porpoise-db` | 671 | 10 | Foundation | ✅ 8/10 tasks — all CRUD models, migrations, pool |
+| `porpoise-cli` | 700 | 16 | Application | ✅ 11/12 tasks — 16 commands, JSON output, completions, integration tests |
+| `porpoise-relay` | 537 | 9 | Service | ✅ 10/11 tasks — Unix + Windows IPC, auto-reconnect, version neg. |
+| `porpoise-runtime` | 950 | 11 | Service | ✅ 11/11 tasks — Unix PTY, ProcessManager, HealthChecker, signal, log rotation, WorktreeProcessManager |
+| `porpoise-server` | 703 | 14 | Orchestration | ✅ 11/11 tasks — daemon, pidfile, graceful shutdown, services, log rotation, notifications |
+| `porpoise-git` | 745 | 7 | Service | ✅ 14/14 tasks — GitEngine, WorktreeManager, GitHub provider, SSH key auth, stash |
+| `porpoise-agent` | 1,443 | 13 | Service | ✅ 13/13 tasks — Agent trait, detectors (Claude/Codex/Gemini), pool, hook, session resume, account switcher, token usage |
+| `porpoise-terminal` | 953 | 10 | Service | ✅ 11/11 tasks — PtyMultiplexer, parser, scrollback (SQLite + file), color schemes, reflow, regex search |
+| `porpoise-network` | 340 | 6 | Service | ✅ 5/5 tasks — HTTP/WS client, rate limiter, proxy, connectivity monitor |
+| `porpoise-ssh` | 471 | 7 | Service | ✅ 8/9 tasks — SshManager, session, auth, config, keepalive, exec, port forwarding, remote worktree |
+| `porpoise-browser` | 80 | 3 | Service | ✅ 7/7 tasks — BrowserEngine trait stub, navigation types |
+| `porpoise-skills` | 726 | 7 | Service | ✅ 13/14 tasks — WasmRuntime, SkillRegistry, sandbox, pipeline, hooks, hot-reload |
+| `porpoise-app` | 249 | 4 | Application | ✅ 9/10 tasks — Tauri 2.x, menu bar, tray, keyboard shortcuts, frontend UI |
 
-**Total: 111 Rust source files, ~5,486 lines across 14 crates.**
+**Total: 134 Rust source files, ~9,945 lines across 14 crates.**
 
 ### Key Architectural Decisions Made During Implementation
 
@@ -752,7 +752,11 @@ impl EventBus {
 | Direct tokio I/O instead of Transport trait | Avoids `async_trait` dyn-compatibility issues on Windows |
 | UUID v7 for all entity IDs | Time-ordered sorting, no coordinator needed, collision-free |
 | `thiserror` over `anyhow` | Precise error types for library crates; consumers decide presentation |
+| `RotatingLogFile` for server logs | Size-based rotation with configurable max files, no external deps |
+| `CompilationPipeline` for WASM | WAT→WASM compilation with wasmtime, .cwasm cache, export validation |
+| `HookRegistry` with 9 hook types | Async callback system with error collection, no panic propagation |
+| `HotReloadManager` with mtime polling | Simple, dependency-free approach; no filesystem watch overhead |
 
 ---
 
-*This architecture is living documentation. As Porpoise evolves, update this document to reflect changes. See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidance on architectural decisions. Last updated: 2026-07-02 after Phase 0–4 implementation.*
+*This architecture is living documentation. As Porpoise evolves, update this document to reflect changes. Last updated: 2026-07-10 after Phase 0–7 implementation completion.*

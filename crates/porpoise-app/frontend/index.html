@@ -1,1 +1,326 @@
-<!DOCTYPE html><html><body><h1>Porpoise</h1><p>Loading...</p></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Porpoise</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #1a1b26;
+      --bg-elevated: #24283b;
+      --bg-hover: #2f334d;
+      --fg: #c0caf5;
+      --fg-muted: #565f89;
+      --accent: #7aa2f7;
+      --border: #2a2e44;
+      --green: #9ece6a;
+      --red: #f7768e;
+    }
+    body {
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      overflow: hidden;
+      height: 100vh;
+    }
+    .app { display: flex; height: 100vh; }
+
+    /* Worktree Sidebar */
+    .sidebar {
+      width: 260px;
+      min-width: 200px;
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      resize: horizontal;
+    }
+    .sidebar-header {
+      padding: 12px 16px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--fg-muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-new {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .sidebar-list { flex: 1; overflow-y: auto; }
+    .worktree-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-bottom: 1px solid transparent;
+    }
+    .worktree-item:hover { background: var(--bg-hover); }
+    .worktree-item.active { background: var(--bg-hover); border-left: 3px solid var(--accent); }
+    .worktree-name { font-size: 13px; font-weight: 500; }
+    .worktree-meta { font-size: 11px; color: var(--fg-muted); }
+
+    /* Main Panel */
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .toolbar {
+      height: 36px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+    }
+    .toolbar-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .toolbar-btn:hover { background: var(--bg-hover); }
+
+    /* Terminal Panel */
+    .terminal-area { flex: 1; display: flex; }
+    .terminal-pane {
+      flex: 1;
+      background: #000;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      padding: 8px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+    .terminal-pane:last-child { border-right: none; }
+    .terminal-content { white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+
+    /* Editor Panel */
+    .editor-pane {
+      flex: 1;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      display: none;
+    }
+    .editor-pane.visible { display: flex; flex-direction: column; }
+    .editor-header {
+      padding: 8px 12px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    /* Settings Modal */
+    .settings-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .settings-modal.visible { display: flex; }
+    .settings-content {
+      background: var(--bg-elevated);
+      border-radius: 8px;
+      padding: 24px;
+      width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .settings-tab {
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .settings-tab.active { background: var(--accent); color: var(--bg); }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+    .settings-label { font-size: 13px; }
+    .settings-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      width: 200px;
+    }
+
+    /* Status bar */
+    .statusbar {
+      height: 24px;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--fg-muted);
+      gap: 16px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span>Worktrees</span>
+        <button class="btn-new" onclick="createWorktree()">+</button>
+      </div>
+      <div class="sidebar-list" id="worktree-list">
+        <div class="worktree-item" onclick="selectWorktree(this, 'main')">
+          <span class="worktree-name">main</span>
+          <span class="worktree-meta">claude - running</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="toolbar">
+        <button class="toolbar-btn" onclick="splitHorizontal()">Split H</button>
+        <button class="toolbar-btn" onclick="splitVertical()">Split V</button>
+        <button class="toolbar-btn" onclick="toggleEditor()">Editor</button>
+        <button class="toolbar-btn" onclick="showSettings()">Settings</button>
+      </div>
+
+      <div class="terminal-area" id="terminal-area">
+        <div class="terminal-pane">
+          <div class="terminal-content" id="terminal-0">$ porpoise worktree list</div>
+        </div>
+      </div>
+
+      <div class="editor-pane" id="editor-pane">
+        <div class="editor-header">README.md</div>
+        <div style="flex:1; padding:12px; font-family:monospace; font-size:13px;">
+          <div contenteditable="true" style="outline:none; height:100%;">
+            # Porpoise Worktree
+          </div>
+        </div>
+      </div>
+
+      <div class="statusbar">
+        <span class="status-dot"></span>
+        <span>Connected</span>
+        <span id="agent-count">0 agents</span>
+        <span id="terminal-count">1 terminal</span>
+        <span style="margin-left:auto;">v0.1.0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-modal" id="settings-modal">
+    <div class="settings-content">
+      <h2 style="margin-bottom:16px;">Settings</h2>
+      <div class="settings-tabs">
+        <div class="settings-tab active" onclick="switchTab('general')">General</div>
+        <div class="settings-tab" onclick="switchTab('agent')">Agent</div>
+        <div class="settings-tab" onclick="switchTab('git')">Git</div>
+        <div class="settings-tab" onclick="switchTab('keyboard')">Keyboard</div>
+      </div>
+      <div id="settings-general">
+        <div class="settings-row">
+          <span class="settings-label">Theme</span>
+          <select class="settings-input">
+            <option>Tokyo Night</option>
+            <option>Dracula</option>
+            <option>Solarized Dark</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Default Agent</span>
+          <select class="settings-input">
+            <option>claude</option>
+            <option>codex</option>
+            <option>gemini</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Max Concurrent Agents</span>
+          <input type="number" class="settings-input" value="5">
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+        <button class="toolbar-btn" onclick="hideSettings()">Cancel</button>
+        <button class="toolbar-btn" style="background:var(--accent); color:var(--bg);" onclick="hideSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function createWorktree() {
+      const name = prompt('Worktree name:');
+      if (name) {
+        const list = document.getElementById('worktree-list');
+        const item = document.createElement('div');
+        item.className = 'worktree-item';
+        item.onclick = () => selectWorktree(item, name);
+        item.innerHTML = `<span class="worktree-name">${name}</span><span class="worktree-meta">idle</span>`;
+        list.appendChild(item);
+      }
+    }
+
+    function selectWorktree(el, name) {
+      document.querySelectorAll('.worktree-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function splitHorizontal() {
+      const area = document.getElementById('terminal-area');
+      const pane = document.createElement('div');
+      pane.className = 'terminal-pane';
+      pane.innerHTML = '<div class="terminal-content">$ </div>';
+      area.appendChild(pane);
+      updateTerminalCount();
+    }
+
+    function splitVertical() {
+      splitHorizontal();
+    }
+
+    function toggleEditor() {
+      document.getElementById('editor-pane').classList.toggle('visible');
+    }
+
+    function showSettings() {
+      document.getElementById('settings-modal').classList.add('visible');
+    }
+
+    function hideSettings() {
+      document.getElementById('settings-modal').classList.remove('visible');
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function updateTerminalCount() {
+      const count = document.querySelectorAll('.terminal-pane').length;
+      document.getElementById('terminal-count').textContent = count + ' terminal' + (count > 1 ? 's' : '');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') { showSettings(); e.preventDefault(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') { createWorktree(); e.preventDefault(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 't') { splitHorizontal(); e.preventDefault(); }
+      if (e.key === 'Escape') { hideSettings(); }
+    });
+  </script>
+</body>
+</html>

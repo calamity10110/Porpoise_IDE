@@ -1,0 +1,16 @@
+{
+  "id": "highlighter",
+  "name": "Syntax Highlighter",
+  "version": "0.1.0",
+  "description": "Highlights code keywords in agent output",
+  "entry": "highlighter.wat",
+  "capabilities": {
+    "fs_read": [],
+    "fs_write": [],
+    "network": [],
+    "process": [],
+    "ssh": []
+  },
+  "hooks": ["on_agent_output"],
+  "fuel_limit": 1000000
+}

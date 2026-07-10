@@ -4,12 +4,15 @@ use porpoise_git::GitEngine;
 pub async fn handle_status(repo_path: &str) -> Result<serde_json::Value> {
     let engine = GitEngine::open(std::path::Path::new(repo_path))?;
     let changes = engine.status()?;
-    let json_changes: Vec<serde_json::Value> = changes.iter().map(|c| {
-        serde_json::json!({
-            "path": c.path.display().to_string(),
-            "status": format!("{:?}", c.status),
+    let json_changes: Vec<serde_json::Value> = changes
+        .iter()
+        .map(|c| {
+            serde_json::json!({
+                "path": c.path.display().to_string(),
+                "status": format!("{:?}", c.status),
+            })
         })
-    }).collect();
+        .collect();
     Ok(serde_json::json!({ "changes": json_changes }))
 }
 

@@ -1,19 +1,20 @@
 pub mod handle;
 pub mod pool;
 
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
+use std::{collections::HashMap, path::Path, sync::Arc};
+
 use chrono::Utc;
-use tokio::process::Command;
-use tokio::sync::{mpsc, watch, RwLock};
-use tokio::task::JoinHandle;
-
-use porpoise_core::error::{PorpoiseError, Result};
-use porpoise_core::types::id::ProcessId;
-use porpoise_core::bus::EventBus;
-
 pub use handle::ProcessHandle;
+use porpoise_core::{
+    bus::EventBus,
+    error::{PorpoiseError, Result},
+    types::id::ProcessId,
+};
+use tokio::{
+    process::Command,
+    sync::{RwLock, mpsc, watch},
+    task::JoinHandle,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProcessKind {
@@ -69,7 +70,9 @@ impl ProcessManager {
         let id = ProcessId::new();
 
         let mut command = Command::new(cmd);
-        command.args(args).stdin(std::process::Stdio::piped())
+        command
+            .args(args)
+            .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
 
@@ -80,11 +83,12 @@ impl ProcessManager {
             command.env(k, v);
         }
 
-        let child = command.spawn()
+        let child = command
+            .spawn()
             .map_err(|e| PorpoiseError::Runtime(format!("spawn failed: {e}")))?;
-        let pid = child.id().ok_or_else(|| {
-            PorpoiseError::Runtime("no pid from spawned process".into())
-        })?;
+        let pid = child
+            .id()
+            .ok_or_else(|| PorpoiseError::Runtime("no pid from spawned process".into()))?;
 
         let (_status_tx, status_rx) = watch::channel(ProcessStatus::Running);
         let (cmd_tx, mut cmd_rx) = mpsc::channel::<ProcessCommand>(32);
@@ -103,17 +107,21 @@ impl ProcessManager {
             let _ = cmd_rx.recv().await;
         });
 
-        self.processes.write().await.insert(id, ProcessEntry {
-            handle: handle.clone(),
-            _task: monitor_task,
-        });
+        self.processes.write().await.insert(
+            id,
+            ProcessEntry {
+                handle: handle.clone(),
+                _task: monitor_task,
+            },
+        );
 
         Ok(handle)
     }
 
     pub async fn kill(&self, id: ProcessId) -> Result<()> {
         let mut procs = self.processes.write().await;
-        let entry = procs.remove(&id)
+        let entry = procs
+            .remove(&id)
             .ok_or_else(|| PorpoiseError::Runtime(format!("process {id} not found")))?;
         entry.handle.cmd_tx.send(ProcessCommand::Kill).await.ok();
         Ok(())
@@ -130,8 +138,6 @@ impl ProcessManager {
     }
 
     pub async fn list(&self) -> Vec<ProcessHandle> {
-        self.processes.read().await.values()
-            .map(|e| e.handle.clone())
-            .collect()
+        self.processes.read().await.values().map(|e| e.handle.clone()).collect()
     }
 }

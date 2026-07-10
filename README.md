@@ -217,19 +217,17 @@ Claude Code · Codex · Grok · Cursor · GitHub Copilot · OpenCode · MiMo Cod
 
 | Phase | Component | Status |
 |-------|-----------|--------|
-| 0 | Foundation (core, db, cli, CI) | ✅ 98% — 44/51 tasks (core 1,092 loc, db 622 loc, cli 559 loc) |
-| 1 | CLI & Runtime (relay, runtime, server) | ✅ 82% — 27/33 tasks (relay 466 loc, runtime 422 loc, server 365 loc) |
-| 2 | Git Integration | ✅ 85% — 11/13 tasks (git 539 loc) |
-| 3 | Terminal Engine | ✅ 70% — 7/11 tasks (terminal 337 loc) |
-| 4 | Agent Framework | ✅ 75% — 9/12 tasks (agent 501 loc) |
-| 5 | Desktop Application | ○ Design complete — placeholder crate |
-| 6 | Advanced Features | ◆ 65% — 16/24 tasks (network 300 loc, ssh 125 loc, browser 63 loc) |
-| 7 | Plugin System | ◆ 43% — 6/14 tasks (skills 93 loc) |
+| 0 | Foundation (core, db, cli, CI) | ✅ Complete — 44 tasks |
+| 1 | CLI & Runtime (relay, runtime, server) | ✅ Complete — 31 tasks |
+| 2 | Git Integration | ✅ Complete — 13 tasks (745 loc) |
+| 3 | Terminal Engine | ✅ Complete — 11 tasks (953 loc) |
+| 4 | Agent Framework | ✅ Complete — 13 tasks (1,443 loc) |
+| 5 | Desktop Application | ✅ 90% — 9/10 tasks (249 loc + Tauri frontend) |
+| 6 | Advanced Features | ✅ 92% — 22/24 tasks (network, ssh, browser, notifications) |
+| 7 | Plugin System | ✅ 93% — 13/14 tasks (726 loc, WASM pipeline, hooks, hot-reload) |
 | 8 | Polish & Release | ○ Not started |
 
-**Total: 111 Rust files, ~5,486 lines across 14 workspace crates. Builds clean on Windows, macOS, Linux.**
-
-See [ROADMAP.md](./ROADMAP.md) and [TODO.md](./TODO.md) for detailed tracking.
+**Total: 134 Rust files, ~9,945 lines across 14 workspace crates. Builds clean on Windows, macOS, Linux. Passes `cargo clippy -- -D warnings`.**
 
 ---
 
@@ -267,6 +265,7 @@ porpoise/
 | [ROADMAP.md](./ROADMAP.md) | Phased development roadmap |
 | [TODO.md](./TODO.md) | Granular task tracking |
 | [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md) | Implementation guide |
+| [docs/SDK.md](./docs/SDK.md) | Plugin SDK documentation |
 | [docs/crates/CORE_TYPES.md](./docs/crates/CORE_TYPES.md) | Core type definitions |
 | [docs/crates/RUNTIME_DESIGN.md](./docs/crates/RUNTIME_DESIGN.md) | Runtime design |
 | [docs/crates/PROTOCOL_DESIGN.md](./docs/crates/PROTOCOL_DESIGN.md) | IPC protocol |

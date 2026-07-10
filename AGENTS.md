@@ -186,6 +186,7 @@ Use conditional compilation (`#[cfg(unix)]`, `#[cfg(windows)]`, `#[cfg(target_os
 - [ROADMAP.md](./ROADMAP.md) — Development roadmap
 - [TODO.md](./TODO.md) — Task tracking
 - [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md) — Implementation guide
+- [docs/SDK.md](./docs/SDK.md) — Plugin SDK documentation
 - [docs/crates/CORE_TYPES.md](./docs/crates/CORE_TYPES.md) — Core type design
 - [docs/crates/RUNTIME_DESIGN.md](./docs/crates/RUNTIME_DESIGN.md) — Runtime design
 - [docs/crates/PROTOCOL_DESIGN.md](./docs/crates/PROTOCOL_DESIGN.md) — IPC protocol design

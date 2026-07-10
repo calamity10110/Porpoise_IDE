@@ -1,6 +1,5 @@
 use porpoise_core::error::Result;
-use porpoise_ssh::auth::AuthMethod;
-use porpoise_ssh::SshManager;
+use porpoise_ssh::{SshManager, auth::AuthMethod};
 
 pub async fn handle_connect(host: &str, port: u16, user: &str) -> Result<serde_json::Value> {
     let manager = SshManager::new();

@@ -1,0 +1,16 @@
+{
+  "id": "lint-checker",
+  "name": "Lint Checker",
+  "version": "0.1.0",
+  "description": "Checks code for common issues like trailing whitespace",
+  "entry": "lint_checker.wat",
+  "capabilities": {
+    "fs_read": [],
+    "fs_write": [],
+    "network": [],
+    "process": [],
+    "ssh": []
+  },
+  "hooks": ["on_agent_output"],
+  "fuel_limit": 1000000
+}

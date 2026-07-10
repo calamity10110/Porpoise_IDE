@@ -2,13 +2,17 @@ use std::path::PathBuf;
 
 pub fn parse_ssh_config(path: &PathBuf) -> Vec<HostConfig> {
     let mut hosts = Vec::new();
-    if !path.exists() { return hosts; }
+    if !path.exists() {
+        return hosts;
+    }
     let content = std::fs::read_to_string(path).ok();
     if let Some(text) = content {
         let mut current = HostConfig::default();
         for line in text.lines() {
             let line = line.trim();
-            if line.starts_with('#') || line.is_empty() { continue; }
+            if line.starts_with('#') || line.is_empty() {
+                continue;
+            }
             if line.to_lowercase().starts_with("host ") {
                 if !current.host.is_empty() {
                     hosts.push(std::mem::take(&mut current));
@@ -26,7 +30,9 @@ pub fn parse_ssh_config(path: &PathBuf) -> Vec<HostConfig> {
                 }
             }
         }
-        if !current.host.is_empty() { hosts.push(current); }
+        if !current.host.is_empty() {
+            hosts.push(current);
+        }
     }
     hosts
 }

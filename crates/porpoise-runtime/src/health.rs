@@ -1,8 +1,6 @@
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use porpoise_core::bus::EventBus;
-use porpoise_core::error::Result;
+use porpoise_core::{bus::EventBus, error::Result};
 
 use crate::process::ProcessManager;
 
@@ -15,7 +13,11 @@ pub struct HealthChecker {
 
 impl HealthChecker {
     pub fn new(pm: Arc<ProcessManager>, interval: Duration, event_bus: EventBus) -> Self {
-        Self { process_manager: pm, interval, event_bus }
+        Self {
+            process_manager: pm,
+            interval,
+            event_bus,
+        }
     }
 
     pub async fn run(&self) {
@@ -37,10 +39,7 @@ impl HealthChecker {
                     {
                         let exists = unsafe { libc::kill(handle.pid as i32, 0) == 0 };
                         if !exists {
-                            tracing::warn!(
-                                "process {} (PID {}) dead but not reaped",
-                                handle.id, handle.pid
-                            );
+                            tracing::warn!("process {} (PID {}) dead but not reaped", handle.id, handle.pid);
                             self.process_manager.kill(handle.id).await.ok();
                         }
                     }
