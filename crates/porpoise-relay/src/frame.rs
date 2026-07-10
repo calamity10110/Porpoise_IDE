@@ -26,7 +26,11 @@ pub struct Frame {
 
 impl Frame {
     pub fn new(flags: FrameFlags, payload: Vec<u8>) -> Self {
-        Self { version: PROTOCOL_VERSION, flags, payload }
+        Self {
+            version: PROTOCOL_VERSION,
+            flags,
+            payload,
+        }
     }
 
     pub fn encode(&self) -> Result<Vec<u8>> {
@@ -40,14 +44,29 @@ impl Frame {
     }
 
     pub fn decode(data: &[u8]) -> Result<Self> {
-        if data.len() < HEADER_SIZE { return Err(PorpoiseError::Ipc("short frame".into())); }
-        if data[0..2] != PROTOCOL_MAGIC { return Err(PorpoiseError::Ipc("bad magic".into())); }
+        if data.len() < HEADER_SIZE {
+            return Err(PorpoiseError::Ipc("short frame".into()));
+        }
+        if data[0..2] != PROTOCOL_MAGIC {
+            return Err(PorpoiseError::Ipc("bad magic".into()));
+        }
         let version = data[2];
-        if version != PROTOCOL_VERSION { return Err(PorpoiseError::IpcVersionMismatch { server: PROTOCOL_VERSION, client: version }); }
+        if version != PROTOCOL_VERSION {
+            return Err(PorpoiseError::IpcVersionMismatch {
+                server: PROTOCOL_VERSION,
+                client: version,
+            });
+        }
         let flags = FrameFlags::from_bits(data[3]).ok_or_else(|| PorpoiseError::Ipc("bad flags".into()))?;
         let len = u32::from_le_bytes(data[4..8].try_into().unwrap()) as usize;
-        if data.len() < HEADER_SIZE + len { return Err(PorpoiseError::Ipc("truncated".into())); }
-        Ok(Self { version, flags, payload: data[HEADER_SIZE..HEADER_SIZE + len].to_vec() })
+        if data.len() < HEADER_SIZE + len {
+            return Err(PorpoiseError::Ipc("truncated".into()));
+        }
+        Ok(Self {
+            version,
+            flags,
+            payload: data[HEADER_SIZE..HEADER_SIZE + len].to_vec(),
+        })
     }
 }
 

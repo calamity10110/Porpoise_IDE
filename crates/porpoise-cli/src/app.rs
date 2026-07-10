@@ -1,7 +1,11 @@
-use clap::{Parser, Subcommand, Args};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "porpoise", version, about = "AI Orchestration IDE - Rust-native port of Orca")]
+#[command(
+    name = "porpoise",
+    version,
+    about = "AI Orchestration IDE - Rust-native port of Orca"
+)]
 #[command(propagate_version = true)]
 pub struct Cli {
     #[arg(global = true, long, help = "Output as JSON")]
@@ -74,9 +78,16 @@ pub enum WorktreeAction {
         prompt: Option<String>,
     },
     List,
-    Show { name: String },
-    Rm { name: String },
-    Prune { #[arg(long)] dry_run: bool },
+    Show {
+        name: String,
+    },
+    Rm {
+        name: String,
+    },
+    Prune {
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Args)]
@@ -93,7 +104,10 @@ pub enum TerminalAction {
         #[arg(long)]
         shell: Option<String>,
     },
-    List { #[arg(long)] worktree: Option<String> },
+    List {
+        #[arg(long)]
+        worktree: Option<String>,
+    },
     Send {
         id: String,
         #[arg(long)]
@@ -101,9 +115,17 @@ pub enum TerminalAction {
         #[arg(long)]
         enter: bool,
     },
-    Read { id: String },
-    Resize { id: String, rows: u16, cols: u16 },
-    Close { id: String },
+    Read {
+        id: String,
+    },
+    Resize {
+        id: String,
+        rows: u16,
+        cols: u16,
+    },
+    Close {
+        id: String,
+    },
 }
 
 #[derive(Args)]
@@ -122,8 +144,14 @@ pub enum AgentAction {
         #[arg(long)]
         prompt: String,
     },
-    Stop { id: String },
-    Logs { id: String, #[arg(long)] lines: Option<u32> },
+    Stop {
+        id: String,
+    },
+    Logs {
+        id: String,
+        #[arg(long)]
+        lines: Option<u32>,
+    },
 }
 
 #[derive(Args)]
@@ -134,11 +162,26 @@ pub struct GitArgs {
 
 #[derive(Subcommand)]
 pub enum GitAction {
-    Status { repo_path: String },
-    Diff { repo_path: String, #[arg(long)] staged: bool },
-    Log { repo_path: String, #[arg(long)] count: Option<u32> },
-    Clone { url: String, path: String },
-    Branch { repo_path: String },
+    Status {
+        repo_path: String,
+    },
+    Diff {
+        repo_path: String,
+        #[arg(long)]
+        staged: bool,
+    },
+    Log {
+        repo_path: String,
+        #[arg(long)]
+        count: Option<u32>,
+    },
+    Clone {
+        url: String,
+        path: String,
+    },
+    Branch {
+        repo_path: String,
+    },
 }
 
 #[derive(Args)]
@@ -149,10 +192,21 @@ pub struct BrowserArgs {
 
 #[derive(Subcommand)]
 pub enum BrowserAction {
-    Open { url: String },
-    Snapshot { page_id: String },
-    Click { page_id: String, selector: String },
-    Fill { page_id: String, selector: String, value: String },
+    Open {
+        url: String,
+    },
+    Snapshot {
+        page_id: String,
+    },
+    Click {
+        page_id: String,
+        selector: String,
+    },
+    Fill {
+        page_id: String,
+        selector: String,
+        value: String,
+    },
 }
 
 #[derive(Args)]
@@ -163,9 +217,18 @@ pub struct SshArgs {
 
 #[derive(Subcommand)]
 pub enum SshAction {
-    Connect { host: String, user: Option<String> },
-    Worktree { session_id: String },
-    PortForward { session_id: String, local: u16, remote: u16 },
+    Connect {
+        host: String,
+        user: Option<String>,
+    },
+    Worktree {
+        session_id: String,
+    },
+    PortForward {
+        session_id: String,
+        local: u16,
+        remote: u16,
+    },
 }
 
 #[derive(Args)]

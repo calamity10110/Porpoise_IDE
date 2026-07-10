@@ -25,6 +25,5 @@ pub use error::{PorpoiseError, Result};
 pub use platform::Platform;
 pub use serialization::{from_bincode, from_json, to_bincode, to_json, to_json_pretty};
 pub use state::AppState;
-pub use types::event::*;
-pub use types::id::*;
+pub use types::{event::*, id::*};
 pub use version::AppVersion;

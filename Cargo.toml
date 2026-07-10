@@ -57,6 +57,7 @@ mockall = "0.13"
 proptest = "1"
 assert_cmd = "2"
 criterion = { version = "0.5", features = ["async_futures"] }
+plist = "1"
 
 [profile.release]
 opt-level = 3

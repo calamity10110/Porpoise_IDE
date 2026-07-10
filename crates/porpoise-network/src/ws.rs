@@ -1,14 +1,15 @@
 use std::time::Duration;
-use futures_util::{StreamExt, SinkExt};
-use tokio_tungstenite::connect_async;
-use tokio_tungstenite::tungstenite::Message;
+
+use futures_util::{SinkExt, StreamExt};
 use porpoise_core::error::{PorpoiseError, Result};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 pub struct WsClient;
 
 impl WsClient {
     pub async fn connect(url: &str) -> Result<WsSession> {
-        let (stream, _) = connect_async(url).await
+        let (stream, _) = connect_async(url)
+            .await
             .map_err(|e| PorpoiseError::Network(format!("ws connect {url}: {e}")))?;
         Ok(WsSession { stream })
     }
@@ -20,7 +21,9 @@ pub struct WsSession {
 
 impl WsSession {
     pub async fn send(&mut self, text: &str) -> Result<()> {
-        self.stream.send(Message::Text(text.into())).await
+        self.stream
+            .send(Message::Text(text.into()))
+            .await
             .map_err(|e| PorpoiseError::Network(format!("ws send: {e}")))?;
         Ok(())
     }
@@ -37,7 +40,9 @@ impl WsSession {
     }
 
     pub async fn close(mut self) -> Result<()> {
-        self.stream.close(None).await
+        self.stream
+            .close(None)
+            .await
             .map_err(|e| PorpoiseError::Network(format!("ws close: {e}")))?;
         Ok(())
     }

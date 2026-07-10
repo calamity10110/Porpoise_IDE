@@ -1,5 +1,4 @@
-use porpoise_core::types::id::CorrelationId;
-use porpoise_core::types::event::SystemEvent;
+use porpoise_core::types::{event::SystemEvent, id::CorrelationId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,7 +61,12 @@ pub struct Response {
 
 impl Response {
     pub fn ok(id: CorrelationId, body: serde_json::Value) -> Self {
-        Self { id, status: StatusCode::Ok, body, error: None }
+        Self {
+            id,
+            status: StatusCode::Ok,
+            body,
+            error: None,
+        }
     }
 
     pub fn err(id: CorrelationId, code: ErrorCode, message: impl Into<String>) -> Self {

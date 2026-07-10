@@ -10,9 +10,9 @@ pub mod transport;
 
 #[cfg(unix)]
 pub use client::RelayClient;
-#[cfg(unix)]
-pub use server::RelayServer;
+pub use frame::{Frame, FrameFlags, PROTOCOL_MAGIC, PROTOCOL_VERSION};
+pub use message::{ErrorCode, ProtocolError, Request, Response, StatusCode, WireMessage};
 #[cfg(unix)]
 pub use router::Router;
-pub use frame::{Frame, FrameFlags, PROTOCOL_MAGIC, PROTOCOL_VERSION};
-pub use message::{Request, Response, WireMessage, StatusCode, ErrorCode, ProtocolError};
+#[cfg(unix)]
+pub use server::RelayServer;

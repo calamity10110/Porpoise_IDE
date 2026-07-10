@@ -1,6 +1,7 @@
-use clap::Command;
-use clap_complete::{generate_to, Shell};
 use std::io::Error;
+
+use clap::Command;
+use clap_complete::{Shell, generate_to};
 
 #[allow(dead_code)]
 pub fn generate_completions(cmd: &mut Command, out_dir: &std::path::Path) -> Result<(), Error> {

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::error::Result;
 use super::AppConfig;
+use crate::error::Result;
 
 /// Discovers the configuration file path using this priority:
 /// 1. `PORPOISE_CONFIG` environment variable
@@ -34,8 +34,8 @@ fn platform_config_dir() -> Result<PathBuf> {
 
     #[cfg(target_os = "windows")]
     {
-        let appdata = std::env::var("APPDATA")
-            .map_err(|_| crate::error::PorpoiseError::Config("APPDATA not set".into()))?;
+        let appdata =
+            std::env::var("APPDATA").map_err(|_| crate::error::PorpoiseError::Config("APPDATA not set".into()))?;
         Ok(PathBuf::from(appdata))
     }
 

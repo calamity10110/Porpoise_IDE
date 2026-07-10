@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+
 use porpoise_core::config::discovery;
 
 #[allow(dead_code)]
@@ -16,8 +17,7 @@ impl Default for CliSettings {
             output_format: super::output::OutputFormat::Plain,
             pager: true,
             color: true,
-            config_path: discovery::discover_config_path()
-                .unwrap_or_else(|_| PathBuf::from("config.toml")),
+            config_path: discovery::discover_config_path().unwrap_or_else(|_| PathBuf::from("config.toml")),
         }
     }
 }

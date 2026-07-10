@@ -1,11 +1,13 @@
-use std::path::PathBuf;
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
+
+use porpoise_core::error::{PorpoiseError, Result};
 use tokio::sync::Mutex;
 
-use crate::frame::{Frame, FrameFlags, PROTOCOL_MAGIC};
-use crate::message::{Request, WireMessage};
-use crate::transport::unix::UnixSocketTransport;
-use porpoise_core::error::{PorpoiseError, Result};
+use crate::{
+    frame::{Frame, FrameFlags, PROTOCOL_MAGIC},
+    message::{Request, WireMessage},
+    transport::unix::UnixSocketTransport,
+};
 
 const BASE_DELAY_MS: u64 = 100;
 const MAX_DELAY_MS: u64 = 30_000;
@@ -18,7 +20,10 @@ pub struct RelayClient {
 impl RelayClient {
     pub async fn connect(path: &PathBuf) -> Result<Self> {
         let transport = Self::connect_with_retry(path, false).await?;
-        Ok(Self { socket_path: path.clone(), transport: Mutex::new(transport) })
+        Ok(Self {
+            socket_path: path.clone(),
+            transport: Mutex::new(transport),
+        })
     }
 
     async fn connect_with_retry(path: &PathBuf, retry: bool) -> Result<UnixSocketTransport> {
@@ -47,7 +52,7 @@ impl RelayClient {
 
         let mut guard = self.transport.lock().await;
         match guard.send(&frame).await {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
                 tracing::warn!("send failed, reconnecting: {e}");
                 *guard = Self::connect_with_retry(&self.socket_path, true).await?;
@@ -65,8 +70,8 @@ impl RelayClient {
             }
         };
 
-        let wire: WireMessage = serde_json::from_slice(&resp_frame.payload)
-            .map_err(|e| PorpoiseError::Ipc(format!("deserialize: {e}")))?;
+        let wire: WireMessage =
+            serde_json::from_slice(&resp_frame.payload).map_err(|e| PorpoiseError::Ipc(format!("deserialize: {e}")))?;
 
         match wire {
             WireMessage::Response(resp) => {

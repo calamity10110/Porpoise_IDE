@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
 use super::id::*;
@@ -161,9 +162,17 @@ pub enum SystemEventKind {
     Startup,
     Shutdown,
     ConfigReloaded,
-    LowMemory { available_mb: u64 },
-    Error { message: String },
-    Notification { title: String, body: String, severity: NotificationSeverity },
+    LowMemory {
+        available_mb: u64,
+    },
+    Error {
+        message: String,
+    },
+    Notification {
+        title: String,
+        body: String,
+        severity: NotificationSeverity,
+    },
 }
 
 /// Severity level for user-facing notifications.

@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 pub struct RateLimiter {
     capacity: u64,
     tokens: f64,
-    refill_rate: f64,  // tokens per second
+    refill_rate: f64, // tokens per second
     last_refill: Instant,
 }
 
@@ -54,7 +54,10 @@ pub struct RateLimitConfig {
 
 impl Default for RateLimitConfig {
     fn default() -> Self {
-        Self { requests_per_second: 10, burst_size: 30 }
+        Self {
+            requests_per_second: 10,
+            burst_size: 30,
+        }
     }
 }
 

@@ -1,5 +1,5 @@
-use std::fmt;
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -34,8 +34,7 @@ macro_rules! id_type {
                 let inner = s
                     .strip_prefix($prefix)
                     .ok_or_else(|| PorpoiseError::invalid_id(stringify!($name), s))?;
-                let uuid = Uuid::from_str(inner)
-                    .map_err(|_| PorpoiseError::invalid_id(stringify!($name), s))?;
+                let uuid = Uuid::from_str(inner).map_err(|_| PorpoiseError::invalid_id(stringify!($name), s))?;
                 Ok(Self(uuid))
             }
         }

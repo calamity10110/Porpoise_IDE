@@ -1,8 +1,7 @@
+use porpoise_core::error::{PorpoiseError, Result};
 use rusqlite::Connection;
 
-use crate::schema;
-use crate::pool::DbPool;
-use porpoise_core::error::{PorpoiseError, Result};
+use crate::{pool::DbPool, schema};
 
 pub trait Migration {
     fn version(&self) -> u32;
@@ -13,19 +12,21 @@ pub trait Migration {
 struct InitialSchema;
 
 impl Migration for InitialSchema {
-    fn version(&self) -> u32 { 1 }
-    fn description(&self) -> &'static str { "initial schema" }
+    fn version(&self) -> u32 {
+        1
+    }
+    fn description(&self) -> &'static str {
+        "initial schema"
+    }
 
     fn up(&self, conn: &Connection) -> Result<()> {
         for table in schema::ALL_TABLES {
-            conn.execute(table, []).map_err(|e| {
-                PorpoiseError::DbMigration(format!("create table failed: {e}"))
-            })?;
+            conn.execute(table, [])
+                .map_err(|e| PorpoiseError::DbMigration(format!("create table failed: {e}")))?;
         }
         for idx in schema::CREATE_INDEXES {
-            conn.execute(idx, []).map_err(|e| {
-                PorpoiseError::DbMigration(format!("create index failed: {e}"))
-            })?;
+            conn.execute(idx, [])
+                .map_err(|e| PorpoiseError::DbMigration(format!("create index failed: {e}")))?;
         }
         conn.execute("PRAGMA foreign_keys = ON", []).ok();
         conn.execute("PRAGMA journal_mode = WAL", []).ok();
@@ -38,16 +39,14 @@ fn all_migrations() -> Vec<Box<dyn Migration>> {
 }
 
 pub fn run_migrations(pool: &DbPool) -> Result<u32> {
-    let conn = pool.get().map_err(|e| {
-        PorpoiseError::DbMigration(format!("failed to get connection: {e}"))
-    })?;
+    let conn = pool
+        .get()
+        .map_err(|e| PorpoiseError::DbMigration(format!("failed to get connection: {e}")))?;
 
     let current: u32 = conn
-        .query_row(
-            "SELECT COALESCE(MAX(version), 0) FROM schema_version",
-            [],
-            |row| row.get(0),
-        )
+        .query_row("SELECT COALESCE(MAX(version), 0) FROM schema_version", [], |row| {
+            row.get(0)
+        })
         .unwrap_or(0);
 
     let migrations = all_migrations();

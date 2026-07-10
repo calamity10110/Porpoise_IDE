@@ -1,4 +1,5 @@
 use porpoise_core::error::{PorpoiseError, Result};
+
 use crate::pool::DbPool;
 
 #[derive(Debug, Clone)]
@@ -21,33 +22,43 @@ impl WorktreeRow {
             "INSERT INTO worktrees (id, repo_path, worktree_path, branch, base_ref, agent_id, status)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             rusqlite::params![
-                row.id, row.repo_path, row.worktree_path, row.branch,
-                row.base_ref, row.agent_id, row.status,
+                row.id,
+                row.repo_path,
+                row.worktree_path,
+                row.branch,
+                row.base_ref,
+                row.agent_id,
+                row.status,
             ],
-        ).map_err(|e| PorpoiseError::Db(format!("insert worktree failed: {e}")))?;
+        )
+        .map_err(|e| PorpoiseError::Db(format!("insert worktree failed: {e}")))?;
         Ok(())
     }
 
     pub fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<Self>> {
         let conn = pool.get()?;
-        let mut stmt = conn.prepare(
-            "SELECT id, repo_path, worktree_path, branch, base_ref, agent_id, status, created_at, updated_at
-             FROM worktrees WHERE id = ?1"
-        ).map_err(|e| PorpoiseError::Db(format!("prepare failed: {e}")))?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, repo_path, worktree_path, branch, base_ref, agent_id, status, created_at, updated_at
+             FROM worktrees WHERE id = ?1",
+            )
+            .map_err(|e| PorpoiseError::Db(format!("prepare failed: {e}")))?;
 
-        let mut rows = stmt.query_map(rusqlite::params![id], |row| {
-            Ok(WorktreeRow {
-                id: row.get(0)?,
-                repo_path: row.get(1)?,
-                worktree_path: row.get(2)?,
-                branch: row.get(3)?,
-                base_ref: row.get(4)?,
-                agent_id: row.get(5)?,
-                status: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
+        let mut rows = stmt
+            .query_map(rusqlite::params![id], |row| {
+                Ok(WorktreeRow {
+                    id: row.get(0)?,
+                    repo_path: row.get(1)?,
+                    worktree_path: row.get(2)?,
+                    branch: row.get(3)?,
+                    base_ref: row.get(4)?,
+                    agent_id: row.get(5)?,
+                    status: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
             })
-        }).map_err(|e| PorpoiseError::Db(format!("query failed: {e}")))?;
+            .map_err(|e| PorpoiseError::Db(format!("query failed: {e}")))?;
 
         match rows.next() {
             Some(Ok(row)) => Ok(Some(row)),
@@ -58,24 +69,28 @@ impl WorktreeRow {
 
     pub fn list(pool: &DbPool) -> Result<Vec<Self>> {
         let conn = pool.get()?;
-        let mut stmt = conn.prepare(
-            "SELECT id, repo_path, worktree_path, branch, base_ref, agent_id, status, created_at, updated_at
-             FROM worktrees ORDER BY created_at DESC"
-        ).map_err(|e| PorpoiseError::Db(format!("prepare failed: {e}")))?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, repo_path, worktree_path, branch, base_ref, agent_id, status, created_at, updated_at
+             FROM worktrees ORDER BY created_at DESC",
+            )
+            .map_err(|e| PorpoiseError::Db(format!("prepare failed: {e}")))?;
 
-        let rows = stmt.query_map([], |row| {
-            Ok(WorktreeRow {
-                id: row.get(0)?,
-                repo_path: row.get(1)?,
-                worktree_path: row.get(2)?,
-                branch: row.get(3)?,
-                base_ref: row.get(4)?,
-                agent_id: row.get(5)?,
-                status: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(WorktreeRow {
+                    id: row.get(0)?,
+                    repo_path: row.get(1)?,
+                    worktree_path: row.get(2)?,
+                    branch: row.get(3)?,
+                    base_ref: row.get(4)?,
+                    agent_id: row.get(5)?,
+                    status: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
+                })
             })
-        }).map_err(|e| PorpoiseError::Db(format!("query failed: {e}")))?;
+            .map_err(|e| PorpoiseError::Db(format!("query failed: {e}")))?;
 
         let mut result = Vec::new();
         for row in rows {
@@ -89,7 +104,8 @@ impl WorktreeRow {
         conn.execute(
             "UPDATE worktrees SET status = ?1, updated_at = datetime('now') WHERE id = ?2",
             rusqlite::params![status, id],
-        ).map_err(|e| PorpoiseError::Db(format!("update status failed: {e}")))?;
+        )
+        .map_err(|e| PorpoiseError::Db(format!("update status failed: {e}")))?;
         Ok(())
     }
 

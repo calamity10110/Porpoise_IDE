@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 
-use crate::error::Result;
-use crate::types::event::SystemEvent;
+use crate::{error::Result, types::event::SystemEvent};
 
 /// Reacts to system events published on the `EventBus`.
 ///

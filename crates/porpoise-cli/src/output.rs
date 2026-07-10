@@ -10,13 +10,8 @@ impl OutputFormat {
     pub fn format(&self, value: &serde_json::Value) -> String {
         match self {
             OutputFormat::Plain => self.format_plain(value),
-            OutputFormat::Json => {
-                serde_json::to_string(value).unwrap_or_else(|e| format!("error: {e}"))
-            }
-            OutputFormat::JsonPretty => {
-                serde_json::to_string_pretty(value)
-                    .unwrap_or_else(|e| format!("error: {e}"))
-            }
+            OutputFormat::Json => serde_json::to_string(value).unwrap_or_else(|e| format!("error: {e}")),
+            OutputFormat::JsonPretty => serde_json::to_string_pretty(value).unwrap_or_else(|e| format!("error: {e}")),
         }
     }
 
@@ -42,9 +37,7 @@ impl OutputFormat {
                 }
                 out
             }
-            serde_json::Value::Array(arr) => {
-                arr.iter().map(plain_line).collect::<Vec<_>>().join("\n")
-            }
+            serde_json::Value::Array(arr) => arr.iter().map(plain_line).collect::<Vec<_>>().join("\n"),
             other => plain_line(other),
         }
     }

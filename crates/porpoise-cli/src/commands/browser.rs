@@ -1,7 +1,7 @@
-use crate::app::BrowserAction;
-use crate::output::OutputFormat;
-use porpoise_browser::{HeadlessBrowser, BrowserEngine};
+use porpoise_browser::{BrowserEngine, HeadlessBrowser};
 use porpoise_core::error::Result;
+
+use crate::{app::BrowserAction, output::OutputFormat};
 
 pub async fn handle(args: crate::app::BrowserArgs, format: &OutputFormat) -> Result<String> {
     match args.action {
@@ -14,14 +14,12 @@ pub async fn handle(args: crate::app::BrowserArgs, format: &OutputFormat) -> Res
                 "status": format!("{:?}", result.status),
             })))
         }
-        BrowserAction::Snapshot { page_id } => {
-            Ok(format!("[snapshot of page {page_id}]"))
-        }
-        BrowserAction::Click { page_id, selector } => {
-            Ok(format!("[clicked {selector} on page {page_id}]"))
-        }
-        BrowserAction::Fill { page_id, selector, value } => {
-            Ok(format!("[filled {selector} with '{value}' on page {page_id}]"))
-        }
+        BrowserAction::Snapshot { page_id } => Ok(format!("[snapshot of page {page_id}]")),
+        BrowserAction::Click { page_id, selector } => Ok(format!("[clicked {selector} on page {page_id}]")),
+        BrowserAction::Fill {
+            page_id,
+            selector,
+            value,
+        } => Ok(format!("[filled {selector} with '{value}' on page {page_id}]")),
     }
 }

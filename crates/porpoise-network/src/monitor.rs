@@ -1,6 +1,11 @@
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
+
 use tokio::net::TcpStream;
 
 pub struct ConnectivityMonitor {
@@ -19,10 +24,7 @@ impl ConnectivityMonitor {
     pub fn new() -> Self {
         Self {
             connected: Arc::new(AtomicBool::new(true)),
-            check_hosts: vec![
-                "8.8.8.8:53".into(),
-                "1.1.1.1:53".into(),
-            ],
+            check_hosts: vec!["8.8.8.8:53".into(), "1.1.1.1:53".into()],
             interval: Duration::from_secs(30),
         }
     }

@@ -47,7 +47,10 @@ impl Platform {
 
     /// True on any Unix-like OS (Linux, macOS).
     pub const fn is_unix(&self) -> bool {
-        matches!(self, Self::LinuxX64 | Self::LinuxArm64 | Self::MacOSX64 | Self::MacOSArm64)
+        matches!(
+            self,
+            Self::LinuxX64 | Self::LinuxArm64 | Self::MacOSX64 | Self::MacOSArm64
+        )
     }
 }
 

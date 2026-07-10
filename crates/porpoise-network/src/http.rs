@@ -1,4 +1,5 @@
 use std::time::Duration;
+
 use porpoise_core::error::{PorpoiseError, Result};
 
 pub struct HttpClient {
@@ -14,7 +15,11 @@ impl HttpClient {
             .user_agent("porpoise/0.1.0")
             .build()
             .map_err(|e| PorpoiseError::Network(format!("http client: {e}")))?;
-        Ok(Self { client, max_retries: 3, base_delay_ms: 500 })
+        Ok(Self {
+            client,
+            max_retries: 3,
+            base_delay_ms: 500,
+        })
     }
 
     pub fn with_proxy(mut self, proxy: reqwest::Proxy) -> Result<Self> {
@@ -40,35 +45,59 @@ impl HttpClient {
 
     pub async fn get(&self, url: &str) -> Result<String> {
         self.request_with_retry(|| async {
-            let resp = self.client.get(url).send().await
+            let resp = self
+                .client
+                .get(url)
+                .send()
+                .await
                 .map_err(|e| PorpoiseError::Network(format!("GET {url}: {e}")))?;
             let status = resp.status();
-            let body = resp.text().await
+            let body = resp
+                .text()
+                .await
                 .map_err(|e| PorpoiseError::Network(format!("read body: {e}")))?;
-            if status.is_success() { Ok(body) }
-            else { Err(PorpoiseError::Http { status: status.as_u16(), message: body }) }
-        }).await
+            if status.is_success() {
+                Ok(body)
+            } else {
+                Err(PorpoiseError::Http {
+                    status: status.as_u16(),
+                    message: body,
+                })
+            }
+        })
+        .await
     }
 
     pub async fn post(&self, url: &str, body: &str) -> Result<String> {
         self.request_with_retry(|| async {
-            let resp = self.client.post(url)
+            let resp = self
+                .client
+                .post(url)
                 .header("content-type", "application/json")
                 .body(body.to_string())
-                .send().await
+                .send()
+                .await
                 .map_err(|e| PorpoiseError::Network(format!("POST {url}: {e}")))?;
             let status = resp.status();
-            let body = resp.text().await
+            let body = resp
+                .text()
+                .await
                 .map_err(|e| PorpoiseError::Network(format!("read body: {e}")))?;
-            if status.is_success() { Ok(body) }
-            else { Err(PorpoiseError::Http { status: status.as_u16(), message: body }) }
-        }).await
+            if status.is_success() {
+                Ok(body)
+            } else {
+                Err(PorpoiseError::Http {
+                    status: status.as_u16(),
+                    message: body,
+                })
+            }
+        })
+        .await
     }
 
     pub async fn get_json<T: serde::de::DeserializeOwned>(&self, url: &str) -> Result<T> {
         let text = self.get(url).await?;
-        serde_json::from_str(&text)
-            .map_err(|e| PorpoiseError::Network(format!("json parse: {e}")))
+        serde_json::from_str(&text).map_err(|e| PorpoiseError::Network(format!("json parse: {e}")))
     }
 
     async fn request_with_retry<F, Fut>(&self, f: F) -> Result<String>

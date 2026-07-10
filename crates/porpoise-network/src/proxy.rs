@@ -16,8 +16,12 @@ impl Default for ProxyConfig {
             .collect();
 
         Self {
-            http: std::env::var("HTTP_PROXY").or_else(|_| std::env::var("http_proxy")).ok(),
-            https: std::env::var("HTTPS_PROXY").or_else(|_| std::env::var("https_proxy")).ok(),
+            http: std::env::var("HTTP_PROXY")
+                .or_else(|_| std::env::var("http_proxy"))
+                .ok(),
+            https: std::env::var("HTTPS_PROXY")
+                .or_else(|_| std::env::var("https_proxy"))
+                .ok(),
             socks5: None,
             no_proxy,
         }

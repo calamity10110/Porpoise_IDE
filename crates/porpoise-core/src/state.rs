@@ -1,11 +1,15 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
 use tokio::sync::RwLock;
 
-use crate::bus::EventBus;
-use crate::config::AppConfig;
-use crate::types::event::{AgentStatusKind, WorktreeStatus};
-use crate::types::id::*;
+use crate::{
+    bus::EventBus,
+    config::AppConfig,
+    types::{
+        event::{AgentStatusKind, WorktreeStatus},
+        id::*,
+    },
+};
 
 /// Shared application state, accessible across all service tasks.
 ///

@@ -8,15 +8,17 @@ pub mod ssh;
 pub mod terminal;
 pub mod worktree;
 
-use crate::app::Commands;
-use crate::output::OutputFormat;
 use porpoise_core::error::Result;
+
+use crate::{app::Commands, output::OutputFormat};
 
 /// Pipe long text output through the system pager (`less`).
 /// No-op if output is short or pager unavailable.
 fn page_output(output: &str) -> String {
     let line_count = output.lines().count();
-    if line_count <= 24 { return output.to_string(); }
+    if line_count <= 24 {
+        return output.to_string();
+    }
     if let Ok(mut child) = std::process::Command::new("less")
         .args(["-F", "-R", "-X"])
         .stdin(std::process::Stdio::piped())

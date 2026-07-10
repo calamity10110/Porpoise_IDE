@@ -3,10 +3,11 @@ pub mod models;
 pub mod pool;
 pub mod schema;
 
+pub use models::{
+    agent::AgentRow,
+    config::ConfigEntry,
+    session::SessionRow,
+    terminal::{HistoryRow, TerminalRow},
+    worktree::WorktreeRow,
+};
 pub use pool::DbPool;
-pub use models::worktree::WorktreeRow;
-pub use models::session::SessionRow;
-pub use models::terminal::{TerminalRow, HistoryRow};
-pub use models::agent::AgentRow;
-pub use models::config::ConfigEntry;
-

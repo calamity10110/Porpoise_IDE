@@ -1,8 +1,6 @@
 //! Application version tracking, parsed from Cargo.toml at compile time.
 
-use std::fmt;
-use std::str::FromStr;
-use std::sync::OnceLock;
+use std::{fmt, str::FromStr, sync::OnceLock};
 
 use crate::error::PorpoiseError;
 
@@ -39,7 +37,12 @@ impl AppVersion {
             // Leak is intentional: runs once, version is a compile-time constant.
             Box::leak(pre.to_string().into_boxed_str())
         };
-        Self { major, minor, patch, pre }
+        Self {
+            major,
+            minor,
+            patch,
+            pre,
+        }
     }
 }
 
@@ -82,7 +85,12 @@ impl FromStr for AppVersion {
         } else {
             Box::leak(pre.to_string().into_boxed_str())
         };
-        Ok(Self { major, minor, patch, pre })
+        Ok(Self {
+            major,
+            minor,
+            patch,
+            pre,
+        })
     }
 }
 
@@ -118,14 +126,40 @@ mod tests {
 
     #[test]
     fn test_display_version() {
-        assert_eq!(AppVersion { major: 1, minor: 2, patch: 3, pre: "" }.to_string(), "1.2.3");
-        assert_eq!(AppVersion { major: 0, minor: 1, patch: 0, pre: "rc1" }.to_string(), "0.1.0-rc1");
+        assert_eq!(
+            AppVersion {
+                major: 1,
+                minor: 2,
+                patch: 3,
+                pre: ""
+            }
+            .to_string(),
+            "1.2.3"
+        );
+        assert_eq!(
+            AppVersion {
+                major: 0,
+                minor: 1,
+                patch: 0,
+                pre: "rc1"
+            }
+            .to_string(),
+            "0.1.0-rc1"
+        );
     }
 
     #[test]
     fn test_from_str() {
         let v: AppVersion = "1.2.3".parse().unwrap();
-        assert_eq!(v, AppVersion { major: 1, minor: 2, patch: 3, pre: "" });
+        assert_eq!(
+            v,
+            AppVersion {
+                major: 1,
+                minor: 2,
+                patch: 3,
+                pre: ""
+            }
+        );
     }
 
     #[test]

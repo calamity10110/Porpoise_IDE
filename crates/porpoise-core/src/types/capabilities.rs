@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
 /// Set of granted capabilities for a plugin or component.

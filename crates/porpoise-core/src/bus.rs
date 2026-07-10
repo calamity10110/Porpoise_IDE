@@ -44,8 +44,7 @@ impl EventBus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::event::*;
-    use crate::types::id::WorktreeId;
+    use crate::types::{event::*, id::WorktreeId};
 
     #[test]
     fn test_publish_subscribe() {

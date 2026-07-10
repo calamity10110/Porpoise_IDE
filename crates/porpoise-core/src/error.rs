@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+
 use thiserror::Error;
 
 /// Convenience alias for `Result<T, PorpoiseError>` throughout the Porpoise system.
@@ -91,10 +92,7 @@ pub enum PorpoiseError {
 
     // Validation
     #[error("invalid ID format for {type_name}: {value}")]
-    InvalidId {
-        type_name: &'static str,
-        value: String,
-    },
+    InvalidId { type_name: &'static str, value: String },
     #[error("validation error: {0}")]
     Validation(String),
 

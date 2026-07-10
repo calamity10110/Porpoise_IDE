@@ -2,6 +2,7 @@ pub mod defaults;
 pub mod discovery;
 
 use std::path::PathBuf;
+
 use serde::Deserialize;
 
 /// Top-level application configuration, deserialized from TOML + env vars.
