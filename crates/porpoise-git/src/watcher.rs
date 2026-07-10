@@ -1,8 +1,8 @@
-use std::path::Path;
-use std::sync::mpsc;
-use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher as NotifyWatcher};
+use std::{path::Path, sync::mpsc};
 
+use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher as NotifyWatcher};
 use porpoise_core::error::{PorpoiseError, Result};
+
 use crate::types::{WatchEvent, WatchEventKind};
 
 pub struct FileWatcher {
@@ -15,7 +15,8 @@ impl FileWatcher {
         let (tx, rx) = mpsc::channel();
         let mut watcher = RecommendedWatcher::new(tx, Config::default())
             .map_err(|e| PorpoiseError::Runtime(format!("file watcher: {e}")))?;
-        watcher.watch(path, RecursiveMode::Recursive)
+        watcher
+            .watch(path, RecursiveMode::Recursive)
             .map_err(|e| PorpoiseError::Runtime(format!("watch {path:?}: {e}")))?;
         Ok(Self { _watcher: watcher, rx })
     }

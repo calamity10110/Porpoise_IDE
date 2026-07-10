@@ -1,14 +1,22 @@
 use async_trait::async_trait;
+use octocrab::models::{issues::Issue as OctoIssue, pulls::PullRequest as OctoPr};
 use porpoise_core::error::{PorpoiseError, Result};
-use crate::types::{PullRequest, PrState, Issue, IssueState as OurIssueState};
-use octocrab::models::pulls::PullRequest as OctoPr;
-use octocrab::models::issues::Issue as OctoIssue;
+
+use crate::types::{Issue, IssueState as OurIssueState, PrState, PullRequest};
 
 #[async_trait]
 pub trait RemoteProvider: Send + Sync {
     async fn list_prs(&self, owner: &str, repo: &str) -> Result<Vec<PullRequest>>;
     async fn get_pr(&self, owner: &str, repo: &str, number: u64) -> Result<PullRequest>;
-    async fn create_pr(&self, owner: &str, repo: &str, title: &str, head: &str, base: &str, body: Option<&str>) -> Result<PullRequest>;
+    async fn create_pr(
+        &self,
+        owner: &str,
+        repo: &str,
+        title: &str,
+        head: &str,
+        base: &str,
+        body: Option<&str>,
+    ) -> Result<PullRequest>;
     async fn merge_pr(&self, owner: &str, repo: &str, number: u64) -> Result<()>;
     async fn list_issues(&self, owner: &str, repo: &str) -> Result<Vec<Issue>>;
 }
@@ -31,7 +39,9 @@ impl GitHubProvider {
 }
 
 fn pr_state(pr: &OctoPr) -> PrState {
-    if pr.merged_at.is_some() { return PrState::Merged; }
+    if pr.merged_at.is_some() {
+        return PrState::Merged;
+    }
     match pr.state {
         Some(octocrab::models::IssueState::Closed) => PrState::Closed,
         _ => PrState::Open,
@@ -71,7 +81,10 @@ fn from_octo_issue(i: OctoIssue) -> Issue {
 #[async_trait]
 impl RemoteProvider for GitHubProvider {
     async fn list_prs(&self, owner: &str, repo: &str) -> Result<Vec<PullRequest>> {
-        let prs = self.client.pulls(owner, repo).list()
+        let prs = self
+            .client
+            .pulls(owner, repo)
+            .list()
             .per_page(50)
             .send()
             .await
@@ -80,19 +93,32 @@ impl RemoteProvider for GitHubProvider {
     }
 
     async fn get_pr(&self, owner: &str, repo: &str, number: u64) -> Result<PullRequest> {
-        let pr = self.client.pulls(owner, repo).get(number)
+        let pr = self
+            .client
+            .pulls(owner, repo)
+            .get(number)
             .await
             .map_err(|e| PorpoiseError::Git(format!("get PR #{number}: {e}")))?;
         Ok(from_octo_pr(pr))
     }
 
-    async fn create_pr(&self, owner: &str, repo: &str, title: &str, head: &str, base: &str, body: Option<&str>) -> Result<PullRequest> {
+    async fn create_pr(
+        &self,
+        owner: &str,
+        repo: &str,
+        title: &str,
+        head: &str,
+        base: &str,
+        body: Option<&str>,
+    ) -> Result<PullRequest> {
         let pulls_handler = self.client.pulls(owner, repo);
         let mut create = pulls_handler.create(title, head, base);
         if let Some(b) = body {
             create = create.body(b);
         }
-        let pr = create.send().await
+        let pr = create
+            .send()
+            .await
             .map_err(|e| PorpoiseError::Git(format!("create PR: {e}")))?;
         let mut result = from_octo_pr(pr);
         result.state = PrState::Open;
@@ -100,14 +126,20 @@ impl RemoteProvider for GitHubProvider {
     }
 
     async fn merge_pr(&self, owner: &str, repo: &str, number: u64) -> Result<()> {
-        self.client.pulls(owner, repo).merge(number).send()
+        self.client
+            .pulls(owner, repo)
+            .merge(number)
+            .send()
             .await
             .map_err(|e| PorpoiseError::Git(format!("merge PR #{number}: {e}")))?;
         Ok(())
     }
 
     async fn list_issues(&self, owner: &str, repo: &str) -> Result<Vec<Issue>> {
-        let issues = self.client.issues(owner, repo).list()
+        let issues = self
+            .client
+            .issues(owner, repo)
+            .list()
             .per_page(50)
             .send()
             .await

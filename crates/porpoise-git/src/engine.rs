@@ -1,31 +1,38 @@
 use std::path::Path;
-use git2::{Repository, StatusOptions, DiffOptions};
+
+use git2::{DiffOptions, Repository, StatusOptions};
 use porpoise_core::error::{PorpoiseError, Result};
 
-use crate::types::{Change, ChangeStatus, CommitEntry, BranchInfo};
+use crate::types::{BranchInfo, Change, ChangeStatus, CommitEntry};
 
 pub struct GitEngine {
-    repo_path: std::path::PathBuf,
-    repo: Repository,
+    pub(crate) repo_path: std::path::PathBuf,
+    pub(crate) repo: Repository,
 }
 
 impl GitEngine {
     pub fn open(path: &Path) -> Result<Self> {
-        let repo = Repository::open(path)
-            .map_err(|e| PorpoiseError::Git(format!("open repo: {e}")))?;
-        Ok(Self { repo_path: path.to_path_buf(), repo })
+        let repo = Repository::open(path).map_err(|e| PorpoiseError::Git(format!("open repo: {e}")))?;
+        Ok(Self {
+            repo_path: path.to_path_buf(),
+            repo,
+        })
     }
 
     pub fn clone(url: &str, path: &Path) -> Result<Self> {
-        let repo = Repository::clone(url, path)
-            .map_err(|e| PorpoiseError::Git(format!("clone {url}: {e}")))?;
-        Ok(Self { repo_path: path.to_path_buf(), repo })
+        let repo = Repository::clone(url, path).map_err(|e| PorpoiseError::Git(format!("clone {url}: {e}")))?;
+        Ok(Self {
+            repo_path: path.to_path_buf(),
+            repo,
+        })
     }
 
     pub fn init(path: &Path) -> Result<Self> {
-        let repo = Repository::init(path)
-            .map_err(|e| PorpoiseError::Git(format!("init: {e}")))?;
-        Ok(Self { repo_path: path.to_path_buf(), repo })
+        let repo = Repository::init(path).map_err(|e| PorpoiseError::Git(format!("init: {e}")))?;
+        Ok(Self {
+            repo_path: path.to_path_buf(),
+            repo,
+        })
     }
 
     pub fn status(&self) -> Result<Vec<Change>> {
@@ -33,7 +40,9 @@ impl GitEngine {
         opts.include_untracked(true)
             .recurse_untracked_dirs(true)
             .include_unmodified(false);
-        let statuses = self.repo.statuses(Some(&mut opts))
+        let statuses = self
+            .repo
+            .statuses(Some(&mut opts))
             .map_err(|e| PorpoiseError::Git(format!("status: {e}")))?;
 
         let mut changes = Vec::new();
@@ -57,24 +66,28 @@ impl GitEngine {
                 continue;
             };
 
-            changes.push(Change { path: path.to_path_buf(), status });
+            changes.push(Change {
+                path: path.to_path_buf(),
+                status,
+            });
         }
         Ok(changes)
     }
 
     pub fn diff(&self, staged: bool) -> Result<String> {
         if staged {
-            let tree = self.repo.head()
-                .ok()
-                .and_then(|h| h.peel_to_tree().ok());
+            let tree = self.repo.head().ok().and_then(|h| h.peel_to_tree().ok());
             let mut opts = DiffOptions::new();
-            let diff = self.repo.diff_tree_to_index(
-                tree.as_ref(), None, Some(&mut opts),
-            ).map_err(|e| PorpoiseError::Git(format!("diff staged: {e}")))?;
+            let diff = self
+                .repo
+                .diff_tree_to_index(tree.as_ref(), None, Some(&mut opts))
+                .map_err(|e| PorpoiseError::Git(format!("diff staged: {e}")))?;
             Self::format_diff(&diff)
         } else {
             let mut opts = DiffOptions::new();
-            let diff = self.repo.diff_tree_to_workdir(None, Some(&mut opts))
+            let diff = self
+                .repo
+                .diff_tree_to_workdir(None, Some(&mut opts))
                 .map_err(|e| PorpoiseError::Git(format!("diff workdir: {e}")))?;
             Self::format_diff(&diff)
         }
@@ -94,22 +107,32 @@ impl GitEngine {
                 out.push_str(content);
             }
             true
-        }).map_err(|e| PorpoiseError::Git(format!("diff print: {e}")))?;
+        })
+        .map_err(|e| PorpoiseError::Git(format!("diff print: {e}")))?;
         Ok(out)
     }
 
     pub fn log(&self, count: usize) -> Result<Vec<CommitEntry>> {
-        let mut revwalk = self.repo.revwalk()
+        let mut revwalk = self
+            .repo
+            .revwalk()
             .map_err(|e| PorpoiseError::Git(format!("revwalk: {e}")))?;
-        revwalk.push_head()
+        revwalk
+            .push_head()
             .map_err(|e| PorpoiseError::Git(format!("push head: {e}")))?;
-        revwalk.set_sorting(git2::Sort::TIME).map_err(|e| PorpoiseError::Git(format!("sort: {e}")))?;
+        revwalk
+            .set_sorting(git2::Sort::TIME)
+            .map_err(|e| PorpoiseError::Git(format!("sort: {e}")))?;
 
         let mut entries = Vec::new();
         for (i, oid) in revwalk.enumerate() {
-            if i >= count { break; }
+            if i >= count {
+                break;
+            }
             let oid = oid.map_err(|e| PorpoiseError::Git(format!("oid: {e}")))?;
-            let commit = self.repo.find_commit(oid)
+            let commit = self
+                .repo
+                .find_commit(oid)
                 .map_err(|e| PorpoiseError::Git(format!("find commit: {e}")))?;
             entries.push(CommitEntry {
                 id: oid.to_string(),
@@ -124,7 +147,8 @@ impl GitEngine {
     pub fn branch_list(&self) -> Result<Vec<BranchInfo>> {
         let mut branches = Vec::new();
         let head = self.repo.head().ok().map(|h| h.shorthand().unwrap_or("").to_string());
-        self.repo.branches(None)
+        self.repo
+            .branches(None)
             .map_err(|e| PorpoiseError::Git(format!("branches: {e}")))?
             .filter_map(|b| b.ok())
             .for_each(|(branch, _kind)| {
@@ -136,27 +160,36 @@ impl GitEngine {
     }
 
     pub fn branch_create(&self, name: &str) -> Result<()> {
-        let head_commit = self.repo.head()
+        let head_commit = self
+            .repo
+            .head()
             .map_err(|e| PorpoiseError::Git(format!("head: {e}")))?
             .peel_to_commit()
             .map_err(|e| PorpoiseError::Git(format!("peel: {e}")))?;
-        self.repo.branch(name, &head_commit, false)
+        self.repo
+            .branch(name, &head_commit, false)
             .map_err(|e| PorpoiseError::Git(format!("create branch '{name}': {e}")))?;
         Ok(())
     }
 
     pub fn branch_checkout(&self, name: &str) -> Result<()> {
-        let obj = self.repo.revparse_single(name)
+        let obj = self
+            .repo
+            .revparse_single(name)
             .map_err(|_| PorpoiseError::GitNoSuchBranch(name.into()))?;
-        self.repo.checkout_tree(&obj, None)
+        self.repo
+            .checkout_tree(&obj, None)
             .map_err(|e| PorpoiseError::Git(format!("checkout tree: {e}")))?;
-        self.repo.set_head(&format!("refs/heads/{name}"))
+        self.repo
+            .set_head(&format!("refs/heads/{name}"))
             .map_err(|e| PorpoiseError::Git(format!("set head: {e}")))?;
         Ok(())
     }
 
     pub fn fetch(&self, remote: &str) -> Result<()> {
-        let mut rm = self.repo.find_remote(remote)
+        let mut rm = self
+            .repo
+            .find_remote(remote)
             .map_err(|e| PorpoiseError::Git(format!("remote '{remote}': {e}")))?;
         rm.fetch(&[] as &[&str], None, None as Option<&str>)
             .map_err(|e| PorpoiseError::Git(format!("fetch: {e}")))?;
@@ -164,7 +197,9 @@ impl GitEngine {
     }
 
     pub fn push(&self, remote: &str, branch: &str) -> Result<()> {
-        let mut rm = self.repo.find_remote(remote)
+        let mut rm = self
+            .repo
+            .find_remote(remote)
             .map_err(|e| PorpoiseError::Git(format!("remote '{remote}': {e}")))?;
         let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
         rm.push(&[&refspec], None)
@@ -212,8 +247,9 @@ impl GitEngine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::TempDir;
+
+    use super::*;
 
     #[test]
     fn test_init_and_open() {
