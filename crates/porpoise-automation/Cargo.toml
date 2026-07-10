@@ -1,0 +1,19 @@
+[package]
+name = "porpoise-automation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Workflow automation engine — DAG-based multi-step task execution"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+porpoise-agent = { path = "../porpoise-agent" }
+porpoise-browser = { path = "../porpoise-browser" }
+porpoise-credentials = { path = "../porpoise-credentials" }
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml = "0.9"
+tracing.workspace = true
+tokio.workspace = true
+chrono.workspace = true
+uuid.workspace = true

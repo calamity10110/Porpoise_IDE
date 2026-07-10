@@ -15,6 +15,9 @@ members = [
     "crates/porpoise-network",
     "crates/porpoise-skills",
     "crates/porpoise-app",
+    "crates/porpoise-automation",
+    "crates/porpoise-credentials",
+    "crates/porpoise-computer-use",
 ]
 
 [workspace.package]
@@ -59,6 +62,10 @@ assert_cmd = "2"
 criterion = { version = "0.5", features = ["async_futures"] }
 plist = "1"
 portable-pty = "0.8"
+aes-gcm = "0.10"
+rand = "0.8"
+zeroize = { version = "1", features = ["derive"] }
+enigo = "0.2"
 
 [profile.release]
 opt-level = 3
