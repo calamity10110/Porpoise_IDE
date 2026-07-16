@@ -19,6 +19,8 @@ impl SandboxedRuntime {
         // Create engine with fuel metering for CPU limits
         let mut config = wasmtime::Config::default();
         config.consume_fuel(true);
+        config.static_memory_maximum_size(128 * 1024 * 1024);
+        config.max_wasm_stack(1024 * 1024);
         let engine = Engine::new(&config).map_err(|e| PorpoiseError::Wasm(format!("engine: {e}")))?;
         Ok(Self { engine })
     }

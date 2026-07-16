@@ -88,7 +88,7 @@ impl SshSession {
                 Ok(n) => output.push_str(&String::from_utf8_lossy(&buf[..n])),
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     if !channel.eof() {
-                        std::thread::sleep(std::time::Duration::from_millis(50));
+                        std::hint::spin_loop();
                         continue;
                     }
                     break;

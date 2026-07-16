@@ -93,12 +93,12 @@ pub async fn get_status(relay: State<'_, RelayClient>) -> Result<SystemStatus, S
     let version = env!("CARGO_PKG_VERSION").to_string();
     let body = relay.call("health", serde_json::json!({})).await.map_err(|e| e.to_string())?;
     let uptime = body.get("uptime_seconds").and_then(|v| v.as_u64()).unwrap_or(0);
-    let count = body.get("process_count").and_then(|v| v.as_u64()).unwrap_or(0);
+    let process_count = body.get("process_count").and_then(|v| v.as_u64()).unwrap_or(0);
     Ok(SystemStatus {
         version,
         uptime_seconds: uptime,
         worktree_count: 0,
-        agent_count: count as usize,
+        agent_count: process_count as usize,
         terminal_count: 0,
     })
 }
@@ -113,7 +113,8 @@ pub async fn get_settings(relay: State<'_, RelayClient>) -> Result<Settings, Str
 
 #[tauri::command]
 pub async fn save_settings(settings: Settings, relay: State<'_, RelayClient>) -> Result<(), String> {
-    relay.call("config_set", serde_json::json!({"key": "app", "value": serde_json::to_value(&settings).unwrap()})).await.map_err(|e| e.to_string())?;
+    let value = serde_json::to_value(&settings).map_err(|e| e.to_string())?;
+    relay.call("config_set", serde_json::json!({"key": "app", "value": value})).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 

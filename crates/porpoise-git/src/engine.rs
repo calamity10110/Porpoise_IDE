@@ -262,8 +262,10 @@ mod tests {
     #[test]
     fn test_branch_list_empty() {
         let dir = TempDir::new().unwrap();
-        GitEngine::init(dir.path()).unwrap();
-        assert!(true);
+        let engine = GitEngine::init(dir.path()).unwrap();
+        // A freshly init'd repo may or may not have a branch depending on git version/config
+        let branches = engine.branch_list().unwrap_or_default();
+        assert!(!branches.iter().any(|b| b.is_head), "new repo has no checked-out branches");
     }
 
     #[test]

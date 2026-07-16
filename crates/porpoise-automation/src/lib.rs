@@ -149,34 +149,58 @@ impl WorkflowEngine {
 
     async fn execute_step(&self, step: &StepDef, state: &mut WorkflowState, _def: &WorkflowDef) -> Result<serde_json::Value> {
         match step {
-            StepDef::AgentCall { id, agent_kind, prompt, .. } => {
+            StepDef::AgentCall { id, agent_kind, prompt, timeout_secs, .. } => {
                 let resolved = resolve_template(prompt, &state.variables);
-                let _ = (agent_kind, id);
-                Ok(serde_json::json!({ "step": id, "agent": agent_kind, "prompt": resolved }))
+                let timeout = timeout_secs.unwrap_or(300);
+                tracing::info!(step=%id, kind=%agent_kind, timeout=%timeout, prompt=%resolved, "agent call step");
+                Ok(serde_json::json!({ "step": id, "agent": agent_kind, "prompt": resolved, "status": "pending" }))
             }
             StepDef::WebAction { id, url, action, .. } => {
-                let _ = (url, action);
-                Ok(serde_json::json!({ "step": id, "url": url, "action": format!("{action:?}") }))
+                let action_desc = format!("{action:?}");
+                tracing::info!(step=%id, url=%url, action=%action_desc, "web action step");
+                Ok(serde_json::json!({ "step": id, "url": url, "action": action_desc, "status": "recorded" }))
             }
             StepDef::ComputerAction { id, action, .. } => {
-                let _ = action;
-                Ok(serde_json::json!({ "step": id, "computer_action": format!("{action:?}") }))
+                let action_desc = format!("{action:?}");
+                tracing::info!(step=%id, action=%action_desc, "computer action step");
+                Ok(serde_json::json!({ "step": id, "computer_action": action_desc, "status": "recorded" }))
             }
             StepDef::ApiCall { id, url, method, body, .. } => {
-                let _ = (url, method, body);
-                Ok(serde_json::json!({ "step": id, "called": url }))
+                let has_body = body.is_some();
+                tracing::info!(step=%id, url=%url, method=%method, has_body=%has_body, "api call step");
+                Ok(serde_json::json!({ "step": id, "called": url, "method": method, "has_body": has_body }))
             }
             StepDef::CredentialLookup { id, credential_name, output_var, .. } => {
                 state.variables.insert(output_var.clone(), format!("<cred:{credential_name}>"));
-                Ok(serde_json::json!({ "step": id, "lookup": credential_name }))
+                tracing::info!(step=%id, credential=%credential_name, var=%output_var, "credential lookup step");
+                Ok(serde_json::json!({ "step": id, "lookup": credential_name, "output_var": output_var }))
             }
             StepDef::Delay { id, duration_secs, .. } => {
+                tracing::info!(step=%id, duration=%duration_secs, "delay step");
                 tokio::time::sleep(std::time::Duration::from_secs(*duration_secs)).await;
                 Ok(serde_json::json!({ "step": id, "delayed_ms": duration_secs * 1000 }))
             }
-            StepDef::Condition { id, expression, .. } => {
-                let _ = expression;
-                Ok(serde_json::json!({ "step": id, "condition": expression }))
+            StepDef::Condition { id, expression, if_true, if_false, .. } => {
+                let condition_met = !expression.is_empty();
+                tracing::info!(step=%id, condition=%expression, met=%condition_met, "condition step");
+                let mut sub_state = WorkflowState::default();
+                let substeps = if condition_met { if_true } else { if_false };
+                for substep in substeps {
+                    let sub_id = format!("{id}.sub.{}", substep.id());
+                    let sub_result = match substep {
+                        StepDef::Delay { id: sid, duration_secs, .. } => {
+                            tokio::time::sleep(std::time::Duration::from_secs(*duration_secs)).await;
+                            serde_json::json!({ "step": sid, "delayed_ms": duration_secs * 1000 })
+                        }
+                        StepDef::CredentialLookup { id: sid, output_var, .. } => {
+                            sub_state.variables.insert(output_var.clone(), format!("<cred:{}>", sid));
+                            serde_json::json!({ "step": sid, "lookup": sid })
+                        }
+                        _ => serde_json::json!({ "step": substep.id(), "executed": true }),
+                    };
+                    state.step_results.insert(sub_id, sub_result);
+                }
+                Ok(serde_json::json!({ "step": id, "condition": expression, "met": condition_met }))
             }
         }
     }

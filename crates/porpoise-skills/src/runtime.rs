@@ -7,7 +7,11 @@ pub struct WasmRuntime {
 
 impl WasmRuntime {
     pub fn new() -> Result<Self> {
-        let engine = Engine::default();
+        let mut config = wasmtime::Config::default();
+        config.consume_fuel(true);
+        config.static_memory_maximum_size(128 * 1024 * 1024);
+        config.max_wasm_stack(1024 * 1024);
+        let engine = Engine::new(&config).map_err(|e| PorpoiseError::Wasm(format!("engine: {e}")))?;
         Ok(Self { engine })
     }
 
@@ -28,6 +32,9 @@ pub struct CompiledModule {
 impl CompiledModule {
     pub fn instantiate(&self) -> Result<WasmInstance> {
         let mut store = Store::new(&self.engine, ());
+        store
+            .set_fuel(10000)
+            .map_err(|e| PorpoiseError::Wasm(format!("fuel: {e}")))?;
         let linker = Linker::new(&self.engine);
         let instance = linker
             .instantiate(&mut store, &self.module)

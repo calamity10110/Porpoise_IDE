@@ -253,9 +253,22 @@ porpoise-skills/     # 726 loc, 7 files
 
 ---
 
-## Phase 8: Polish & Hardening — ○ Not Started
+## Phase 8: Polish & Hardening — ◆ Architecture Audit Complete
 
 **Objective:** Production readiness — performance, security audit, final testing, v1.0.
+
+### Architecture Hardening (✓ Complete)
+
+| Area | Fix | Status |
+|------|-----|--------|
+| Process Lifecycle | Store tokio::process::Child in ProcessEntry/ManagedProcess | ✓ |
+| PTY Safety | dup() pattern replaces unsafe from_raw_fd+forget. SIGHUP+waitpid on close | ✓ |
+| Credential Security | PBKDF2-HMAC-SHA256 (600K iter) + fs2 file locking + random salt | ✓ |
+| WASM Sandbox | 128MB memory cap, 1MB stack, fuel on both runtimes | ✓ |
+| SSH Non-Blocking | spin_loop replaces std::thread::sleep in exec loop | ✓ |
+| Event Routing | HookServer stores real AgentId instead of AgentId::new() | ✓ |
+| WebSocket Auth | Exact token matching, no substring vulnerability | ✓ |
+| Named Pipe IPC | Server handle used directly, no double pipe instance | ✓ |
 
 ### Performance Targets (not yet benchmarked)
 

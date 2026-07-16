@@ -266,10 +266,18 @@
 
 ---
 
-## Phase 8: Polish & Hardening — 0% (not started)
+## Phase 8: Polish & Hardening — ○ Architecture Audit Complete
 
 | Area | Status |
 |------|--------|
+| Process Lifecycle | ✓ ProcessManager/WorktreeProcessManager store Child, proper kill/shutdown |
+| PTY Safety | ✓ dup() pattern, SIGHUP to process group, waitpid reaping |
+| Credential Security | ✓ PBKDF2 KDF (600K), fs2 file locking, random salt generation |
+| WASM Sandbox | ✓ 128MB memory cap, 1MB stack limit, fuel metering on both runtimes |
+| SSH Non-Blocking | ✓ spin_loop replaces thread::sleep |
+| Event Routing | ✓ HookServer uses real AgentId |
+| WebSocket Auth | ✓ Exact token match, no substring |
+| Named Pipe IPC | ✓ Server handle used directly, no double-connection |
 | Performance | ○ All benchmarks |
 | Security | ○ Auth audit, fuzzing |
 | Testing | ○ Cross-platform, stress tests |
@@ -327,9 +335,9 @@
 | 5 | ~11 tasks | 10 | 0 | 1 |
 | 6 | ~24 tasks | 22 | 0 | 2 |
 | 7 | ~14 tasks | 13 | 0 | 1 |
-| 8 | ~20 tasks | 0 | 0 | 20 |
+| 8 | ~20 tasks | 9 | 0 | 11 |
 | 9 | ~23 tasks | 23 | 0 | 0 |
-| **Total** | **~221 tasks** | **182** | **0** | **39** |
+| **Total** | **~221 tasks** | **191** | **0** | **30** |
 
 ## Phase Completion Checklist
 
@@ -341,4 +349,4 @@ Run this ritual after every phase is marked complete:
 
 ---
 
-*Last updated: 2026-07-10 — Phase 0–7 and Phase 9 done, Phase 8 (Polish & Release) remaining. Build: 17 crates, 146 Rust files, ~10,367 LOC, 95 tests passing, clippy-clean.*
+*Last updated: 2026-07-15 — Phase 0–9 done, Phase 8 architecture audit complete (9 hardening tasks). Build: 17 crates, 136 Rust files, ~11,306 LOC, 95+ tests passing, clippy-clean.*

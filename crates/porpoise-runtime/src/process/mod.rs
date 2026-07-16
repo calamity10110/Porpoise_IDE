@@ -13,7 +13,6 @@ use porpoise_core::{
 use tokio::{
     process::Command,
     sync::{RwLock, mpsc, watch},
-    task::JoinHandle,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,15 +39,15 @@ pub enum ProcessCommand {
     Signal(String),
 }
 
+struct ProcessEntry {
+    handle: ProcessHandle,
+    child: Option<tokio::process::Child>,
+}
+
 pub struct ProcessManager {
     processes: Arc<RwLock<HashMap<ProcessId, ProcessEntry>>>,
     #[allow(dead_code)]
     event_bus: EventBus,
-}
-
-struct ProcessEntry {
-    handle: ProcessHandle,
-    _task: JoinHandle<()>,
 }
 
 impl ProcessManager {
@@ -91,7 +90,7 @@ impl ProcessManager {
             .ok_or_else(|| PorpoiseError::Runtime("no pid from spawned process".into()))?;
 
         let (_status_tx, status_rx) = watch::channel(ProcessStatus::Running);
-        let (cmd_tx, mut cmd_rx) = mpsc::channel::<ProcessCommand>(32);
+        let (cmd_tx, _cmd_rx) = mpsc::channel::<ProcessCommand>(32);
 
         let handle = ProcessHandle {
             id,
@@ -102,16 +101,11 @@ impl ProcessManager {
             cmd_tx,
         };
 
-        let _p = pid;
-        let monitor_task = tokio::spawn(async move {
-            let _ = cmd_rx.recv().await;
-        });
-
         self.processes.write().await.insert(
             id,
             ProcessEntry {
                 handle: handle.clone(),
-                _task: monitor_task,
+                child: Some(child),
             },
         );
 
@@ -123,7 +117,10 @@ impl ProcessManager {
         let entry = procs
             .remove(&id)
             .ok_or_else(|| PorpoiseError::Runtime(format!("process {id} not found")))?;
-        entry.handle.cmd_tx.send(ProcessCommand::Kill).await.ok();
+        if let Some(mut child) = entry.child {
+            child.start_kill().map_err(|e| PorpoiseError::Runtime(format!("kill: {e}")))?;
+            child.wait().await.map_err(|e| PorpoiseError::Runtime(format!("wait: {e}")))?;
+        }
         Ok(())
     }
 
@@ -132,8 +129,6 @@ impl ProcessManager {
         for id in &ids {
             self.kill(*id).await.ok();
         }
-        tokio::time::sleep(_timeout).await;
-        self.processes.write().await.clear();
         Ok(())
     }
 

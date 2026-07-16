@@ -11,7 +11,6 @@ use porpoise_core::{
 };
 use tokio::{process::Command, sync::RwLock};
 
-/// Tracks a process spawned within a specific worktree directory.
 #[derive(Debug, Clone)]
 pub struct WorktreeProcess {
     pub process_id: ProcessId,
@@ -23,14 +22,13 @@ pub struct WorktreeProcess {
     pub started_at: chrono::DateTime<Utc>,
 }
 
-/// Manages process spawning scoped to worktree directories.
-///
-/// Each spawned process is tracked by `WorktreeId`, allowing the caller
-/// to enumerate or shut down all processes belonging to a specific worktree.
-/// This is used by the agent pool to ensure agents run in the correct
-/// worktree working directory and can be cleaned up per-worktree.
+struct ManagedProcess {
+    info: WorktreeProcess,
+    child: Option<tokio::process::Child>,
+}
+
 pub struct WorktreeProcessManager {
-    processes: Arc<RwLock<HashMap<ProcessId, WorktreeProcess>>>,
+    processes: Arc<RwLock<HashMap<ProcessId, ManagedProcess>>>,
     by_worktree: Arc<RwLock<HashMap<WorktreeId, Vec<ProcessId>>>>,
     max_per_worktree: usize,
 }
@@ -50,10 +48,6 @@ impl WorktreeProcessManager {
         }
     }
 
-    /// Spawns a process in the given worktree directory.
-    ///
-    /// The process stdin/stdout/stderr are piped. Environment variables
-    /// from `envs` are applied on top of the inherited environment.
     pub async fn spawn(
         &self,
         worktree_id: WorktreeId,
@@ -81,8 +75,7 @@ impl WorktreeProcessManager {
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
-            .current_dir(worktree_path)
-            .kill_on_drop(true);
+            .current_dir(worktree_path);
 
         for (k, v) in &envs {
             cmd.env(k, v);
@@ -96,7 +89,7 @@ impl WorktreeProcessManager {
             .ok_or_else(|| PorpoiseError::Runtime("no pid from spawned process".into()))?;
 
         let process_id = ProcessId::new();
-        let entry = WorktreeProcess {
+        let info = WorktreeProcess {
             process_id,
             worktree_id,
             pid,
@@ -106,7 +99,10 @@ impl WorktreeProcessManager {
             started_at: Utc::now(),
         };
 
-        self.processes.write().await.insert(process_id, entry.clone());
+        self.processes.write().await.insert(
+            process_id,
+            ManagedProcess { info: info.clone(), child: Some(child) },
+        );
         self.by_worktree
             .write()
             .await
@@ -114,15 +110,13 @@ impl WorktreeProcessManager {
             .or_default()
             .push(process_id);
 
-        Ok(entry)
+        Ok(info)
     }
 
-    /// Lists all processes across all worktrees.
     pub async fn list(&self) -> Vec<WorktreeProcess> {
-        self.processes.read().await.values().cloned().collect()
+        self.processes.read().await.values().map(|e| e.info.clone()).collect()
     }
 
-    /// Lists all processes for a specific worktree.
     pub async fn list_for_worktree(&self, worktree_id: WorktreeId) -> Vec<WorktreeProcess> {
         let ids = self
             .by_worktree
@@ -132,42 +126,29 @@ impl WorktreeProcessManager {
             .cloned()
             .unwrap_or_default();
         let procs = self.processes.read().await;
-        ids.iter().filter_map(|id| procs.get(id).cloned()).collect()
+        ids.iter().filter_map(|id| procs.get(id).map(|e| e.info.clone())).collect()
     }
 
-    /// Sends SIGTERM (Unix) or TerminateProcess (Windows) to a process.
     pub async fn kill(&self, process_id: ProcessId) -> Result<()> {
-        let entry = self
+        let mut entry = self
             .processes
             .write()
             .await
             .remove(&process_id)
             .ok_or_else(|| PorpoiseError::Runtime(format!("process {process_id} not found")))?;
 
-        #[cfg(unix)]
-        unsafe {
-            libc::kill(entry.pid as i32, libc::SIGTERM);
-        }
-        #[cfg(windows)]
-        unsafe {
-            use windows::Win32::{
-                Foundation::CloseHandle,
-                System::Threading::{OpenProcess, PROCESS_TERMINATE, TerminateProcess},
-            };
-            if let Ok(handle) = OpenProcess(PROCESS_TERMINATE, false, entry.pid) {
-                TerminateProcess(handle, 1).ok();
-                CloseHandle(handle).ok();
-            }
+        if let Some(ref mut child) = entry.child {
+            child.start_kill().map_err(|e| PorpoiseError::Runtime(format!("kill: {e}")))?;
+            child.wait().await.map_err(|e| PorpoiseError::Runtime(format!("wait: {e}")))?;
         }
 
-        if let Some(ids) = self.by_worktree.write().await.get_mut(&entry.worktree_id) {
+        if let Some(ids) = self.by_worktree.write().await.get_mut(&entry.info.worktree_id) {
             ids.retain(|id| *id != process_id);
         }
 
         Ok(())
     }
 
-    /// Kills all processes for a specific worktree.
     pub async fn kill_worktree(&self, worktree_id: WorktreeId) -> Result<()> {
         let ids = self.by_worktree.write().await.remove(&worktree_id).unwrap_or_default();
         for id in ids {
@@ -176,7 +157,6 @@ impl WorktreeProcessManager {
         Ok(())
     }
 
-    /// Kills all managed processes.
     pub async fn shutdown_all(&self) -> Result<()> {
         let ids: Vec<ProcessId> = self.processes.read().await.keys().copied().collect();
         for id in ids {
@@ -186,7 +166,6 @@ impl WorktreeProcessManager {
         Ok(())
     }
 
-    /// Returns the count of all active processes.
     pub async fn count(&self) -> usize {
         self.processes.read().await.len()
     }

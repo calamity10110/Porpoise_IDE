@@ -314,7 +314,19 @@ porpoise skill run credential-manager  # Manage credentials
 | 8 | Polish & Release | ○ Not started |
 | 9 | Automation & Enterprise | ✅ Complete — 23 tasks (automation 309 loc, credentials 195 loc, computer-use 95 loc, workflow editor) |
 
-**Total: 146 Rust files, ~10,367 lines across 17 workspace crates. 95+ tests pass. Builds clean on Windows. Passes `cargo clippy -- -D warnings`.**
+**Total: 136 Rust files, ~11,306 lines across 17 workspace crates. 95+ tests pass. Builds clean on Windows. Passes `cargo clippy -- -D warnings`.**
+
+### Architectural Hardening (6-Vector Audit)
+
+All critical findings from the production-grade architectural review have been resolved:
+
+- **Process Lifecycle**: `ProcessManager` and `WorktreeProcessManager` now store `tokio::process::Child` — no more orphaned processes or premature SIGKILL
+- **PTY Safety**: `dup()` pattern replaces unsafe `from_raw_fd + mem::forget`. Close sends SIGHUP to process group with `waitpid` reaping
+- **Credential Security**: PBKDF2-HMAC-SHA256 KDF (600K iterations) replaces single SHA-256. Cross-platform file locking (fs2) prevents TOCTOU data races
+- **WASM Sandbox**: 128MB memory cap + 1MB stack limit + fuel metering on both `WasmRuntime` and `SandboxedRuntime`
+- **SSH Non-Blocking**: `std::thread::sleep` replaced with `std::hint::spin_loop()` in exec loop
+- **Event Routing**: `HookServer` uses real `AgentId` instead of generating random UUIDs per output event
+- **WebSocket Auth**: Exact token matching (no more substring vulnerability)
 
 ---
 

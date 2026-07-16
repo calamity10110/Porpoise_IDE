@@ -108,11 +108,14 @@ async fn pty_read_impl(fd: i32, buf: &mut [u8]) -> Result<usize> {
     {
         use std::os::unix::io::FromRawFd;
         use tokio::io::AsyncReadExt;
-        let std_file = unsafe { std::fs::File::from_raw_fd(fd) };
+        // dup() creates a copy of fd so the original stays valid
+        let dup_fd = unsafe { libc::dup(fd) };
+        if dup_fd < 0 {
+            return Err(PorpoiseError::PtyError("dup failed".into()));
+        }
+        let std_file = unsafe { std::fs::File::from_raw_fd(dup_fd) };
         let mut file = tokio::fs::File::from_std(std_file);
-        let n = file.read(buf).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
-        std::mem::forget(file);
-        Ok(n)
+        file.read(buf).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))
     }
     #[cfg(target_os = "windows")]
     {
@@ -142,11 +145,13 @@ async fn pty_write_impl(fd: i32, data: &[u8]) -> Result<()> {
     {
         use std::os::unix::io::FromRawFd;
         use tokio::io::AsyncWriteExt;
-        let std_file = unsafe { std::fs::File::from_raw_fd(fd) };
+        let dup_fd = unsafe { libc::dup(fd) };
+        if dup_fd < 0 {
+            return Err(PorpoiseError::PtyError("dup failed".into()));
+        }
+        let std_file = unsafe { std::fs::File::from_raw_fd(dup_fd) };
         let mut file = tokio::fs::File::from_std(std_file);
-        file.write_all(data).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
-        std::mem::forget(file);
-        Ok(())
+        file.write_all(data).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))
     }
     #[cfg(target_os = "windows")]
     {
@@ -250,12 +255,22 @@ impl PtyManager {
     }
 
     pub async fn close(&self, id: TerminalId) -> Result<()> {
-        #[cfg(target_os = "windows")]
         if let Some(session) = self.sessions.write().await.remove(&id) {
+            #[cfg(target_os = "windows")]
             windows_pty::remove_master(session.fd);
+
+            #[cfg(not(target_os = "windows"))]
+            {
+                // Send SIGHUP to child process to terminate gracefully
+                if let Some(pid) = session.child_pid {
+                    unsafe { libc::kill(pid as i32, libc::SIGHUP) };
+                    // Reap child to prevent zombie process
+                    unsafe { libc::waitpid(pid as i32, std::ptr::null_mut(), libc::WNOHANG) };
+                }
+                // Close the master file descriptor
+                unsafe { libc::close(session.fd) };
+            }
         }
-        #[cfg(not(target_os = "windows"))]
-        { self.sessions.write().await.remove(&id); }
         Ok(())
     }
 }

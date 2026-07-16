@@ -3,13 +3,53 @@ use std::{path::Path, sync::Arc};
 use porpoise_core::error::{PorpoiseError, Result};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::windows::named_pipe::{ClientOptions, ServerOptions},
+    net::windows::named_pipe::{ClientOptions, NamedPipeServer, ServerOptions},
 };
 
 use crate::frame::{Frame, HEADER_SIZE};
 
+pub enum NamedPipeStream {
+    Client(tokio::net::windows::named_pipe::NamedPipeClient),
+    Server(NamedPipeServer),
+}
+
+impl NamedPipeStream {
+    pub async fn send(&mut self, frame: &Frame) -> Result<()> {
+        let data = frame.encode()?;
+        match self {
+            NamedPipeStream::Client(s) => s.write_all(&data).await,
+            NamedPipeStream::Server(s) => s.write_all(&data).await,
+        }
+        .map_err(|e| PorpoiseError::Ipc(format!("pipe write: {e}")))?;
+        Ok(())
+    }
+
+    pub async fn receive(&mut self) -> Result<Frame> {
+        let mut header = vec![0u8; HEADER_SIZE];
+        let read_result = match self {
+            NamedPipeStream::Client(s) => s.read_exact(&mut header).await,
+            NamedPipeStream::Server(s) => s.read_exact(&mut header).await,
+        };
+        read_result.map_err(|e| PorpoiseError::Ipc(format!("pipe read header: {e}")))?;
+
+        let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
+        let mut payload = vec![0u8; length];
+        if length > 0 {
+            let read_result = match self {
+                NamedPipeStream::Client(s) => s.read_exact(&mut payload).await,
+                NamedPipeStream::Server(s) => s.read_exact(&mut payload).await,
+            };
+            read_result.map_err(|e| PorpoiseError::Ipc(format!("pipe read payload: {e}")))?;
+        }
+
+        let mut frame_data = header;
+        frame_data.extend_from_slice(&payload);
+        Frame::decode(&frame_data)
+    }
+}
+
 pub struct NamedPipeTransport {
-    stream: tokio::net::windows::named_pipe::NamedPipeClient,
+    stream: NamedPipeStream,
 }
 
 impl NamedPipeTransport {
@@ -17,37 +57,19 @@ impl NamedPipeTransport {
         let stream = ClientOptions::new()
             .open(path)
             .map_err(|e| PorpoiseError::Ipc(format!("pipe connect: {e}")))?;
-        Ok(Self { stream })
+        Ok(Self { stream: NamedPipeStream::Client(stream) })
+    }
+
+    pub fn from_server(server: NamedPipeServer) -> Self {
+        Self { stream: NamedPipeStream::Server(server) }
     }
 
     pub async fn send(&mut self, frame: &Frame) -> Result<()> {
-        let data = frame.encode()?;
-        self.stream
-            .write_all(&data)
-            .await
-            .map_err(|e| PorpoiseError::Ipc(format!("pipe write: {e}")))?;
-        Ok(())
+        self.stream.send(frame).await
     }
 
     pub async fn receive(&mut self) -> Result<Frame> {
-        let mut header = vec![0u8; HEADER_SIZE];
-        self.stream
-            .read_exact(&mut header)
-            .await
-            .map_err(|e| PorpoiseError::Ipc(format!("pipe read header: {e}")))?;
-
-        let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
-        let mut payload = vec![0u8; length];
-        if length > 0 {
-            self.stream
-                .read_exact(&mut payload)
-                .await
-                .map_err(|e| PorpoiseError::Ipc(format!("pipe read payload: {e}")))?;
-        }
-
-        let mut frame_data = header;
-        frame_data.extend_from_slice(&payload);
-        Frame::decode(&frame_data)
+        self.stream.receive().await
     }
 }
 
@@ -79,15 +101,10 @@ impl NamedPipeListener {
                 .await
                 .map_err(|e| PorpoiseError::Ipc(format!("pipe wait: {e}")))?;
 
-            // The connected server handle IS the pipe
-            // We create a NamedPipeClient from it by reopening
-            let client = ClientOptions::new()
-                .open(&self.path)
-                .map_err(|e| PorpoiseError::Ipc(format!("pipe open: {e}")))?;
-
+            let transport = NamedPipeTransport::from_server(server);
             let h = handler.clone();
             tokio::spawn(async move {
-                h(NamedPipeTransport { stream: client }).await;
+                h(transport).await;
             });
         }
     }

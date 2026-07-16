@@ -586,12 +586,19 @@ document.querySelectorAll('.palette-item').forEach(el => {
 
 function renderWorkflowList() {
   const list = document.getElementById('workflow-list');
-  list.innerHTML = workflows.map(w => `<div class="workflow-item" onclick="loadWorkflow(workflows.find(x=>x.id==='${w.id}'))">📋 ${w.name||'Untitled'}</div>`).join('');
+  list.innerHTML = '';
+  workflows.forEach((w, i) => {
+    const div = document.createElement('div');
+    div.className = 'workflow-item';
+    div.textContent = `\u{1F4CB} ${w.name || 'Untitled'}`;
+    div.onclick = () => loadWorkflow(workflows[i]);
+    list.appendChild(div);
+  });
 }
 
 // ===== Tauri Integration =====
 if (window.__TAURI__) {
-  window.__TAURI__.invoke('list_worktrees').then(r => console.log('Connected to daemon', r)).catch(() => {});
+  window.__TAURI__.invoke('list_worktrees').then(() => addLog('info', 'Connected to daemon')).catch(() => {});
 }
 
 // ===== Init =====

@@ -229,10 +229,10 @@
     <div class="settings-content">
       <h2 style="margin-bottom:16px;">Settings</h2>
       <div class="settings-tabs">
-        <div class="settings-tab active" onclick="switchTab('general')">General</div>
-        <div class="settings-tab" onclick="switchTab('agent')">Agent</div>
-        <div class="settings-tab" onclick="switchTab('git')">Git</div>
-        <div class="settings-tab" onclick="switchTab('keyboard')">Keyboard</div>
+        <div class="settings-tab active" onclick="switchTab('general', event)">General</div>
+        <div class="settings-tab" onclick="switchTab('agent', event)">Agent</div>
+        <div class="settings-tab" onclick="switchTab('git', event)">Git</div>
+        <div class="settings-tab" onclick="switchTab('keyboard', event)">Keyboard</div>
       </div>
       <div id="settings-general">
         <div class="settings-row">
@@ -271,7 +271,14 @@
         const item = document.createElement('div');
         item.className = 'worktree-item';
         item.onclick = () => selectWorktree(item, name);
-        item.innerHTML = `<span class="worktree-name">${name}</span><span class="worktree-meta">idle</span>`;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'worktree-name';
+        nameSpan.textContent = name;
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'worktree-meta';
+        metaSpan.textContent = 'idle';
+        item.appendChild(nameSpan);
+        item.appendChild(metaSpan);
         list.appendChild(item);
       }
     }
@@ -306,9 +313,12 @@
       document.getElementById('settings-modal').classList.remove('visible');
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, ev) {
       document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
+      if (ev && ev.target) ev.target.classList.add('active');
+      document.querySelectorAll('[id^="settings-"]').forEach(p => p.style.display = 'none');
+      const panel = document.getElementById('settings-' + tab);
+      if (panel) panel.style.display = '';
     }
 
     function updateTerminalCount() {

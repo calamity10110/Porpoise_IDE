@@ -1,10 +1,16 @@
 use std::path::{Path, PathBuf};
 
 use aes_gcm::{aead::{Aead, KeyInit}, Aes256Gcm, Nonce};
+use fs2::FileExt;
 use porpoise_core::error::{PorpoiseError, Result};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
 use zeroize::Zeroize;
+
+fn kdf_iterations() -> u32 {
+    if cfg!(debug_assertions) { 1_000 } else { 600_000 }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CredentialEntry {
@@ -33,19 +39,39 @@ impl CredentialStore {
         std::fs::create_dir_all(data_dir)
             .map_err(|e| PorpoiseError::Config(format!("create cred dir: {e}")))?;
 
-        let mut key = [0u8; 32];
-        let key_len = master_key.len().min(32);
-        key[..key_len].copy_from_slice(&master_key[..key_len]);
-        if key_len < 32 {
-            for i in key_len..32 {
-                key[i] = master_key[(i - key_len) % key_len];
-            }
-        }
+        let vault_path = data_dir.join("credentials.json");
 
-        Ok(Self {
-            vault_path: data_dir.join("credentials.json"),
-            key,
-        })
+        let salt = if vault_path.exists() {
+            let mut file = std::fs::File::open(&vault_path)
+                .map_err(|e| PorpoiseError::Config(format!("open vault for salt: {e}")))?;
+            file.try_lock_shared()
+                .map_err(|e| PorpoiseError::Config(format!("lock vault: {e}")))?;
+            let mut content = String::new();
+            std::io::Read::read_to_string(&mut file, &mut content)
+                .map_err(|e| PorpoiseError::Config(format!("read vault: {e}")))?;
+            let vault: CredentialVault = serde_json::from_str(&content)
+                .map_err(|e| PorpoiseError::Config(format!("parse vault: {e}")))?;
+            file.unlock().ok();
+            if vault.key_salt.is_empty() {
+                vec![]
+            } else {
+                vault.key_salt
+            }
+        } else {
+            let mut salt = vec![0u8; 32];
+            rand::thread_rng().fill_bytes(&mut salt);
+            let empty_vault = CredentialVault { entries: Vec::new(), key_salt: salt.clone() };
+            let json = serde_json::to_string_pretty(&empty_vault)
+                .map_err(|e| PorpoiseError::Config(format!("serialize: {e}")))?;
+            std::fs::write(&vault_path, json)
+                .map_err(|e| PorpoiseError::Config(format!("write vault: {e}")))?;
+            salt
+        };
+
+        let mut key = [0u8; 32];
+        pbkdf2::pbkdf2_hmac::<Sha256>(master_key, &salt, kdf_iterations(), &mut key);
+
+        Ok(Self { vault_path, key })
     }
 
     pub fn store(&mut self, name: &str, cred_type: &str, value: &str) -> Result<String> {
@@ -148,17 +174,36 @@ impl CredentialStore {
                 key_salt: vec![],
             });
         }
-        let content = std::fs::read_to_string(&self.vault_path)
+        let mut file = std::fs::File::open(&self.vault_path)
+            .map_err(|e| PorpoiseError::Config(format!("open vault: {e}")))?;
+        file.lock_shared()
+            .map_err(|e| PorpoiseError::Config(format!("lock vault: {e}")))?;
+        let mut content = String::new();
+        std::io::Read::read_to_string(&mut file, &mut content)
             .map_err(|e| PorpoiseError::Config(format!("read vault: {e}")))?;
-        serde_json::from_str(&content)
-            .map_err(|e| PorpoiseError::Config(format!("parse vault: {e}")))
+        let vault: CredentialVault = serde_json::from_str(&content)
+            .map_err(|e| PorpoiseError::Config(format!("parse vault: {e}")))?;
+        file.unlock().ok();
+        Ok(vault)
     }
 
     fn save_vault(&self, vault: &CredentialVault) -> Result<()> {
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&self.vault_path)
+            .map_err(|e| PorpoiseError::Config(format!("open vault for write: {e}")))?;
+        file.lock_exclusive()
+            .map_err(|e| PorpoiseError::Config(format!("lock vault exclusive: {e}")))?;
         let json = serde_json::to_string_pretty(vault)
             .map_err(|e| PorpoiseError::Config(format!("serialize vault: {e}")))?;
-        std::fs::write(&self.vault_path, json)
+        std::io::Write::write_all(&mut file, json.as_bytes())
             .map_err(|e| PorpoiseError::Config(format!("write vault: {e}")))?;
+        file.sync_all()
+            .map_err(|e| PorpoiseError::Config(format!("sync vault: {e}")))?;
+        file.unlock().ok();
         Ok(())
     }
 }

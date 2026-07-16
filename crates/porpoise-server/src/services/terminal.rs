@@ -4,9 +4,25 @@ use porpoise_core::{
 };
 use porpoise_runtime::PtyManager;
 
-pub async fn handle_create_pty(pty: &PtyManager, rows: u16, cols: u16, shell: &str) -> Result<serde_json::Value> {
+pub async fn handle_create_pty(
+    pty: &PtyManager,
+    rows: u16,
+    cols: u16,
+    shell: &str,
+    worktree_id: Option<&str>,
+) -> Result<serde_json::Value> {
     let id = pty.alloc(rows, cols, shell).await?;
-    Ok(serde_json::json!({ "id": id.to_string(), "status": "created" }))
+    Ok(serde_json::json!({
+        "id": id.to_string(),
+        "status": "created",
+        "worktree_id": worktree_id,
+        "rows": rows,
+        "cols": cols
+    }))
+}
+
+pub async fn handle_list_terminals(_pty: &PtyManager) -> Result<serde_json::Value> {
+    Ok(serde_json::json!({ "terminals": [], "status": "list_requires_session_tracking" }))
 }
 
 pub async fn handle_send_pty(pty: &PtyManager, id_str: &str, data: &str) -> Result<serde_json::Value> {

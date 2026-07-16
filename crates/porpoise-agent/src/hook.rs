@@ -8,11 +8,12 @@ use porpoise_core::{
 
 pub struct HookServer {
     event_bus: EventBus,
+    agent_id: AgentId,
 }
 
 impl HookServer {
-    pub fn new(event_bus: EventBus) -> Self {
-        Self { event_bus }
+    pub fn new(event_bus: EventBus, agent_id: AgentId) -> Self {
+        Self { event_bus, agent_id }
     }
 
     pub fn process_output(&self, text: &str) {
@@ -22,7 +23,7 @@ impl HookServer {
             OutputKind::Text
         };
         self.event_bus.publish(SystemEvent::Agent(AgentEvent::Output {
-            id: AgentId::new(),
+            id: self.agent_id,
             text: text.to_string(),
             kind,
         }));

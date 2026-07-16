@@ -13,3 +13,12 @@ pub async fn handle_open(url: &str) -> Result<serde_json::Value> {
         Err(e) => Ok(serde_json::json!({ "status": "error", "message": e.to_string() })),
     }
 }
+
+pub async fn handle_snapshot(url: &str) -> Result<serde_json::Value> {
+    Ok(serde_json::json!({
+        "url": url,
+        "html": "",
+        "status": "snapshot_unavailable",
+        "message": "Browser snapshot requires platform-specific WebView implementation"
+    }))
+}
