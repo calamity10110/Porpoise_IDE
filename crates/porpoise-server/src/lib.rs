@@ -12,7 +12,7 @@ use porpoise_core::{
     types::event::{AgentEvent, NotificationSeverity, SystemEvent, TerminalEvent},
 };
 use porpoise_db::DbPool;
-use porpoise_relay::{RelayServer, Router};
+use porpoise_relay::{auth::SessionTokenStore, RelayServer, Router};
 use porpoise_runtime::PtyManager;
 use tokio::sync::broadcast;
 
@@ -26,6 +26,7 @@ pub struct Daemon {
     pub agent_pool: Arc<AgentPool>,
     pub start_time: DateTime<Utc>,
     pub notification_service: Arc<NotificationService>,
+    session_token: String,
     pidfile_path: Option<PathBuf>,
 }
 
@@ -38,11 +39,15 @@ impl Daemon {
 
         let notification_service = Arc::new(NotificationService::new(db.clone()));
 
-        let socket_path = config
+        let data_dir = config
             .core
             .data_dir
-            .unwrap_or_else(std::env::temp_dir)
-            .join("porpoise.sock");
+            .clone()
+            .unwrap_or_else(std::env::temp_dir);
+        let socket_path = data_dir.join("porpoise.sock");
+
+        let token_store = SessionTokenStore::create(&data_dir)?;
+        let session_token = token_store.token.clone();
 
         let agent_pool = Arc::new(AgentPool::new(config.agent.max_concurrent_agents as usize));
 
@@ -51,6 +56,7 @@ impl Daemon {
             db,
             socket_path,
             agent_pool,
+            session_token,
             start_time: Utc::now(),
             server: None,
             notification_service,
@@ -70,7 +76,7 @@ impl Daemon {
             self.state.clone(),
         );
         let router = Arc::new(router);
-        let server = RelayServer::bind(&self.socket_path, router).await?;
+        let server = RelayServer::bind(&self.socket_path, router, self.session_token.clone()).await?;
         tracing::info!("porpoise-server listening on {}", self.socket_path.display());
         self.server = Some(server);
 

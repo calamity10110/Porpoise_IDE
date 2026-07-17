@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use porpoise_core::error::{PorpoiseError, Result};
 use wasmtime::{Engine, Module};
 
+use crate::sandbox::validate_imports;
+
 /// Compiles a WAT (WebAssembly Text) source to WASM binary using wasmtime.
 pub fn compile_wat_to_binary(wat_source: &str) -> Result<Vec<u8>> {
     let engine = Engine::default();
@@ -86,6 +88,10 @@ impl CompilationPipeline {
     pub fn compile_from_wasm(&self, skill_id: &str, wasm_bytes: &[u8]) -> Result<CompiledSkill> {
         let module = Module::from_binary(&self.engine, wasm_bytes)
             .map_err(|e| PorpoiseError::Wasm(format!("compile '{skill_id}': {e}")))?;
+
+        // Reject modules with imports at compile time (fail fast)
+        validate_imports(&module)?;
+
         let exports: Vec<String> = module.exports().map(|e| e.name().to_string()).collect();
         Ok(CompiledSkill {
             id: skill_id.to_string(),

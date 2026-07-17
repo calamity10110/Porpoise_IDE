@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     frame::{Frame, FrameFlags},
-    message::{Request, WireMessage},
+    message::{Handshake, Request, WireMessage},
 };
 
 #[cfg(unix)]
@@ -29,6 +29,35 @@ pub struct RelayClient {
 impl RelayClient {
     pub async fn connect(path: &std::path::Path) -> Result<Self> {
         let transport = Self::connect_with_retry(path, false).await?;
+        Ok(Self {
+            socket_path: path.to_path_buf(),
+            transport: Mutex::new(transport),
+        })
+    }
+
+    pub async fn connect_with_auth(path: &std::path::Path, token: &str) -> Result<Self> {
+        let mut transport = Self::connect_with_retry(path, false).await?;
+
+        // Read server's handshake first (server sends it on accept)
+        let _frame = transport
+            .receive()
+            .await
+            .map_err(|e| PorpoiseError::Ipc(format!("read handshake: {e}")))?;
+
+        // Respond with our handshake containing the auth token
+        let auth_hs = WireMessage::Handshake(Handshake {
+            version: crate::frame::PROTOCOL_VERSION,
+            min_version: crate::frame::MIN_PROTOCOL_VERSION,
+            server_name: "porpoise-cli".into(),
+            session_token: Some(token.to_string()),
+            peer_pid: std::process::id(),
+        });
+        let payload = serde_json::to_vec(&auth_hs)
+            .map_err(|e| PorpoiseError::Ipc(format!("serialize auth: {e}")))?;
+        transport
+            .send(&Frame::new(FrameFlags::EVENT, payload))
+            .await?;
+
         Ok(Self {
             socket_path: path.to_path_buf(),
             transport: Mutex::new(transport),

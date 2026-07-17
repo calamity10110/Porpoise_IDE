@@ -4,6 +4,29 @@ use porpoise_core::{
 };
 use wasmtime::{Engine, Linker, Module, Store};
 
+/// Validate WASM module imports against allowed capabilities.
+///
+/// Currently denies ALL imports (secure by omission).
+/// Returns `Ok` only if the module has zero imports.
+/// In future, this will check each import against the granted capability set.
+pub fn validate_imports(module: &Module) -> Result<()> {
+    for import in module.imports() {
+        return Err(PorpoiseError::WasmImportDenied {
+            module: import.module().to_string(),
+            import: import.name().to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Build a `Linker` with capability-gated host functions.
+///
+/// Currently returns an empty linker (no host functions).
+/// In future, host functions will be added based on `Capabilities` fields.
+pub fn build_capability_linker(engine: &Engine, _capabilities: &Capabilities) -> Linker<()> {
+    Linker::new(engine)
+}
+
 /// Sandboxed WASM runtime that enforces capability-based permissions.
 ///
 /// Each sandboxed instance is created with a set of `Capabilities`. The
@@ -35,14 +58,16 @@ impl SandboxedRuntime {
     pub fn instantiate(&self, wasm_bytes: &[u8], capabilities: &Capabilities, fuel: u64) -> Result<SandboxedInstance> {
         let module = Module::new(&self.engine, wasm_bytes).map_err(|e| PorpoiseError::Wasm(format!("compile: {e}")))?;
 
+        // Validate imports before instantiation (fail fast)
+        validate_imports(&module)?;
+
         let mut store = Store::new(&self.engine, ());
         store
             .set_fuel(fuel)
             .map_err(|e| PorpoiseError::Wasm(format!("fuel: {e}")))?;
 
-        // Create a linker with no default host functions — capabilities
-        // explicitly whitelist what's available.
-        let linker: Linker<()> = Linker::new(&self.engine);
+        // Build a linker gated on the granted capabilities
+        let linker = build_capability_linker(&self.engine, capabilities);
 
         let instance = linker
             .instantiate(&mut store, &module)
@@ -117,5 +142,34 @@ impl SandboxedInstance {
             });
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasmtime::Engine;
+
+    #[test]
+    fn test_no_imports_succeeds() {
+        let engine = Engine::default();
+        let wat = r#"(module (func (export "run") (result i32) i32.const 42))"#;
+        let module = Module::new(&engine, wat).unwrap();
+        assert!(validate_imports(&module).is_ok());
+    }
+
+    #[test]
+    fn test_with_import_denied() {
+        let engine = Engine::default();
+        let wat = r#"(module (import "env" "log" (func (param i32))))"#;
+        let module = Module::new(&engine, wat).unwrap();
+        let err = validate_imports(&module).unwrap_err();
+        match err {
+            PorpoiseError::WasmImportDenied { ref module, ref import } => {
+                assert_eq!(module, "env");
+                assert_eq!(import, "log");
+            }
+            _ => panic!("expected WasmImportDenied"),
+        }
     }
 }

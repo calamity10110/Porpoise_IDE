@@ -23,11 +23,12 @@ pub struct RelayServer {
     #[cfg(windows)]
     listener: NamedPipeListener,
     _socket_path: PathBuf,
+    session_token: String,
 }
 
 impl RelayServer {
     #[cfg(unix)]
-    pub async fn bind(path: &std::path::Path, router: Arc<Router>) -> Result<Self> {
+    pub async fn bind(path: &std::path::Path, router: Arc<Router>, session_token: String) -> Result<Self> {
         if path.exists() {
             tokio::fs::remove_file(path).await.ok();
         }
@@ -39,14 +40,14 @@ impl RelayServer {
                 .await
                 .map_err(|e| PorpoiseError::Ipc(format!("perms: {e}")))?;
         }
-        Ok(Self { listener, router, _socket_path: path.clone() })
+        Ok(Self { listener, router, _socket_path: path.clone(), session_token })
     }
 
     #[cfg(windows)]
-    pub async fn bind(path: &std::path::Path, router: Arc<Router>) -> Result<Self> {
+    pub async fn bind(path: &std::path::Path, router: Arc<Router>, session_token: String) -> Result<Self> {
         let pipe_name = path.to_str().unwrap_or("porpoise");
         let listener = NamedPipeListener::bind(pipe_name);
-        Ok(Self { listener, router, _socket_path: path.to_path_buf() })
+        Ok(Self { listener, router, _socket_path: path.to_path_buf(), session_token })
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -58,11 +59,13 @@ impl RelayServer {
 
     #[cfg(unix)]
     async fn run_unix(&self) -> Result<()> {
+        let session_token = self.session_token.clone();
         loop {
             match self.listener.accept().await {
                 Ok((stream, _)) => {
                     let router = self.router.clone();
-                    tokio::spawn(async move { handle_unix(stream, router).await });
+                    let token = session_token.clone();
+                    tokio::spawn(async move { handle_unix(stream, router, token).await });
                 }
                 Err(e) => tracing::error!("accept: {e}"),
             }
@@ -72,21 +75,42 @@ impl RelayServer {
     #[cfg(windows)]
     async fn run_windows(&self) -> Result<()> {
         let router = self.router.clone();
+        let session_token = self.session_token.clone();
         self.listener
             .accept(move |transport| {
                 let router = router.clone();
-                async move { handle_windows(transport, router).await }
+                let token = session_token.clone();
+                async move { handle_windows(transport, router, token).await }
             })
             .await
     }
 }
 
 #[cfg(unix)]
-async fn handle_unix(mut stream: UnixStream, router: Arc<Router>) {
+async fn handle_unix(mut stream: UnixStream, router: Arc<Router>, session_token: String) {
     use porpoise_core::error::PorpoiseError;
     let handshake = WireMessage::Handshake(Handshake::new());
     if let Ok(payload) = serde_json::to_vec(&handshake) {
         let _ = write_frame_unix(&mut stream, &Frame::new(FrameFlags::EVENT, payload)).await;
+    }
+
+    // Validate client handshake with session token
+    match read_frame_unix(&mut stream).await {
+        Ok(frame) => {
+            if let Ok(WireMessage::Handshake(client_hs)) = serde_json::from_slice(&frame.payload) {
+                if client_hs.session_token.as_deref() != Some(session_token.as_str()) {
+                    tracing::warn!("auth rejected: invalid session token");
+                    return;
+                }
+            } else {
+                tracing::warn!("auth rejected: expected Handshake, got {:?}", frame.flags);
+                return;
+            }
+        }
+        Err(e) => {
+            tracing::warn!("auth rejected: read error: {e}");
+            return;
+        }
     }
 
     loop {
@@ -135,12 +159,31 @@ async fn write_frame_unix(stream: &mut UnixStream, frame: &Frame) -> Result<()> 
 }
 
 #[cfg(windows)]
-async fn handle_windows(transport: crate::transport::pipe::NamedPipeTransport, router: Arc<Router>) {
+async fn handle_windows(transport: crate::transport::pipe::NamedPipeTransport, router: Arc<Router>, session_token: String) {
     let mut stream = transport;
 
     let handshake = WireMessage::Handshake(Handshake::new());
     if let Ok(payload) = serde_json::to_vec(&handshake) {
         let _ = stream.send(&Frame::new(FrameFlags::EVENT, payload)).await;
+    }
+
+    // Validate client handshake with session token
+    match stream.receive().await {
+        Ok(frame) => {
+            if let Ok(WireMessage::Handshake(client_hs)) = serde_json::from_slice(&frame.payload) {
+                if client_hs.session_token.as_deref() != Some(session_token.as_str()) {
+                    tracing::warn!("auth rejected: invalid session token");
+                    return;
+                }
+            } else {
+                tracing::warn!("auth rejected: expected Handshake, got {:?}", frame.flags);
+                return;
+            }
+        }
+        Err(e) => {
+            tracing::warn!("auth rejected: read error: {e}");
+            return;
+        }
     }
 
     loop {

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use porpoise_agent::AgentPool;
 use porpoise_core::state::AppState;
+use porpoise_git::cache::GitStatusCache;
 use porpoise_relay::Router;
 use porpoise_runtime::PtyManager;
 
@@ -277,6 +278,9 @@ pub fn register_all(
         }),
     );
 
+    let status_cache = GitStatusCache::new();
+
+    let cache = status_cache.clone();
     router.register(
         "git_status",
         Arc::new(move |req, _| {
@@ -286,7 +290,8 @@ pub fn register_all(
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| ".".into());
-            Box::pin(async move { super::git::handle_status(&path).await })
+            let cache = cache.clone();
+            Box::pin(async move { super::git::handle_status(&path, &cache).await })
         }),
     );
 
@@ -309,6 +314,7 @@ pub fn register_all(
         }),
     );
 
+    let cache = status_cache.clone();
     router.register(
         "git_diff",
         Arc::new(move |req, _| {
@@ -319,10 +325,12 @@ pub fn register_all(
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| ".".into());
             let staged = req.params.get("staged").and_then(|v| v.as_bool()).unwrap_or(false);
-            Box::pin(async move { super::git::handle_diff(&path, staged).await })
+            let cache = cache.clone();
+            Box::pin(async move { super::git::handle_diff(&path, staged, &cache).await })
         }),
     );
 
+    let cache = status_cache.clone();
     router.register(
         "git_log",
         Arc::new(move |req, _| {
@@ -333,10 +341,12 @@ pub fn register_all(
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| ".".into());
             let count = req.params.get("count").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
-            Box::pin(async move { super::git::handle_log(&path, count).await })
+            let cache = cache.clone();
+            Box::pin(async move { super::git::handle_log(&path, count, &cache).await })
         }),
     );
 
+    let cache = status_cache.clone();
     router.register(
         "git_branch",
         Arc::new(move |req, _| {
@@ -358,11 +368,12 @@ pub fn register_all(
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
                 .unwrap_or_default();
+            let cache = cache.clone();
             Box::pin(async move {
                 match action.as_str() {
                     "create" => super::git::handle_branch_create(&path, &name).await,
                     "checkout" => super::git::handle_branch_checkout(&path, &name).await,
-                    _ => super::git::handle_branch_list(&path).await,
+                    _ => super::git::handle_branch_list(&path, &cache).await,
                 }
             })
         }),
