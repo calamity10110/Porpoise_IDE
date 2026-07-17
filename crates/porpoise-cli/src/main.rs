@@ -11,6 +11,23 @@ mod output;
 async fn main() {
     let cli = app::Cli::parse();
 
+    // Initialize tracing based on verbosity flags
+    let filter = if cli.debug {
+        "debug"
+    } else if cli.verbose {
+        "porpoise=debug,info"
+    } else {
+        "warn"
+    };
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(filter));
+    tracing_subscriber::fmt()
+        .with_env_filter(env_filter)
+        .with_target(false)
+        .init();
+
+    tracing::debug!("CLI started");
+
     let format = if cli.json {
         output::OutputFormat::JsonPretty
     } else {

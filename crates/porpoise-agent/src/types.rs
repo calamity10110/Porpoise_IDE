@@ -39,6 +39,7 @@ pub struct AgentInfo {
     pub pid: Option<u32>,
     pub status: AgentStatus,
     pub worktree_path: Option<PathBuf>,
+    pub last_used_at: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

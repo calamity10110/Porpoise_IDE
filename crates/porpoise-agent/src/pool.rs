@@ -60,6 +60,7 @@ impl AgentPool {
             pid,
             status: AgentStatus::Running,
             worktree_path: Some(worktree.to_path_buf()),
+            last_used_at: None,
         };
         self.agents.write().await.insert(
             id,

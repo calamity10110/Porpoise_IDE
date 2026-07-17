@@ -14,6 +14,10 @@ pub struct Handshake {
     pub version: u8,
     pub min_version: u8,
     pub server_name: String,
+    #[serde(default)]
+    pub session_token: Option<String>,
+    #[serde(default)]
+    pub peer_pid: u32,
 }
 
 impl Default for Handshake {
@@ -28,6 +32,8 @@ impl Handshake {
             version: crate::frame::PROTOCOL_VERSION,
             min_version: crate::frame::PROTOCOL_VERSION,
             server_name: "porpoise-server".into(),
+            session_token: None,
+            peer_pid: 0,
         }
     }
 }

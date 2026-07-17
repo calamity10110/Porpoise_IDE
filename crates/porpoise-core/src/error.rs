@@ -73,6 +73,10 @@ pub enum PorpoiseError {
     IpcConnectionRefused,
     #[error("protocol version mismatch: server={server} client={client}")]
     IpcVersionMismatch { server: u8, client: u8 },
+    #[error("IPC authentication failed: {0}")]
+    IpcAuthFailed(String),
+    #[error("IPC session expired")]
+    IpcSessionExpired,
 
     // Terminal
     #[error("terminal error: {0}")]
@@ -89,6 +93,8 @@ pub enum PorpoiseError {
     Wasm(String),
     #[error("plugin {id} denied capability: {capability}")]
     PluginCapabilityDenied { id: String, capability: String },
+    #[error("WASM module {module} denied import: {import}")]
+    WasmImportDenied { module: String, import: String },
 
     // Validation
     #[error("invalid ID format for {type_name}: {value}")]

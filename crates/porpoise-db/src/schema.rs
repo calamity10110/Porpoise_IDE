@@ -74,6 +74,45 @@ CREATE TABLE IF NOT EXISTS event_log (
     timestamp   TEXT NOT NULL DEFAULT (datetime('now'))
 );";
 
+pub const CREATE_NOTIFICATIONS: &str = "
+CREATE TABLE IF NOT EXISTS notifications (
+    id          TEXT PRIMARY KEY,
+    agent_id    TEXT,
+    level       TEXT NOT NULL DEFAULT 'info',
+    title       TEXT NOT NULL,
+    message     TEXT,
+    source      TEXT,
+    read        INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL
+);";
+
+pub const CREATE_SCROLLBACK: &str = "
+CREATE TABLE IF NOT EXISTS scrollback (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    terminal_id TEXT NOT NULL,
+    text        TEXT NOT NULL,
+    is_osc      INTEGER NOT NULL DEFAULT 0,
+    timestamp   INTEGER NOT NULL,
+    generation_id TEXT
+);";
+
+pub const CREATE_AGENT_SESSIONS: &str = "
+CREATE TABLE IF NOT EXISTS agent_sessions (
+    session_id  TEXT PRIMARY KEY,
+    agent_id    TEXT,
+    worktree_id TEXT,
+    status      TEXT NOT NULL DEFAULT 'active',
+    started_at  INTEGER,
+    ended_at    INTEGER,
+    generation_id TEXT
+);";
+
+pub const CREATE_SERVER_METADATA: &str = "
+CREATE TABLE IF NOT EXISTS server_metadata (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL
+);";
+
 pub const CREATE_INDEXES: &[&str] = &[
     "CREATE INDEX IF NOT EXISTS idx_sessions_worktree ON sessions(worktree_id);",
     "CREATE INDEX IF NOT EXISTS idx_terminals_session ON terminals(session_id);",
@@ -82,6 +121,10 @@ pub const CREATE_INDEXES: &[&str] = &[
     "CREATE INDEX IF NOT EXISTS idx_agents_worktree ON agents(worktree_id);",
     "CREATE INDEX IF NOT EXISTS idx_event_log_type ON event_log(event_type);",
     "CREATE INDEX IF NOT EXISTS idx_event_log_time ON event_log(timestamp);",
+    "CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);",
+    "CREATE INDEX IF NOT EXISTS idx_scrollback_terminal ON scrollback(terminal_id);",
+    "CREATE INDEX IF NOT EXISTS idx_scrollback_generation ON scrollback(generation_id);",
+    "CREATE INDEX IF NOT EXISTS idx_agent_sessions_agent ON agent_sessions(agent_id);",
 ];
 
 pub const ALL_TABLES: &[&str] = &[
@@ -93,4 +136,8 @@ pub const ALL_TABLES: &[&str] = &[
     CREATE_AGENTS,
     CREATE_CONFIG,
     CREATE_EVENT_LOG,
+    CREATE_NOTIFICATIONS,
+    CREATE_SCROLLBACK,
+    CREATE_AGENT_SESSIONS,
+    CREATE_SERVER_METADATA,
 ];
