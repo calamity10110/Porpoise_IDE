@@ -2,7 +2,9 @@ use std::{path::PathBuf, time::Duration};
 
 use porpoise_core::error::{PorpoiseError, Result};
 use tokio::sync::Mutex;
+use tokio::sync::watch;
 
+use crate::auth::ConnectionState;
 use crate::{
     frame::{Frame, FrameFlags},
     message::{Handshake, Request, WireMessage},
@@ -24,19 +26,25 @@ type InnerTransport = NamedPipeTransport;
 pub struct RelayClient {
     socket_path: PathBuf,
     transport: Mutex<InnerTransport>,
+    connection_state: watch::Sender<ConnectionState>,
 }
 
 impl RelayClient {
     pub async fn connect(path: &std::path::Path) -> Result<Self> {
+        let (tx, _) = watch::channel(ConnectionState::Disconnected);
         let transport = Self::connect_with_retry(path, false).await?;
+        tx.send(ConnectionState::Connected).ok();
         Ok(Self {
             socket_path: path.to_path_buf(),
             transport: Mutex::new(transport),
+            connection_state: tx,
         })
     }
 
     pub async fn connect_with_auth(path: &std::path::Path, token: &str) -> Result<Self> {
+        let (tx, _) = watch::channel(ConnectionState::Disconnected);
         let mut transport = Self::connect_with_retry(path, false).await?;
+        tx.send(ConnectionState::Connected).ok();
 
         // Read server's handshake first (server sends it on accept)
         let _frame = transport
@@ -61,7 +69,12 @@ impl RelayClient {
         Ok(Self {
             socket_path: path.to_path_buf(),
             transport: Mutex::new(transport),
+            connection_state: tx,
         })
+    }
+
+    pub fn subscribe_state(&self) -> watch::Receiver<ConnectionState> {
+        self.connection_state.subscribe()
     }
 
     async fn connect_with_retry(path: &std::path::Path, retry: bool) -> Result<InnerTransport> {
