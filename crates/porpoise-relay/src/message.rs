@@ -30,7 +30,7 @@ impl Handshake {
     pub fn new() -> Self {
         Self {
             version: crate::frame::PROTOCOL_VERSION,
-            min_version: crate::frame::PROTOCOL_VERSION,
+            min_version: crate::frame::MIN_PROTOCOL_VERSION,
             server_name: "porpoise-server".into(),
             session_token: None,
             peer_pid: 0,

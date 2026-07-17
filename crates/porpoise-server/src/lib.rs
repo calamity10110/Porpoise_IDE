@@ -36,17 +36,7 @@ impl Daemon {
         let db = DbPool::open(&db_path)?;
         porpoise_db::migration::run_migrations(&db)?;
 
-        let data_dir = config
-            .core
-            .data_dir
-            .clone()
-            .or_else(|| AppConfig::default_data_dir().ok())
-            .unwrap_or_else(std::env::temp_dir);
-        std::fs::create_dir_all(&data_dir)
-            .map_err(|e| PorpoiseError::Internal(format!("create notification data dir: {e}")))?;
-        let notif_db_path = data_dir.join("notifications.db");
-        let notification_service = Arc::new(NotificationService::open(&notif_db_path)?);
-        tracing::info!(path = %notif_db_path.display(), "notification service opened");
+        let notification_service = Arc::new(NotificationService::new(db.clone()));
 
         let socket_path = config
             .core

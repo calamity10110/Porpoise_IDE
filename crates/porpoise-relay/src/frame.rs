@@ -3,6 +3,7 @@ use porpoise_core::error::{PorpoiseError, Result};
 
 pub const PROTOCOL_MAGIC: [u8; 2] = [0x50, 0x50];
 pub const PROTOCOL_VERSION: u8 = 0x01;
+pub const MIN_PROTOCOL_VERSION: u8 = 0x01;
 pub const HEADER_SIZE: usize = 8;
 
 bitflags! {
@@ -51,9 +52,10 @@ impl Frame {
             return Err(PorpoiseError::Ipc("bad magic".into()));
         }
         let version = data[2];
-        if version != PROTOCOL_VERSION {
+        if version < MIN_PROTOCOL_VERSION || version > PROTOCOL_VERSION {
             return Err(PorpoiseError::IpcVersionMismatch {
-                server: PROTOCOL_VERSION,
+                server_min: MIN_PROTOCOL_VERSION,
+                server_max: PROTOCOL_VERSION,
                 client: version,
             });
         }
@@ -79,5 +81,24 @@ mod tests {
         let d = Frame::decode(&f.encode().unwrap()).unwrap();
         assert_eq!(d.flags, FrameFlags::REQUEST);
         assert_eq!(d.payload, b"hi");
+    }
+
+    #[test]
+    fn test_version_below_min_rejected() {
+        let buf = vec![PROTOCOL_MAGIC[0], PROTOCOL_MAGIC[1], 0x00, 0x00, 0, 0, 0, 0];
+        assert!(Frame::decode(&buf).is_err());
+    }
+
+    #[test]
+    fn test_version_current_accepted() {
+        let f = Frame::new(FrameFlags::REQUEST, b"hi".to_vec());
+        let encoded = f.encode().unwrap();
+        assert!(Frame::decode(&encoded).is_ok());
+    }
+
+    #[test]
+    fn test_version_above_max_rejected() {
+        let buf = vec![PROTOCOL_MAGIC[0], PROTOCOL_MAGIC[1], 0x02, 0x00, 0, 0, 0, 0];
+        assert!(Frame::decode(&buf).is_err());
     }
 }

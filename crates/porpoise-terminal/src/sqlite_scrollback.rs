@@ -1,7 +1,6 @@
-use std::path::Path;
-
 use porpoise_core::error::{PorpoiseError, Result};
-use rusqlite::{Connection, params};
+use porpoise_db::DbPool;
+use rusqlite::params;
 
 use crate::types::OutputLine;
 
@@ -11,43 +10,33 @@ use crate::types::OutputLine;
 /// Each row contains the terminal ID, line text, OSC flag, and timestamp.
 /// Provides batched writes and efficient range queries by timestamp.
 pub struct SqliteScrollbackStore {
-    conn: Connection,
+    db: DbPool,
 }
 
 impl SqliteScrollbackStore {
-    pub fn open(db_path: &Path) -> Result<Self> {
-        let conn =
-            Connection::open(db_path).map_err(|e| PorpoiseError::Terminal(format!("open scrollback db: {e}")))?;
-
-        conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS scrollback (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                terminal_id TEXT NOT NULL,
-                text        TEXT NOT NULL,
-                is_osc      INTEGER NOT NULL DEFAULT 0,
-                timestamp   INTEGER NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_scrollback_terminal ON scrollback(terminal_id);
-            CREATE INDEX IF NOT EXISTS idx_scrollback_time ON scrollback(timestamp);",
-        )
-        .map_err(|e| PorpoiseError::Terminal(format!("create scrollback table: {e}")))?;
-
-        Ok(Self { conn })
+    pub fn new(db: DbPool) -> Self {
+        Self { db }
     }
 
     pub fn store_line(&self, terminal_id: &str, line: &OutputLine) -> Result<()> {
-        self.conn
-            .execute(
-                "INSERT INTO scrollback (terminal_id, text, is_osc, timestamp) VALUES (?1, ?2, ?3, ?4)",
-                params![terminal_id, line.text, line.is_osc as i32, line.timestamp],
-            )
-            .map_err(|e| PorpoiseError::Terminal(format!("insert scrollback: {e}")))?;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Terminal(format!("db pool: {e}")))?;
+        conn.execute(
+            "INSERT INTO scrollback (terminal_id, text, is_osc, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![terminal_id, line.text, line.is_osc as i32, line.timestamp],
+        )
+        .map_err(|e| PorpoiseError::Terminal(format!("insert scrollback: {e}")))?;
         Ok(())
     }
 
     pub fn store_batch(&mut self, terminal_id: &str, lines: &[OutputLine]) -> Result<()> {
-        let tx = self
-            .conn
+        let mut conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Terminal(format!("db pool: {e}")))?;
+        let tx = conn
             .transaction()
             .map_err(|e| PorpoiseError::Terminal(format!("begin tx: {e}")))?;
 
@@ -65,8 +54,11 @@ impl SqliteScrollbackStore {
     }
 
     pub fn load(&self, terminal_id: &str, limit: usize) -> Result<Vec<OutputLine>> {
-        let mut stmt = self
-            .conn
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Terminal(format!("db pool: {e}")))?;
+        let mut stmt = conn
             .prepare(
                 "SELECT text, is_osc, timestamp FROM scrollback WHERE terminal_id = ?1 ORDER BY timestamp DESC LIMIT ?2",
             )
@@ -88,15 +80,21 @@ impl SqliteScrollbackStore {
     }
 
     pub fn clear(&self, terminal_id: &str) -> Result<()> {
-        self.conn
-            .execute("DELETE FROM scrollback WHERE terminal_id = ?1", params![terminal_id])
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Terminal(format!("db pool: {e}")))?;
+        conn.execute("DELETE FROM scrollback WHERE terminal_id = ?1", params![terminal_id])
             .map_err(|e| PorpoiseError::Terminal(format!("clear: {e}")))?;
         Ok(())
     }
 
     pub fn line_count(&self, terminal_id: &str) -> Result<usize> {
-        let count: i64 = self
-            .conn
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Terminal(format!("db pool: {e}")))?;
+        let count: i64 = conn
             .query_row(
                 "SELECT COUNT(*) FROM scrollback WHERE terminal_id = ?1",
                 params![terminal_id],
@@ -107,8 +105,11 @@ impl SqliteScrollbackStore {
     }
 
     pub fn prune(&self, terminal_id: &str, keep_count: usize) -> Result<usize> {
-        let deleted = self
-            .conn
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Terminal(format!("db pool: {e}")))?;
+        let deleted = conn
             .execute(
                 "DELETE FROM scrollback WHERE terminal_id = ?1 AND id NOT IN (
                     SELECT id FROM scrollback WHERE terminal_id = ?1
@@ -123,14 +124,21 @@ impl SqliteScrollbackStore {
 
 #[cfg(test)]
 mod tests {
+    use porpoise_db::DbPool;
     use tempfile::TempDir;
 
     use super::*;
 
+    fn make_store() -> (SqliteScrollbackStore, TempDir) {
+        let dir = TempDir::new().unwrap();
+        let db = DbPool::open(&dir.path().join("test.db")).unwrap();
+        porpoise_db::migration::run_migrations(&db).unwrap();
+        (SqliteScrollbackStore::new(db), dir)
+    }
+
     #[test]
     fn test_store_and_load() {
-        let dir = TempDir::new().unwrap();
-        let mut store = SqliteScrollbackStore::open(&dir.path().join("test.db")).unwrap();
+        let (mut store, _dir) = make_store();
 
         let line1 = OutputLine {
             text: "hello".into(),
@@ -152,8 +160,7 @@ mod tests {
 
     #[test]
     fn test_clear_and_count() {
-        let dir = TempDir::new().unwrap();
-        let store = SqliteScrollbackStore::open(&dir.path().join("test.db")).unwrap();
+        let (store, _dir) = make_store();
 
         store
             .store_line(
@@ -172,8 +179,7 @@ mod tests {
 
     #[test]
     fn test_prune() {
-        let dir = TempDir::new().unwrap();
-        let store = SqliteScrollbackStore::open(&dir.path().join("test.db")).unwrap();
+        let (store, _dir) = make_store();
 
         for i in 0..100 {
             store

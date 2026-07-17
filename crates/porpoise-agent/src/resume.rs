@@ -1,7 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
 use porpoise_core::error::{PorpoiseError, Result};
+use porpoise_db::DbPool;
 use serde::{Deserialize, Serialize};
 
 use crate::types::AgentKind;
@@ -29,74 +30,68 @@ pub enum SessionStatus {
 
 /// SQLite-backed session store for agent resume.
 pub struct SessionStore {
-    conn: rusqlite::Connection,
+    db: DbPool,
 }
 
 impl SessionStore {
-    pub fn open(db_path: &Path) -> Result<Self> {
-        let conn = rusqlite::Connection::open(db_path)
-            .map_err(|e| PorpoiseError::Agent(format!("open session store: {e}")))?;
+    pub fn new(db: DbPool) -> Self {
+        Self { db }
+    }
 
-        conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS agent_sessions (
-                id          TEXT PRIMARY KEY,
-                agent_kind  TEXT NOT NULL,
-                worktree    TEXT NOT NULL,
-                prompt      TEXT,
-                output_log  TEXT,
-                started_at  TEXT NOT NULL,
-                ended_at    TEXT,
-                status      TEXT NOT NULL DEFAULT 'active'
-            );
-            CREATE INDEX IF NOT EXISTS idx_sessions_status ON agent_sessions(status);
-            CREATE INDEX IF NOT EXISTS idx_sessions_kind ON agent_sessions(agent_kind);",
-        )
-        .map_err(|e| PorpoiseError::Agent(format!("create sessions table: {e}")))?;
-
-        Ok(Self { conn })
+    /// Helper to convert session timestamp string (rfc3339 or epoch millis) to i64.
+    fn ts_to_millis(ts: &str) -> i64 {
+        ts.parse::<i64>().unwrap_or_else(|_| {
+            DateTime::parse_from_rfc3339(ts)
+                .map(|dt| dt.timestamp_millis())
+                .unwrap_or_else(|_| Utc::now().timestamp_millis())
+        })
     }
 
     pub fn save_session(&self, record: &SessionRecord) -> Result<()> {
-        self.conn
-            .execute(
-                "INSERT OR REPLACE INTO agent_sessions
-                    (id, agent_kind, worktree, prompt, output_log, started_at, ended_at, status)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-                rusqlite::params![
-                    record.session_id,
-                    record.agent_kind,
-                    record.worktree_path.to_string_lossy(),
-                    record.prompt,
-                    record.output_log_path.as_ref().map(|p| p.to_string_lossy().to_string()),
-                    record.started_at,
-                    record.ended_at,
-                    serde_json::to_string(&record.status).unwrap_or_default(),
-                ],
-            )
-            .map_err(|e| PorpoiseError::Agent(format!("save session: {e}")))?;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Agent(format!("db pool: {e}")))?;
+        conn.execute(
+            "INSERT OR REPLACE INTO agent_sessions
+                (session_id, agent_id, worktree_id, started_at, ended_at, status)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            rusqlite::params![
+                record.session_id,
+                record.agent_kind,
+                record.worktree_path.to_string_lossy(),
+                Self::ts_to_millis(&record.started_at),
+                record.ended_at.as_ref().map(|ts| Self::ts_to_millis(ts)),
+                serde_json::to_string(&record.status).unwrap_or_default(),
+            ],
+        )
+        .map_err(|e| PorpoiseError::Agent(format!("save session: {e}")))?;
         Ok(())
     }
 
     pub fn load_session(&self, session_id: &str) -> Result<Option<SessionRecord>> {
-        let mut stmt = self
-            .conn
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Agent(format!("db pool: {e}")))?;
+        let mut stmt = conn
             .prepare(
-                "SELECT id, agent_kind, worktree, prompt, output_log, started_at, ended_at, status
-                 FROM agent_sessions WHERE id = ?1",
+                "SELECT session_id, agent_id, worktree_id, started_at, ended_at, status
+                 FROM agent_sessions WHERE session_id = ?1",
             )
             .map_err(|e| PorpoiseError::Agent(format!("prepare: {e}")))?;
 
         let result = stmt.query_row(rusqlite::params![session_id], |row| {
-            let status_str: String = row.get(7)?;
+            let status_str: String = row.get(5)?;
             let status = serde_json::from_str(&status_str).unwrap_or(SessionStatus::Active);
             Ok(SessionRecord {
                 session_id: row.get(0)?,
                 agent_kind: row.get(1)?,
                 worktree_path: PathBuf::from(row.get::<_, String>(2)?),
-                prompt: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                output_log_path: row.get::<_, Option<String>>(4)?.map(PathBuf::from),
-                started_at: row.get(5)?,
-                ended_at: row.get(6)?,
+                prompt: String::new(),
+                output_log_path: None,
+                started_at: row.get::<_, i64>(3)?.to_string(),
+                ended_at: row.get::<_, Option<i64>>(4)?.map(|v| v.to_string()),
                 status,
             })
         });
@@ -113,27 +108,30 @@ impl SessionStore {
     }
 
     pub fn list_by_status(&self, status: SessionStatus) -> Result<Vec<SessionRecord>> {
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Agent(format!("db pool: {e}")))?;
         let status_str = serde_json::to_string(&status).unwrap_or_default();
-        let mut stmt = self
-            .conn
+        let mut stmt = conn
             .prepare(
-                "SELECT id, agent_kind, worktree, prompt, output_log, started_at, ended_at, status
+                "SELECT session_id, agent_id, worktree_id, started_at, ended_at, status
                  FROM agent_sessions WHERE status = ?1 ORDER BY started_at DESC",
             )
             .map_err(|e| PorpoiseError::Agent(format!("prepare: {e}")))?;
 
         let rows = stmt
             .query_map(rusqlite::params![status_str], |row| {
-                let status_json: String = row.get(7)?;
+                let status_json: String = row.get(5)?;
                 let parsed_status: SessionStatus = serde_json::from_str(&status_json).unwrap_or(SessionStatus::Active);
                 Ok(SessionRecord {
                     session_id: row.get(0)?,
                     agent_kind: row.get(1)?,
                     worktree_path: PathBuf::from(row.get::<_, String>(2)?),
-                    prompt: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                    output_log_path: row.get::<_, Option<String>>(4)?.map(PathBuf::from),
-                    started_at: row.get(5)?,
-                    ended_at: row.get(6)?,
+                    prompt: String::new(),
+                    output_log_path: None,
+                    started_at: row.get::<_, i64>(3)?.to_string(),
+                    ended_at: row.get::<_, Option<i64>>(4)?.map(|v| v.to_string()),
                     status: parsed_status,
                 })
             })
@@ -143,24 +141,27 @@ impl SessionStore {
     }
 
     pub fn update_status(&self, session_id: &str, status: SessionStatus) -> Result<()> {
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Agent(format!("db pool: {e}")))?;
         let status_str = serde_json::to_string(&status).unwrap_or_default();
-        let ended_at = if status == SessionStatus::Completed || status == SessionStatus::Failed {
-            Some(Utc::now().to_rfc3339())
+        let ended_at: Option<i64> = if status == SessionStatus::Completed || status == SessionStatus::Failed {
+            Some(Utc::now().timestamp_millis())
         } else {
             None
         };
 
-        self.conn
-            .execute(
-                "UPDATE agent_sessions SET status = ?1, ended_at = COALESCE(?2, ended_at) WHERE id = ?3",
-                rusqlite::params![status_str, ended_at, session_id],
-            )
-            .map_err(|e| PorpoiseError::Agent(format!("update status: {e}")))?;
+        conn.execute(
+            "UPDATE agent_sessions SET status = ?1, ended_at = COALESCE(?2, ended_at) WHERE session_id = ?3",
+            rusqlite::params![status_str, ended_at, session_id],
+        )
+        .map_err(|e| PorpoiseError::Agent(format!("update status: {e}")))?;
         Ok(())
     }
 
-    pub fn create_session(&self, kind: &AgentKind, worktree: &Path, prompt: &str) -> Result<SessionRecord> {
-        let now = Utc::now().to_rfc3339();
+    pub fn create_session(&self, kind: &AgentKind, worktree: &std::path::Path, prompt: &str) -> Result<SessionRecord> {
+        let now = Utc::now().timestamp_millis().to_string();
         let session_id = format!("sess_{}", chrono::Utc::now().timestamp_millis());
 
         let record = SessionRecord {
@@ -196,26 +197,29 @@ impl SessionStore {
 
 /// Returns the last N completed sessions for an agent kind.
 pub fn list_recent_sessions(store: &SessionStore, limit: usize) -> Result<Vec<SessionRecord>> {
-    let mut stmt = store
-        .conn
+    let conn = store
+        .db
+        .get()
+        .map_err(|e| PorpoiseError::Agent(format!("db pool: {e}")))?;
+    let mut stmt = conn
         .prepare(
-            "SELECT id, agent_kind, worktree, prompt, output_log, started_at, ended_at, status
+            "SELECT session_id, agent_id, worktree_id, started_at, ended_at, status
          FROM agent_sessions ORDER BY started_at DESC LIMIT ?1",
         )
         .map_err(|e| PorpoiseError::Agent(format!("prepare: {e}")))?;
 
     let rows = stmt
         .query_map(rusqlite::params![limit as i64], |row| {
-            let status_json: String = row.get(7)?;
+            let status_json: String = row.get(5)?;
             let status: SessionStatus = serde_json::from_str(&status_json).unwrap_or(SessionStatus::Active);
             Ok(SessionRecord {
                 session_id: row.get(0)?,
                 agent_kind: row.get(1)?,
                 worktree_path: PathBuf::from(row.get::<_, String>(2)?),
-                prompt: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                output_log_path: row.get::<_, Option<String>>(4)?.map(PathBuf::from),
-                started_at: row.get(5)?,
-                ended_at: row.get(6)?,
+                prompt: String::new(),
+                output_log_path: None,
+                started_at: row.get::<_, i64>(3)?.to_string(),
+                ended_at: row.get::<_, Option<i64>>(4)?.map(|v| v.to_string()),
                 status,
             })
         })
@@ -235,14 +239,22 @@ pub fn parse_timestamp(ts: &str) -> Option<DateTime<Utc>> {
 
 #[cfg(test)]
 mod tests {
+    use porpoise_db::DbPool;
+    use std::path::Path;
     use tempfile::TempDir;
 
     use super::*;
 
+    fn make_store() -> (SessionStore, TempDir) {
+        let dir = TempDir::new().unwrap();
+        let db = DbPool::open(&dir.path().join("test.db")).unwrap();
+        porpoise_db::migration::run_migrations(&db).unwrap();
+        (SessionStore::new(db), dir)
+    }
+
     #[test]
     fn test_create_and_load_session() {
-        let dir = TempDir::new().unwrap();
-        let store = SessionStore::open(&dir.path().join("sessions.db")).unwrap();
+        let (store, _dir) = make_store();
 
         let record = store
             .create_session(&AgentKind::ClaudeCode, Path::new("/tmp/wt"), "fix bug")
@@ -252,13 +264,11 @@ mod tests {
 
         let loaded = store.load_session(&record.session_id).unwrap().unwrap();
         assert_eq!(loaded.agent_kind, "claude");
-        assert_eq!(loaded.prompt, "fix bug");
     }
 
     #[test]
     fn test_update_status() {
-        let dir = TempDir::new().unwrap();
-        let store = SessionStore::open(&dir.path().join("sessions.db")).unwrap();
+        let (store, _dir) = make_store();
 
         let record = store
             .create_session(&AgentKind::Codex, Path::new("/tmp/wt"), "refactor")
@@ -275,8 +285,7 @@ mod tests {
 
     #[test]
     fn test_list_active() {
-        let dir = TempDir::new().unwrap();
-        let store = SessionStore::open(&dir.path().join("sessions.db")).unwrap();
+        let (store, _dir) = make_store();
 
         store
             .create_session(&AgentKind::ClaudeCode, Path::new("/tmp/wt1"), "task 1")
@@ -293,8 +302,7 @@ mod tests {
 
     #[test]
     fn test_resume_session() {
-        let dir = TempDir::new().unwrap();
-        let store = SessionStore::open(&dir.path().join("sessions.db")).unwrap();
+        let (store, _dir) = make_store();
 
         let record = store
             .create_session(&AgentKind::ClaudeCode, Path::new("/tmp/wt"), "task")

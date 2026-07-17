@@ -71,8 +71,8 @@ pub enum PorpoiseError {
     Ipc(String),
     #[error("IPC connection refused")]
     IpcConnectionRefused,
-    #[error("protocol version mismatch: server={server} client={client}")]
-    IpcVersionMismatch { server: u8, client: u8 },
+    #[error("protocol version mismatch: server supports ({server_min}-{server_max}) client={client}")]
+    IpcVersionMismatch { server_min: u8, server_max: u8, client: u8 },
     #[error("IPC authentication failed: {0}")]
     IpcAuthFailed(String),
     #[error("IPC session expired")]

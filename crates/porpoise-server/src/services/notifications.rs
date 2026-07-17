@@ -1,10 +1,11 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use chrono::Utc;
 use porpoise_core::{
     error::{PorpoiseError, Result},
     types::event::NotificationSeverity,
 };
+use porpoise_db::DbPool;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
@@ -15,7 +16,7 @@ pub struct NotificationRecord {
     pub body: String,
     pub severity: String,
     pub source: String,
-    pub timestamp: String,
+    pub timestamp: i64,
     pub read: bool,
 }
 
@@ -43,34 +44,16 @@ impl NotificationPreferences {
 }
 
 pub struct NotificationService {
-    conn: Arc<Mutex<rusqlite::Connection>>,
+    db: DbPool,
     prefs: Arc<Mutex<NotificationPreferences>>,
 }
 
 impl NotificationService {
-    pub fn open(db_path: &Path) -> Result<Self> {
-        let conn = rusqlite::Connection::open(db_path)
-            .map_err(|e| PorpoiseError::Internal(format!("open notification db: {e}")))?;
-
-        conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS notifications (
-                id          TEXT PRIMARY KEY,
-                title       TEXT NOT NULL,
-                body        TEXT NOT NULL,
-                severity    TEXT NOT NULL DEFAULT 'info',
-                source      TEXT NOT NULL DEFAULT 'system',
-                timestamp   TEXT NOT NULL,
-                read        INTEGER NOT NULL DEFAULT 0
-            );
-            CREATE INDEX IF NOT EXISTS idx_notifications_time ON notifications(timestamp);
-            CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);",
-        )
-        .map_err(|e| PorpoiseError::Internal(format!("create notifications table: {e}")))?;
-
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
+    pub fn new(db: DbPool) -> Self {
+        Self {
+            db,
             prefs: Arc::new(Mutex::new(NotificationPreferences::defaults())),
-        })
+        }
     }
 
     pub async fn notify(
@@ -89,7 +72,7 @@ impl NotificationService {
                 .trim_matches('"')
                 .to_string(),
             source: source.to_string(),
-            timestamp: Utc::now().to_rfc3339(),
+            timestamp: Utc::now().timestamp_millis(),
             read: false,
         };
 
@@ -104,9 +87,12 @@ impl NotificationService {
     }
 
     async fn store(&self, record: &NotificationRecord) -> Result<()> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         conn.execute(
-            "INSERT INTO notifications (id, title, body, severity, source, timestamp, read)
+            "INSERT INTO notifications (id, title, message, level, source, created_at, read)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             rusqlite::params![
                 record.id,
@@ -123,11 +109,14 @@ impl NotificationService {
     }
 
     pub async fn list_unread(&self) -> Result<Vec<NotificationRecord>> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         let mut stmt = conn
             .prepare(
-                "SELECT id, title, body, severity, source, timestamp, read
-                 FROM notifications WHERE read = 0 ORDER BY timestamp DESC LIMIT 100",
+                "SELECT id, title, message, level, source, created_at, read
+                 FROM notifications WHERE read = 0 ORDER BY created_at DESC LIMIT 100",
             )
             .map_err(|e| PorpoiseError::Internal(format!("prepare: {e}")))?;
 
@@ -139,7 +128,7 @@ impl NotificationService {
                     body: row.get(2)?,
                     severity: row.get(3)?,
                     source: row.get(4)?,
-                    timestamp: row.get(5)?,
+                    timestamp: row.get::<_, i64>(5)?,
                     read: row.get::<_, i32>(6)? != 0,
                 })
             })
@@ -149,11 +138,14 @@ impl NotificationService {
     }
 
     pub async fn list_all(&self, limit: usize) -> Result<Vec<NotificationRecord>> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         let mut stmt = conn
             .prepare(
-                "SELECT id, title, body, severity, source, timestamp, read
-                 FROM notifications ORDER BY timestamp DESC LIMIT ?1",
+                "SELECT id, title, message, level, source, created_at, read
+                 FROM notifications ORDER BY created_at DESC LIMIT ?1",
             )
             .map_err(|e| PorpoiseError::Internal(format!("prepare: {e}")))?;
 
@@ -165,7 +157,7 @@ impl NotificationService {
                     body: row.get(2)?,
                     severity: row.get(3)?,
                     source: row.get(4)?,
-                    timestamp: row.get(5)?,
+                    timestamp: row.get::<_, i64>(5)?,
                     read: row.get::<_, i32>(6)? != 0,
                 })
             })
@@ -175,28 +167,40 @@ impl NotificationService {
     }
 
     pub async fn mark_read(&self, id: &str) -> Result<()> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         conn.execute("UPDATE notifications SET read = 1 WHERE id = ?1", rusqlite::params![id])
             .map_err(|e| PorpoiseError::Internal(format!("mark read: {e}")))?;
         Ok(())
     }
 
     pub async fn mark_all_read(&self) -> Result<()> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         conn.execute("UPDATE notifications SET read = 1", [])
             .map_err(|e| PorpoiseError::Internal(format!("mark all read: {e}")))?;
         Ok(())
     }
 
     pub async fn clear(&self) -> Result<()> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         conn.execute("DELETE FROM notifications", [])
             .map_err(|e| PorpoiseError::Internal(format!("clear: {e}")))?;
         Ok(())
     }
 
     pub async fn unread_count(&self) -> Result<usize> {
-        let conn = self.conn.lock().await;
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM notifications WHERE read = 0", [], |row| {
                 row.get(0)
@@ -274,14 +278,21 @@ impl NotificationService {
 
 #[cfg(test)]
 mod tests {
+    use porpoise_db::DbPool;
     use tempfile::TempDir;
 
     use super::*;
 
+    fn make_svc() -> (NotificationService, TempDir) {
+        let dir = TempDir::new().unwrap();
+        let db = DbPool::open(&dir.path().join("test.db")).unwrap();
+        porpoise_db::migration::run_migrations(&db).unwrap();
+        (NotificationService::new(db), dir)
+    }
+
     #[tokio::test]
     async fn test_notify_and_list() {
-        let dir = TempDir::new().unwrap();
-        let svc = NotificationService::open(&dir.path().join("notif.db")).unwrap();
+        let (svc, _dir) = make_svc();
 
         let prefs = NotificationPreferences {
             desktop_notifications: false,
@@ -306,8 +317,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_unread_count() {
-        let dir = TempDir::new().unwrap();
-        let svc = NotificationService::open(&dir.path().join("notif.db")).unwrap();
+        let (svc, _dir) = make_svc();
         svc.set_preferences(NotificationPreferences {
             desktop_notifications: false,
             ..NotificationPreferences::defaults()
@@ -321,8 +331,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_agent_completion_notification() {
-        let dir = TempDir::new().unwrap();
-        let svc = NotificationService::open(&dir.path().join("notif.db")).unwrap();
+        let (svc, _dir) = make_svc();
         svc.set_preferences(NotificationPreferences {
             desktop_notifications: false,
             ..NotificationPreferences::defaults()
