@@ -217,6 +217,23 @@ impl NotificationService {
         self.prefs.lock().await.clone()
     }
 
+    pub fn prune_old(&self, keep_count: usize) -> Result<usize> {
+        let conn = self
+            .db
+            .get()
+            .map_err(|e| PorpoiseError::Db(format!("prune get conn: {e}")))?;
+        let deleted = conn
+            .execute(
+                "DELETE FROM notifications WHERE id IN (
+                    SELECT id FROM notifications ORDER BY created_at ASC
+                    LIMIT MAX(0, (SELECT CAST(COUNT(*) AS INTEGER) - ?1 FROM notifications))
+                )",
+                rusqlite::params![keep_count as i64],
+            )
+            .map_err(|e| PorpoiseError::Db(format!("prune delete: {e}")))?;
+        Ok(deleted)
+    }
+
     fn should_notify(&self, severity: NotificationSeverity, prefs: &NotificationPreferences) -> bool {
         match severity {
             NotificationSeverity::Info => prefs.agent_completion,

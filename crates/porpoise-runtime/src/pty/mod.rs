@@ -14,6 +14,7 @@ pub struct PtySession {
     pub child_pid: u32,
     pub rows: u16,
     pub cols: u16,
+    pub generation_id: Option<String>,
 }
 
 impl PtySession {
@@ -37,7 +38,7 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
     match unsafe { unistd::fork() } {
         Ok(ForkResult::Parent { child }) => {
             unistd::close(slave_fd).ok();
-            Ok(PtySession { id: TerminalId::new(), fd: master_fd, child_pid: child.as_raw(), rows, cols })
+            Ok(PtySession { id: TerminalId::new(), fd: master_fd, child_pid: child.as_raw(), rows, cols, generation_id: None })
         }
         Ok(ForkResult::Child) => {
             unistd::setsid().ok();
@@ -100,7 +101,7 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
 
     windows_pty::store_master(fd, pair.master);
 
-    Ok(PtySession { id: TerminalId::new(), fd, child_pid: pid, rows, cols })
+    Ok(PtySession { id: TerminalId::new(), fd, child_pid: pid, rows, cols, generation_id: None })
 }
 
 async fn pty_read_impl(fd: i32, buf: &mut [u8]) -> Result<usize> {
@@ -191,15 +192,21 @@ fn pty_resize_impl(fd: i32, rows: u16, cols: u16) -> Result<()> {
 pub struct PtyManager {
     sessions: Arc<RwLock<HashMap<TerminalId, PtySession>>>,
     event_bus: EventBus,
+    generation_id: Option<String>,
 }
 
 impl PtyManager {
     pub fn new(event_bus: EventBus) -> Self {
-        Self { sessions: Arc::new(RwLock::new(HashMap::new())), event_bus }
+        Self { sessions: Arc::new(RwLock::new(HashMap::new())), event_bus, generation_id: None }
+    }
+
+    pub fn set_generation_id(&mut self, id: Option<String>) {
+        self.generation_id = id;
     }
 
     pub async fn alloc(&self, rows: u16, cols: u16, shell: &str) -> Result<TerminalId> {
-        let session = alloc_pty_impl(rows, cols, shell)?;
+        let mut session = alloc_pty_impl(rows, cols, shell)?;
+        session.generation_id.clone_from(&self.generation_id);
         let id = session.id;
         self.sessions.write().await.insert(id, session);
         self.spawn_read_loop(id);

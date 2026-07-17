@@ -30,6 +30,7 @@ tracing-appender.workspace = true
 chrono.workspace = true
 libc.workspace = true
 rusqlite.workspace = true
+uuid.workspace = true
 notify-rust = "4"
 
 [dev-dependencies]

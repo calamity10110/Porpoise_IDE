@@ -26,6 +26,7 @@ pub struct Daemon {
     pub agent_pool: Arc<AgentPool>,
     pub start_time: DateTime<Utc>,
     pub notification_service: Arc<NotificationService>,
+    pub generation_id: String,
     session_token: String,
     pidfile_path: Option<PathBuf>,
 }
@@ -50,6 +51,7 @@ impl Daemon {
         let session_token = token_store.token.clone();
 
         let agent_pool = Arc::new(AgentPool::new(config.agent.max_concurrent_agents as usize));
+        let generation_id = uuid::Uuid::now_v7().to_string();
 
         Ok(Self {
             state,
@@ -60,14 +62,29 @@ impl Daemon {
             start_time: Utc::now(),
             server: None,
             notification_service,
+            generation_id,
             pidfile_path: None,
         })
     }
 
     pub async fn start(&mut self) -> Result<()> {
         self.write_pidfile()?;
+
+        if let Ok(conn) = self.db.get() {
+            let _ = conn.execute(
+                "INSERT OR REPLACE INTO server_metadata (key, value) VALUES ('generation_id', ?1)",
+                rusqlite::params![&self.generation_id],
+            );
+            let _ = conn.execute(
+                "UPDATE sessions SET ended_at = datetime('now'), status = 'orphaned' WHERE generation_id != ?1 AND (status IS NULL OR status != 'orphaned')",
+                rusqlite::params![&self.generation_id],
+            );
+        }
+
         let mut router = Router::new(self.state.clone());
-        let pty_manager = Arc::new(PtyManager::new(self.state.event_bus().clone()));
+        let mut pty = PtyManager::new(self.state.event_bus().clone());
+        pty.set_generation_id(Some(self.generation_id.clone()));
+        let pty_manager = Arc::new(pty);
         services::register_all(
             &mut router,
             self.start_time,
@@ -81,6 +98,21 @@ impl Daemon {
         self.server = Some(server);
 
         self.spawn_notification_subscriber();
+
+        // Spawn notification auto-pruning (keep at most 500, check every hour)
+        let db_for_prune = self.db.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
+            loop {
+                interval.tick().await;
+                if let Ok(conn) = db_for_prune.get() {
+                    let _ = conn.execute(
+                        "DELETE FROM notifications WHERE id IN (SELECT id FROM notifications ORDER BY created_at ASC LIMIT MAX(0, (SELECT COUNT(*) - 500 FROM notifications)))",
+                        [],
+                    );
+                }
+            }
+        });
 
         Ok(())
     }
