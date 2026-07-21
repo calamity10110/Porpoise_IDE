@@ -10,7 +10,7 @@ use wasmtime::{Engine, Linker, Module, Store};
 /// Returns `Ok` only if the module has zero imports.
 /// In future, this will check each import against the granted capability set.
 pub fn validate_imports(module: &Module) -> Result<()> {
-    for import in module.imports() {
+    if let Some(import) = module.imports().next() {
         return Err(PorpoiseError::WasmImportDenied {
             module: import.module().to_string(),
             import: import.name().to_string(),

@@ -14,6 +14,7 @@ pub enum ConnectionState {
 
 pub struct SessionTokenStore {
     pub token: String,
+    #[expect(dead_code)]
     token_path: PathBuf,
 }
 
@@ -42,6 +43,8 @@ impl SessionTokenStore {
         {
             std::fs::write(&token_path, &token)
                 .map_err(|e| PorpoiseError::Ipc(format!("write token: {e}")))?;
+            restrict_token_acl_windows(&token_path)
+                .map_err(|e| PorpoiseError::Ipc(format!("restrict token acl: {e}")))?;
         }
         Ok(Self { token, token_path })
     }
@@ -55,4 +58,35 @@ pub fn load_token(path: &Path) -> Result<String> {
     let token = std::fs::read_to_string(path)
         .map_err(|e| PorpoiseError::Ipc(format!("read token: {e}")))?;
     Ok(token.trim().to_string())
+}
+
+#[cfg(windows)]
+fn restrict_token_acl_windows(path: &Path) -> std::io::Result<()> {
+    let path_str = path.to_str().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "token path must be valid UTF-8")
+    })?;
+    let username = std::env::var("USERNAME").map_err(|_| {
+        std::io::Error::new(std::io::ErrorKind::NotFound, "USERNAME env var not set")
+    })?;
+
+    // /inheritance:r removes inherited ACEs; /grant:r replaces ACEs with current-user-only Full Control.
+    let output = std::process::Command::new("icacls")
+        .arg(path_str)
+        .args(["/inheritance:r"])
+        .args(["/grant:r", &format!("{username}:F")])
+        .output()?;
+
+    if !output.status.success() {
+        return Err(std::io::Error::other(format!(
+            "icacls failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+#[allow(dead_code)]
+fn restrict_token_acl_windows(_path: &Path) -> std::io::Result<()> {
+    Ok(())
 }

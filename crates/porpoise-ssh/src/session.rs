@@ -39,11 +39,11 @@ impl SshSession {
 
         match auth {
             AuthMethod::Password(password) => {
-                sess.userauth_password(username, password)
+                sess.userauth_password(username, password.as_str())
                     .map_err(|e| PorpoiseError::SshAuth(e.to_string()))?;
             }
             AuthMethod::KeyFile(path, passphrase) => {
-                sess.userauth_pubkey_file(username, None, std::path::Path::new(path), passphrase.as_deref())
+                sess.userauth_pubkey_file(username, None, std::path::Path::new(path), passphrase.as_deref().map(|p| p.as_str()))
                     .map_err(|e| PorpoiseError::SshAuth(e.to_string()))?;
             }
             AuthMethod::Agent => {

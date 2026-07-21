@@ -60,7 +60,9 @@ impl Frame {
             });
         }
         let flags = FrameFlags::from_bits(data[3]).ok_or_else(|| PorpoiseError::Ipc("bad flags".into()))?;
-        let len = u32::from_le_bytes(data[4..8].try_into().unwrap()) as usize;
+        let len = u32::from_le_bytes(
+            data[4..8].try_into().map_err(|_| PorpoiseError::Ipc("header length slice misaligned".into()))?,
+        ) as usize;
         if data.len() < HEADER_SIZE + len {
             return Err(PorpoiseError::Ipc("truncated".into()));
         }

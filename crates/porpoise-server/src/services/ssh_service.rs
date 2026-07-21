@@ -10,8 +10,8 @@ pub async fn handle_connect(
 ) -> Result<serde_json::Value> {
     let manager = SshManager::new();
     let auth = match (password, key_path) {
-        (Some(pw), _) => AuthMethod::Password(pw.into()),
-        (_, Some(path)) => AuthMethod::KeyFile(path.into(), None),
+        (Some(pw), _) => AuthMethod::password(pw),
+        (_, Some(path)) => AuthMethod::key_file(path, None),
         _ => AuthMethod::Agent,
     };
     match manager.connect(host, port, user, &auth).await {

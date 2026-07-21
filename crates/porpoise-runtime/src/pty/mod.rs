@@ -68,17 +68,17 @@ mod windows_pty {
         LazyLock::new(|| Mutex::new(HashMap::new()));
 
     pub fn store_master(fd: i32, master: Box<dyn MasterPty + Send>) {
-        WINDOWS_PTYS.lock().unwrap().insert(fd, master);
+        let _ = WINDOWS_PTYS.lock().map(|mut map| map.insert(fd, master));
     }
 
     pub fn remove_master(fd: i32) {
-        WINDOWS_PTYS.lock().unwrap().remove(&fd);
+        let _ = WINDOWS_PTYS.lock().map(|mut map| map.remove(&fd));
     }
 
-    pub fn with_master<R>(fd: i32, f: impl FnOnce(&mut dyn MasterPty) -> R) -> R {
-        let mut map = WINDOWS_PTYS.lock().unwrap();
-        let master = map.get_mut(&fd).expect("master pty not found");
-        f(&mut **master)
+    pub fn with_master<R>(fd: i32, f: impl FnOnce(&mut dyn MasterPty) -> R) -> std::result::Result<R, String> {
+        let mut map = WINDOWS_PTYS.lock().map_err(|e| format!("pty lock poisoned: {e}"))?;
+        let master = map.get_mut(&fd).ok_or_else(|| format!("master pty fd {fd} not found"))?;
+        Ok(f(&mut **master))
     }
 }
 
@@ -121,18 +121,23 @@ async fn pty_read_impl(fd: i32, buf: &mut [u8]) -> Result<usize> {
     #[cfg(target_os = "windows")]
     {
         use std::io::Read;
-        let count = tokio::task::spawn_blocking(move || -> std::io::Result<Vec<u8>> {
-            windows_pty::with_master(fd, |master| {
-                let mut reader = master.try_clone_reader().expect("try_clone_reader failed");
+        let count = tokio::task::spawn_blocking(move || -> std::result::Result<Vec<u8>, String> {
+            let reader_buf: Vec<u8> = windows_pty::with_master(fd, |master| -> std::result::Result<Vec<u8>, String> {
+                let mut reader = master
+                    .try_clone_reader()
+                    .map_err(|e| format!("try_clone_reader: {e}"))?;
                 let mut read_buf = vec![0u8; 4096];
-                let n = reader.read(&mut read_buf)?;
+                let n = reader
+                    .read(&mut read_buf)
+                    .map_err(|e| format!("read: {e}"))?;
                 read_buf.truncate(n);
                 Ok(read_buf)
-            })
+            })??;
+            Ok(reader_buf)
         })
         .await
         .map_err(|e| PorpoiseError::PtyError(format!("blocking read: {e}")))?
-        .map_err(|e| PorpoiseError::PtyError(format!("read: {e}")))?;
+        .map_err(PorpoiseError::PtyError)?;
         let n = count.len();
         if n > 0 {
             buf[..n].copy_from_slice(&count[..n]);
@@ -158,15 +163,20 @@ async fn pty_write_impl(fd: i32, data: &[u8]) -> Result<()> {
     {
         use std::io::Write;
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || {
-            windows_pty::with_master(fd, |master| {
-                let mut writer = master.take_writer().expect("take_writer failed");
-                writer.write_all(&data)
-            })
+        tokio::task::spawn_blocking(move || -> std::result::Result<(), String> {
+            windows_pty::with_master(fd, |master| -> std::result::Result<(), String> {
+                let mut writer = master
+                    .take_writer()
+                    .map_err(|e| format!("take_writer: {e}"))?;
+                writer
+                    .write_all(&data)
+                    .map_err(|e| format!("write: {e}"))
+            })??;
+            Ok(())
         })
         .await
         .map_err(|e| PorpoiseError::PtyError(format!("blocking: {e}")))?
-        .map_err(|e| PorpoiseError::PtyError(format!("write: {e}")))?;
+        .map_err(PorpoiseError::PtyError)?;
         Ok(())
     }
 }
@@ -184,7 +194,8 @@ fn pty_resize_impl(fd: i32, rows: u16, cols: u16) -> Result<()> {
         windows_pty::with_master(fd, |master| {
             let size = PtySize { rows, cols, pixel_width: 0, pixel_height: 0 };
             let _ = master.resize(size);
-        });
+        })
+        .map_err(PorpoiseError::PtyError)?;
         Ok(())
     }
 }

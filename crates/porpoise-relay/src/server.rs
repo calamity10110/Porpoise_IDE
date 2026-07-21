@@ -140,7 +140,9 @@ async fn read_frame_unix(stream: &mut UnixStream) -> Result<Frame> {
     use tokio::io::AsyncReadExt;
     let mut header = vec![0u8; HEADER_SIZE];
     stream.read_exact(&mut header).await.map_err(|e| PorpoiseError::Ipc(format!("header: {e}")))?;
-    let len = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
+    let len = u32::from_le_bytes(
+        header[4..8].try_into().map_err(|_| PorpoiseError::Ipc("header slice misaligned".into()))?,
+    ) as usize;
     let mut payload = vec![0u8; len];
     if len > 0 {
         stream.read_exact(&mut payload).await.map_err(|e| PorpoiseError::Ipc(format!("payload: {e}")))?;

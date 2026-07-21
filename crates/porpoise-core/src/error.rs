@@ -91,6 +91,8 @@ pub enum PorpoiseError {
     Plugin(String),
     #[error("WASM runtime error: {0}")]
     Wasm(String),
+    #[error("WASM module integrity check failed: {0}")]
+    WasmIntegrityFailed(String),
     #[error("plugin {id} denied capability: {capability}")]
     PluginCapabilityDenied { id: String, capability: String },
     #[error("WASM module {module} denied import: {import}")]

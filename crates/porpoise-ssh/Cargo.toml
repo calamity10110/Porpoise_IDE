@@ -13,5 +13,6 @@ serde.workspace = true
 tracing.workspace = true
 chrono.workspace = true
 ssh2 = "0.9"
+zeroize.workspace = true
 
 [dev-dependencies]

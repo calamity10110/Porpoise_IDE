@@ -27,10 +27,10 @@ impl GitStatusCache {
 
     pub fn get(&self, path: &Path) -> Option<serde_json::Value> {
         let map = self.inner.read().ok()?;
-        if let Some(entry) = map.get(path) {
-            if entry.computed_at.elapsed() < CACHE_TTL {
-                return Some(entry.status.clone());
-            }
+        if let Some(entry) = map.get(path)
+            && entry.computed_at.elapsed() < CACHE_TTL
+        {
+            return Some(entry.status.clone());
         }
         None
     }
@@ -51,6 +51,12 @@ impl GitStatusCache {
         if let Ok(mut map) = self.inner.write() {
             map.remove(path);
         }
+    }
+}
+
+impl Default for GitStatusCache {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

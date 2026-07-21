@@ -63,8 +63,9 @@ impl NotificationService {
         severity: NotificationSeverity,
         source: &str,
     ) -> Result<NotificationRecord> {
+        let now = Utc::now();
         let record = NotificationRecord {
-            id: format!("notif_{}", Utc::now().timestamp_millis()),
+            id: format!("notif_{}_{}", now.timestamp_millis(), uuid::Uuid::now_v7().simple()),
             title: title.to_string(),
             body: body.to_string(),
             severity: serde_json::to_string(&severity)
@@ -72,7 +73,7 @@ impl NotificationService {
                 .trim_matches('"')
                 .to_string(),
             source: source.to_string(),
-            timestamp: Utc::now().timestamp_millis(),
+            timestamp: now.timestamp_millis(),
             read: false,
         };
 

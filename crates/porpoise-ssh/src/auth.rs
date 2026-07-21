@@ -1,7 +1,19 @@
+use zeroize::Zeroizing;
+
 pub enum AuthMethod {
-    Password(String),
-    KeyFile(String, Option<String>),
+    Password(Zeroizing<String>),
+    KeyFile(String, Option<Zeroizing<String>>),
     Agent,
+}
+
+impl AuthMethod {
+    pub fn password(p: impl Into<String>) -> Self {
+        Self::Password(Zeroizing::new(p.into()))
+    }
+
+    pub fn key_file(path: impl Into<String>, passphrase: Option<String>) -> Self {
+        Self::KeyFile(path.into(), passphrase.map(Zeroizing::new))
+    }
 }
 
 impl std::fmt::Debug for AuthMethod {

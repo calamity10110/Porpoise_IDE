@@ -74,9 +74,11 @@ impl CompilationPipeline {
             let serialized = module
                 .serialize()
                 .map_err(|e| PorpoiseError::Wasm(format!("serialize: {e}")))?;
-            let cache_file = cache_dir.join(format!("{skill_id}.cwasm"));
-            std::fs::write(&cache_file, &serialized).ok();
+            write_cwasm_with_integrity(cache_dir, skill_id, &serialized).ok();
         }
+
+        // Also validate imports even for WAT (defense in depth)
+        validate_imports(&module)?;
 
         Ok(CompiledSkill {
             id: skill_id.to_string(),
@@ -113,8 +115,10 @@ impl CompilationPipeline {
             }
             "cwasm" => {
                 let bytes = std::fs::read(path).map_err(|e| PorpoiseError::Wasm(format!("read: {e}")))?;
+                verify_cwasm_integrity(path, &bytes)?;
                 let module = unsafe { Module::deserialize(&self.engine, &bytes) }
                     .map_err(|e| PorpoiseError::Wasm(format!("deserialize: {e}")))?;
+                validate_imports(&module)?;
                 let exports: Vec<String> = module.exports().map(|e| e.name().to_string()).collect();
                 Ok(CompiledSkill {
                     id: skill_id.to_string(),
@@ -131,6 +135,49 @@ impl CompilationPipeline {
     pub fn engine(&self) -> &Engine {
         &self.engine
     }
+}
+
+const INTEGRITY_MAGIC: &[u8; 8] = b"PORP-SIG";
+const INTEGRITY_HEADER_LEN: usize = 8 + 1 + 32;
+
+fn write_cwasm_with_integrity(cache_dir: &Path, skill_id: &str, serialized: &[u8]) -> std::io::Result<()> {
+    let hash = blake3::hash(serialized);
+    let cache_file = cache_dir.join(format!("{skill_id}.cwasm"));
+    let sig_file = cache_dir.join(format!("{skill_id}.cwasm.sig"));
+
+    let mut sig_buf = Vec::with_capacity(INTEGRITY_HEADER_LEN);
+    sig_buf.extend_from_slice(INTEGRITY_MAGIC);
+    sig_buf.push(1);
+    sig_buf.extend_from_slice(hash.as_bytes());
+    std::fs::write(&sig_file, &sig_buf)?;
+    std::fs::write(&cache_file, serialized)?;
+    Ok(())
+}
+
+fn verify_cwasm_integrity(cwasm_path: &Path, bytes: &[u8]) -> Result<()> {
+    let sig_path = cwasm_path.with_extension("cwasm.sig");
+    let sig_bytes = std::fs::read(&sig_path)
+        .map_err(|e| PorpoiseError::WasmIntegrityFailed(format!("read sig file: {e}")))?;
+
+    if sig_bytes.len() != INTEGRITY_HEADER_LEN {
+        return Err(PorpoiseError::WasmIntegrityFailed(format!(
+            "bad sig length: {} (expected {INTEGRITY_HEADER_LEN})",
+            sig_bytes.len()
+        )));
+    }
+    if &sig_bytes[0..8] != INTEGRITY_MAGIC {
+        return Err(PorpoiseError::WasmIntegrityFailed("bad sig magic".into()));
+    }
+    if sig_bytes[8] != 1 {
+        return Err(PorpoiseError::WasmIntegrityFailed(format!("unknown sig version: {}", sig_bytes[8])));
+    }
+
+    let stored_hash = &sig_bytes[9..41];
+    let actual_hash = blake3::hash(bytes);
+    if stored_hash != actual_hash.as_slice() {
+        return Err(PorpoiseError::WasmIntegrityFailed("BLAKE3 hash mismatch — file tampered or corrupted".into()));
+    }
+    Ok(())
 }
 
 impl Default for CompilationPipeline {
@@ -189,5 +236,44 @@ mod tests {
         let pipeline = CompilationPipeline::new().unwrap();
         let skill = pipeline.compile_from_file("test", &path).unwrap();
         assert!(skill.exports.contains(&"add".to_string()));
+    }
+
+    #[test]
+    fn test_cwasm_integrity_roundtrip() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let pipeline = CompilationPipeline::new().unwrap();
+        let skill = pipeline.compile_from_wat("roundtrip", SAMPLE_WAT).unwrap();
+
+        let serialized = skill.module.serialize().unwrap();
+        write_cwasm_with_integrity(dir.path(), "roundtrip", serialized.to_vec().as_slice()).unwrap();
+
+        let cwasm_path = dir.path().join("roundtrip.cwasm");
+        assert!(verify_cwasm_integrity(&cwasm_path, &serialized.to_vec()).is_ok());
+    }
+
+    #[test]
+    fn test_cwasm_integrity_rejects_tampered() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let pipeline = CompilationPipeline::new().unwrap();
+        let skill = pipeline.compile_from_wat("tamper", SAMPLE_WAT).unwrap();
+
+        let mut serialized = skill.module.serialize().unwrap().to_vec();
+        write_cwasm_with_integrity(dir.path(), "tamper", &serialized).unwrap();
+
+        if let Some(byte) = serialized.last_mut() {
+            *byte = byte.wrapping_add(1);
+        }
+        let cwasm_path = dir.path().join("tamper.cwasm");
+        let result = verify_cwasm_integrity(&cwasm_path, &serialized);
+        assert!(matches!(result, Err(PorpoiseError::WasmIntegrityFailed(_))), "expected integrity failure");
+    }
+
+    #[test]
+    fn test_cwasm_integrity_rejects_missing_sig() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let cwasm_path = dir.path().join("nope.cwasm");
+        std::fs::write(&cwasm_path, b"some bytes").unwrap();
+        let result = verify_cwasm_integrity(&cwasm_path, b"some bytes");
+        assert!(result.is_err());
     }
 }

@@ -32,7 +32,9 @@ impl NamedPipeStream {
         };
         read_result.map_err(|e| PorpoiseError::Ipc(format!("pipe read header: {e}")))?;
 
-        let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
+        let length = u32::from_le_bytes(
+            header[4..8].try_into().map_err(|_| PorpoiseError::Ipc("header slice misaligned".into()))?,
+        ) as usize;
         let mut payload = vec![0u8; length];
         if length > 0 {
             let read_result = match self {
