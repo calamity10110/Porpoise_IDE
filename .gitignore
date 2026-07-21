@@ -8,3 +8,20 @@
 **/graphify-out/graph.json
 **/graphify-out/GRAPH_REPORT.md
 .sisyphus/
+
+# Flutter mobile app — generated platform directories
+mobile/android/
+mobile/ios/
+mobile/web/
+mobile/linux/
+mobile/macos/
+mobile/windows/
+mobile/build/
+mobile/.dart_tool/
+mobile/.packages
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+
+# Chrome extension build artifacts
+extension/chrome/*.zip
+extension/chrome/.DS_Store

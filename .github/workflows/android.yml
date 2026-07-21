@@ -1,0 +1,51 @@
+name: Android
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          Flutter_SDK_Release: any
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Create Android platform scaffold
+        working-directory: mobile
+        run: |
+          flutter create --platforms=android --project-name porpoise_mobile .
+          # Add INTERNET permission (already default) + cleartext ban
+          sed -i 's|<uses-permission android:name="android.permission.INTERNET"/>|\
+          <uses-permission android:name="android.permission.INTERNET"/>\
+          <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>|' \
+            android/app/src/main/AndroidManifest.xml
+          # Set minSdkVersion
+          sed -i 's|minSdkVersion [0-9]*|minSdkVersion 21|' android/app/build.gradle.kts
+
+      - name: Get dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build release APK
+        working-directory: mobile
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: porpoise-mobile-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
