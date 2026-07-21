@@ -41,6 +41,8 @@ pub enum Commands {
     Config(ConfigArgs),
     /// Skills/plugins
     Skill(SkillArgs),
+    /// Mobile companion pairing
+    Mobile(MobileArgs),
     /// Show system status
     Status,
     /// Show version
@@ -249,6 +251,18 @@ pub enum ConfigAction {
 pub struct SkillArgs {
     #[command(subcommand)]
     pub action: SkillAction,
+}
+
+#[derive(Args)]
+pub struct MobileArgs {
+    #[command(subcommand)]
+    pub action: MobileAction,
+}
+
+#[derive(Subcommand)]
+pub enum MobileAction {
+    /// Print pairing info (host, port, token) for mobile app connection
+    Qr,
 }
 
 #[derive(Subcommand)]

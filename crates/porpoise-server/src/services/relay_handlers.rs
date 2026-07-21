@@ -13,6 +13,8 @@ pub fn register_all(
     pty_manager: Arc<PtyManager>,
     agent_pool: Arc<AgentPool>,
     state: AppState,
+    session_token: String,
+    tls_fingerprint: Option<String>,
 ) {
     let st = state.clone();
     router.register(
@@ -562,6 +564,27 @@ pub fn register_all(
             Box::pin(async move {
                 tracing::info!("daemon_stop requested via RPC");
                 Ok(serde_json::json!({ "status": "stopping" }))
+            })
+        }),
+    );
+
+    let mobile_token = session_token;
+    let mobile_fp = tls_fingerprint;
+    router.register(
+        "mobile/pairing_info",
+        Arc::new(move |_, _| {
+            let fp = mobile_fp.clone();
+            let token = mobile_token.clone();
+            Box::pin(async move {
+                let port_str = std::env::var("PORPOISE_WS_PORT").unwrap_or_default();
+                let tls_enabled = std::env::var("PORPOISE_WS_TLS").as_deref() == Ok("1");
+                Ok(serde_json::json!({
+                    "host": std::env::var("PORPOISE_WS_HOST").unwrap_or_else(|_| "localhost".to_string()),
+                    "port": port_str,
+                    "tls_enabled": tls_enabled,
+                    "tls_fingerprint": fp.unwrap_or_default(),
+                    "token": token,
+                }))
             })
         }),
     );

@@ -6,6 +6,7 @@ use porpoise_core::{
     error::{PorpoiseError, Result},
 };
 use tokio::net::TcpListener;
+use tokio_rustls::TlsAcceptor;
 use tokio_tungstenite::accept_async;
 
 use crate::{
@@ -19,11 +20,12 @@ pub struct WsRelayServer {
     addr: SocketAddr,
     auth_token: Option<String>,
     event_bus: Option<EventBus>,
+    tls_acceptor: Option<TlsAcceptor>,
 }
 
 impl WsRelayServer {
     pub fn new(addr: SocketAddr, router: Arc<Router>) -> Self {
-        Self { router, addr, auth_token: None, event_bus: None }
+        Self { router, addr, auth_token: None, event_bus: None, tls_acceptor: None }
     }
 
     pub fn with_auth(mut self, token: String) -> Self {
@@ -36,11 +38,17 @@ impl WsRelayServer {
         self
     }
 
+    pub fn with_tls(mut self, acceptor: TlsAcceptor) -> Self {
+        self.tls_acceptor = Some(acceptor);
+        self
+    }
+
     pub async fn run(&self) -> Result<()> {
         let listener = TcpListener::bind(self.addr)
             .await
             .map_err(|e| PorpoiseError::Ipc(format!("ws bind: {e}")))?;
-        tracing::info!("WebSocket relay listening on {}", self.addr);
+        let scheme = if self.tls_acceptor.is_some() { "wss" } else { "ws" };
+        tracing::info!("WebSocket relay listening on {scheme}://{}", self.addr);
 
         loop {
             match listener.accept().await {
@@ -48,8 +56,18 @@ impl WsRelayServer {
                     let router = self.router.clone();
                     let auth_token = self.auth_token.clone();
                     let event_bus = self.event_bus.clone();
+                    let tls_acceptor = self.tls_acceptor.clone();
                     tokio::spawn(async move {
-                        if let Err(e) = handle_ws(stream, peer, router, auth_token, event_bus).await {
+                        if let Some(tls) = tls_acceptor {
+                            match tls.accept(stream).await {
+                                Ok(tls_stream) => {
+                                    if let Err(e) = handle_ws(tls_stream, peer, router, auth_token, event_bus).await {
+                                        tracing::warn!("wss client {peer}: {e}");
+                                    }
+                                }
+                                Err(e) => tracing::warn!("tls handshake from {peer}: {e}"),
+                            }
+                        } else if let Err(e) = handle_ws(stream, peer, router, auth_token, event_bus).await {
                             tracing::warn!("ws client {peer}: {e}");
                         }
                     });
@@ -60,13 +78,10 @@ impl WsRelayServer {
     }
 }
 
-async fn handle_ws(
-    stream: tokio::net::TcpStream,
-    peer: SocketAddr,
-    router: Arc<Router>,
-    auth_token: Option<String>,
-    event_bus: Option<EventBus>,
-) -> Result<()> {
+async fn handle_ws<S>(stream: S, peer: SocketAddr, router: Arc<Router>, auth_token: Option<String>, event_bus: Option<EventBus>) -> Result<()>
+where
+    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+{
     let ws_stream = accept_async(stream)
         .await
         .map_err(|e| PorpoiseError::Ipc(format!("ws upgrade: {e}")))?;
@@ -76,11 +91,9 @@ async fn handle_ws(
     let handshake = WireMessage::Handshake(Handshake::new());
     if let Ok(payload) = serde_json::to_vec(&handshake) {
         let frame = Frame::new(FrameFlags::EVENT, payload);
-        #[allow(clippy::collapsible_if)]
-        if let Ok(encoded) = frame.encode() {
-            if let Ok(msg) = serde_json::to_string(&encoded) {
-                let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await;
-            }
+        if let Ok(encoded) = frame.encode()
+            && let Ok(msg) = serde_json::to_string(&encoded) {
+            let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await;
         }
     }
 

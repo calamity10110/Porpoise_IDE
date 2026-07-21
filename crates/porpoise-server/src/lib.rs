@@ -12,7 +12,7 @@ use porpoise_core::{
     types::event::{AgentEvent, NotificationSeverity, SystemEvent, TerminalEvent},
 };
 use porpoise_db::DbPool;
-use porpoise_relay::{auth::SessionTokenStore, RelayServer, Router};
+use porpoise_relay::{auth::SessionTokenStore, tls, RelayServer, Router, WsRelayServer};
 use porpoise_runtime::PtyManager;
 use tokio::sync::broadcast;
 
@@ -22,11 +22,13 @@ pub struct Daemon {
     pub state: AppState,
     pub db: DbPool,
     pub server: Option<RelayServer>,
+    pub ws_server: Option<WsRelayServer>,
     pub socket_path: PathBuf,
     pub agent_pool: Arc<AgentPool>,
     pub start_time: DateTime<Utc>,
     pub notification_service: Arc<NotificationService>,
     pub generation_id: String,
+    pub tls_assets: Option<tls::TlsAssets>,
     session_token: String,
     pidfile_path: Option<PathBuf>,
 }
@@ -61,8 +63,10 @@ impl Daemon {
             session_token,
             start_time: Utc::now(),
             server: None,
+            ws_server: None,
             notification_service,
             generation_id,
+            tls_assets: None,
             pidfile_path: None,
         })
     }
@@ -91,11 +95,42 @@ impl Daemon {
             pty_manager,
             self.agent_pool.clone(),
             self.state.clone(),
+            self.session_token.clone(),
+            self.tls_assets.as_ref().map(|a| a.fingerprint_sha256.clone()),
         );
         let router = Arc::new(router);
-        let server = RelayServer::bind(&self.socket_path, router, self.session_token.clone()).await?;
+        let server = RelayServer::bind(&self.socket_path, router.clone(), self.session_token.clone()).await?;
         tracing::info!("porpoise-server listening on {}", self.socket_path.display());
         self.server = Some(server);
+
+        if let Ok(port_str) = std::env::var("PORPOISE_WS_PORT")
+            && let Ok(port) = port_str.parse::<u16>() {
+            let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+            let mut ws_server = WsRelayServer::new(addr, router.clone())
+                .with_auth(self.session_token.clone())
+                .with_event_bus(self.state.event_bus().clone());
+
+            if std::env::var("PORPOISE_WS_TLS").as_deref() == Ok("1") {
+                let data_dir_for_tls = self.state.config().await.core.data_dir.clone().unwrap_or_else(std::env::temp_dir);
+                let hostnames = std::env::var("PORPOISE_WS_HOSTS")
+                    .unwrap_or_else(|_| "localhost,127.0.0.1".to_string());
+                let host_list: Vec<&str> = hostnames.split(',').map(|s| s.trim()).collect();
+                match tls::load_or_generate(&data_dir_for_tls, &host_list) {
+                    Ok(assets) => match tls::build_tls_acceptor(&assets) {
+                        Ok(acceptor) => {
+                            tracing::info!("mobile WSS cert fingerprint: sha256:{}", assets.fingerprint_sha256);
+                            self.tls_assets = Some(assets);
+                            ws_server = ws_server.with_tls(acceptor);
+                        }
+                        Err(e) => tracing::warn!("TLS acceptor build failed, serving plain WS: {e}"),
+                    },
+                    Err(e) => tracing::warn!("TLS asset load/generate failed, serving plain WS: {e}"),
+                }
+            }
+
+            tracing::info!("mobile WebSocket listening on port {port}");
+            self.ws_server = Some(ws_server);
+        }
 
         self.spawn_notification_subscriber();
 
@@ -119,12 +154,26 @@ impl Daemon {
 
     pub async fn run(&self) -> Result<()> {
         if let Some(ref server) = self.server {
-            tokio::select! {
-                result = server.run() => result,
-                _ = Self::shutdown_signal() => {
-                    tracing::info!("shutdown signal received");
-                    self.shutdown().await;
-                    Ok(())
+            if let Some(ref ws) = self.ws_server {
+                let ws_fut = ws.run();
+                tokio::pin!(ws_fut);
+                tokio::select! {
+                    result = server.run() => result,
+                    _ = &mut ws_fut => Ok(()),
+                    _ = Self::shutdown_signal() => {
+                        tracing::info!("shutdown signal received");
+                        self.shutdown().await;
+                        Ok(())
+                    }
+                }
+            } else {
+                tokio::select! {
+                    result = server.run() => result,
+                    _ = Self::shutdown_signal() => {
+                        tracing::info!("shutdown signal received");
+                        self.shutdown().await;
+                        Ok(())
+                    }
                 }
             }
         } else {

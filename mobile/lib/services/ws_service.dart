@@ -16,6 +16,7 @@ class WsService {
   StreamSubscription<dynamic>? _subscription;
   String? _serverUrl;
   String? _authToken;
+  String? _caFingerprint;
 
   /// Pending RPC calls keyed by request ID.
   final Map<String, Completer<Map<String, dynamic>>> _pending = {};
@@ -36,29 +37,32 @@ class WsService {
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
   // ---------------------------------------------------------------------------
-  // Public state
-  // ---------------------------------------------------------------------------
 
-  /// Whether the WebSocket is currently connected.
   bool get isConnected => _isConnected;
 
-  /// Stream that emits connection state changes.
   Stream<bool> get connectionChanges => _connectionController.stream;
 
-  /// Stream of server-pushed events (messages without a correlation `id`).
   Stream<Map<String, dynamic>> get eventStream => _eventController.stream;
 
-  // ---------------------------------------------------------------------------
-  // Lifecycle
   // ---------------------------------------------------------------------------
 
   /// Connect to the Porpoise daemon at `host:port`.
   ///
-  /// An optional [token] is sent as a `type: auth` message after the
-  /// WebSocket handshake completes.
-  Future<void> connect(String host, int port, {String? token}) async {
-    _serverUrl = 'ws://$host:$port';
+  /// If [useTls] is true (default), uses wss:// and verifies the server
+  /// certificate's SHA-256 fingerprint matches [caFingerprint]. If no
+  /// fingerprint is provided, the cert is accepted unconditionally
+  /// (TOFU / trust-on-first-use).
+  Future<void> connect(
+    String host,
+    int port, {
+    String? token,
+    bool useTls = true,
+    String? caFingerprint,
+  }) async {
+    final scheme = useTls ? 'wss' : 'ws';
+    _serverUrl = '$scheme://$host:$port';
     _authToken = token;
+    _caFingerprint = caFingerprint;
     _reconnectAttempts = 0;
     _intentionalDisconnect = false;
     await _doConnect();
