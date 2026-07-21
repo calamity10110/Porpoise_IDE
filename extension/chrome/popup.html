@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Porpoise Bridge</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="status-bar">
+    <span id="status-dot" class="dot disconnected"></span>
+    <span id="status-text">Disconnected</span>
+  </div>
+
+  <div id="pair-section">
+    <h3>Pair with Daemon</h3>
+    <div class="row">
+      <input id="pair-host" type="text" placeholder="localhost" value="localhost">
+      <input id="pair-port" type="text" placeholder="9876" value="9876">
+    </div>
+    <textarea id="pair-token" placeholder="Auth token (from porpoise mobile qr)"></textarea>
+    <button id="btn-connect" class="primary">Connect</button>
+  </div>
+
+  <div id="connected-section" class="hidden">
+    <div class="page-card">
+      <div id="page-url" class="url"></div>
+      <div id="page-title" class="title"></div>
+      <button id="btn-send-page" class="primary">Send to Agent</button>
+      <button id="btn-inspect" class="secondary">Inspect Mode</button>
+    </div>
+
+    <div id="agent-section">
+      <h3>Agents</h3>
+      <select id="agent-select">
+        <option value="">Select agent...</option>
+      </select>
+      <div id="recent-events"></div>
+    </div>
+  </div>
+
+  <div class="footer-links">
+    <a href="#" id="link-options">Settings</a>
+    <span class="sep">|</span>
+    <a href="#" id="link-reconnect">Reconnect</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

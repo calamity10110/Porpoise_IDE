@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Porpoise Bridge",
+  "version": "0.1.0",
+  "description": "Bridge browser activity to Porpoise AI agents — inspect DOM, send pages to agents, replay automations.",
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications", "contextMenus"],
+  "host_permissions": ["http://localhost/*", "ws://localhost/*", "wss://localhost/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "minimum_chrome_version": "114"
+}

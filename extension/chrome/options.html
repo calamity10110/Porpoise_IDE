@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Porpoise Bridge Settings</title>
+  <style>
+    :root { --bg: #1a1b26; --surface: #24283b; --fg: #c0caf5; --fg-dim: #565f89; --accent: #7aa0f7; --radius: 6px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--fg); max-width: 480px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 18px; margin-bottom: 20px; color: var(--accent); }
+    label { display: block; margin: 12px 0 4px; font-size: 12px; color: var(--fg-dim); }
+    input, textarea, select { width: 100%; padding: 8px 10px; background: var(--surface); border: 1px solid var(--fg-dim); border-radius: var(--radius); color: var(--fg); font-size: 13px; }
+    input:focus, textarea:focus { border-color: var(--accent); outline: none; }
+    textarea { font-family: 'SF Mono', 'Cascadia Code', monospace; min-height: 60px; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+    .checkbox-row input { width: auto; }
+    button { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-size: 14px; margin-top: 16px; }
+    button:hover { opacity: .85; }
+    .toast { display: none; padding: 8px; margin-top: 12px; border-radius: var(--radius); text-align: center; font-size: 12px; }
+    .toast.success { display: block; background: #27ae60; color: #fff; }
+    .toast.error { display: block; background: #c0392b; color: #fff; }
+    .hint { font-size: 11px; color: var(--fg-dim); margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <h1>Porpoise Bridge Settings</h1>
+
+  <label>Daemon Host</label>
+  <input id="opt-host" type="text" placeholder="localhost">
+
+  <label>Daemon Port</label>
+  <input id="opt-port" type="text" placeholder="9876">
+
+  <label>Auth Token</label>
+  <textarea id="opt-token" placeholder="64-char hex token from porpoise mobile qr"></textarea>
+  <div class="hint">Run <code>porpoise mobile qr</code> on your desktop to get this</div>
+
+  <div class="checkbox-row">
+    <input id="opt-tls" type="checkbox">
+    <label for="opt-tls" style="margin:0">Use TLS (WSS)</label>
+  </div>
+
+  <button id="btn-save">Save &amp; Connect</button>
+  <div id="toast" class="toast"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>
