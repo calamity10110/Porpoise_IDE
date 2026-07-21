@@ -134,7 +134,6 @@ impl Daemon {
 
         self.spawn_notification_subscriber();
 
-        // Spawn notification auto-pruning (keep at most 500, check every hour)
         let db_for_prune = self.db.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
@@ -209,7 +208,7 @@ impl Daemon {
             loop {
                 match rx.recv().await {
                     Ok(event) => {
-                        tracing::info!(?event, "notification: received event");
+                        tracing::trace!(?event, "notification: received event");
                         Daemon::handle_notification_event(&svc, &state, &event).await;
                     }
                     Err(broadcast::error::RecvError::Lagged(n)) => {

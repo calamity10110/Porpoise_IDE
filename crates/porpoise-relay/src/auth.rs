@@ -21,7 +21,6 @@ pub struct SessionTokenStore {
 impl SessionTokenStore {
     pub fn create(data_dir: &Path) -> Result<Self> {
         let token_path = data_dir.join("ipc-token");
-        // 32 random bytes → 64-char hex string
         let bytes: Vec<u8> = (0..32).map(|_| rand::random::<u8>()).collect();
         let token = bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
 

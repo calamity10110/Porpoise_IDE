@@ -8,7 +8,6 @@ description = "Agent integration protocols and lifecycle management"
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
 porpoise-db = { path = "../porpoise-db" }
-porpoise-runtime = { path = "../porpoise-runtime" }
 porpoise-git = { path = "../porpoise-git", optional = true }
 tokio.workspace = true
 serde.workspace = true

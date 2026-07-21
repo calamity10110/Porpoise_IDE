@@ -1,5 +1,3 @@
-// porpoise-app crate - Tauri desktop application
-
 use porpoise_relay::RelayClient;
 use tauri::Manager;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};

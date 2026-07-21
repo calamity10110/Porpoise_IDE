@@ -10,5 +10,4 @@ porpoise-core = { path = "../porpoise-core" }
 enigo = "0.2"
 serde.workspace = true
 serde_json.workspace = true
-tracing.workspace = true
 tokio.workspace = true

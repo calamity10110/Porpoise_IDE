@@ -9,7 +9,6 @@ description = "Encrypted credential storage for API keys, passwords, and tokens"
 porpoise-core = { path = "../porpoise-core" }
 serde.workspace = true
 serde_json.workspace = true
-tracing.workspace = true
 chrono.workspace = true
 aes-gcm.workspace = true
 rand.workspace = true

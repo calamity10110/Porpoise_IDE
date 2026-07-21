@@ -3892,12 +3892,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "owo-colors"
-version = "4.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d211803b9b6b570f68772237e415a029d5a50c65d382910b879fb19d3271f94d"
-
-[[package]]
 name = "pango"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4222,7 +4216,6 @@ dependencies = [
  "porpoise-core",
  "porpoise-db",
  "porpoise-git",
- "porpoise-runtime",
  "rusqlite",
  "serde",
  "serde_json",
@@ -4235,10 +4228,8 @@ dependencies = [
 name = "porpoise-app"
 version = "0.1.0"
 dependencies = [
- "porpoise-cli",
  "porpoise-core",
  "porpoise-relay",
- "porpoise-server",
  "serde",
  "serde_json",
  "tauri",
@@ -4253,17 +4244,12 @@ dependencies = [
 name = "porpoise-automation"
 version = "0.1.0"
 dependencies = [
- "chrono",
- "porpoise-agent",
- "porpoise-browser",
  "porpoise-core",
- "porpoise-credentials",
  "serde",
  "serde_json",
  "serde_yaml",
  "tokio",
  "tracing",
- "uuid",
 ]
 
 [[package]]
@@ -4272,7 +4258,6 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "porpoise-core",
- "porpoise-network",
  "reqwest 0.12.28",
  "serde",
  "tokio",
@@ -4286,14 +4271,8 @@ dependencies = [
  "assert_cmd",
  "clap",
  "clap_complete",
- "owo-colors",
- "porpoise-browser",
  "porpoise-core",
- "porpoise-network",
  "porpoise-relay",
- "porpoise-skills",
- "porpoise-ssh",
- "serde",
  "serde_json",
  "tempfile",
  "tokio",
@@ -4310,7 +4289,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -4319,7 +4297,6 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bincode",
- "bitflags 2.13.0",
  "chrono",
  "config",
  "proptest",
@@ -4328,7 +4305,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
- "tracing",
  "uuid",
 ]
 
@@ -4347,7 +4323,6 @@ dependencies = [
  "serde_json",
  "sha2",
  "tempfile",
- "tracing",
  "zeroize",
 ]
 
@@ -4355,15 +4330,11 @@ dependencies = [
 name = "porpoise-db"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "porpoise-core",
  "r2d2",
  "r2d2_sqlite",
  "rusqlite",
- "serde",
- "serde_json",
  "tempfile",
- "tracing",
 ]
 
 [[package]]
@@ -4379,8 +4350,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "tracing",
- "uuid",
 ]
 
 [[package]]
@@ -4394,7 +4363,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-tungstenite",
- "tracing",
 ]
 
 [[package]]
@@ -4402,7 +4370,6 @@ name = "porpoise-relay"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.13.0",
- "chrono",
  "futures-util",
  "porpoise-core",
  "proptest",
@@ -4446,19 +4413,16 @@ dependencies = [
  "porpoise-core",
  "porpoise-db",
  "porpoise-git",
- "porpoise-network",
  "porpoise-relay",
  "porpoise-runtime",
  "porpoise-skills",
  "porpoise-ssh",
- "porpoise-terminal",
  "rusqlite",
  "serde",
  "serde_json",
  "tempfile",
  "tokio",
  "tracing",
- "tracing-appender",
  "tracing-subscriber",
  "uuid",
 ]
@@ -4481,13 +4445,9 @@ dependencies = [
 name = "porpoise-ssh"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "porpoise-core",
- "porpoise-network",
- "serde",
  "ssh2",
  "tokio",
- "tracing",
  "zeroize",
 ]
 
@@ -4507,7 +4467,6 @@ dependencies = [
  "serde_yaml",
  "tempfile",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -6024,12 +5983,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "symlink"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7973cce6668464ea31f176d85b13c7ab3bba2cb3b77a2ed26abd7801688010a"
-
-[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6914,19 +6867,6 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
-]
-
-[[package]]
-name = "tracing-appender"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "050686193eb999b4bb3bc2acfa891a13da00f79734704c4b8b4ef1a10b368a3c"
-dependencies = [
- "crossbeam-channel",
- "symlink",
- "thiserror 2.0.18",
- "time",
- "tracing-subscriber",
 ]
 
 [[package]]

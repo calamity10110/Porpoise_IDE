@@ -544,16 +544,14 @@ pub fn register_all(
         }),
     );
 
-    let pool_for_health = agent_pool.clone();
-    let st_time = start_time;
+    let pool = agent_pool.clone();
     router.register(
         "health",
         Arc::new(move |_, _| {
-            let pool = pool_for_health.clone();
-            let t = st_time;
+            let pool = pool.clone();
             Box::pin(async move {
                 let count = pool.list().await.len();
-                super::health::handle_health(&t, count).await
+                super::health::handle_health(&start_time, count).await
             })
         }),
     );
@@ -568,13 +566,11 @@ pub fn register_all(
         }),
     );
 
-    let mobile_token = session_token;
-    let mobile_fp = tls_fingerprint;
     router.register(
         "mobile/pairing_info",
         Arc::new(move |_, _| {
-            let fp = mobile_fp.clone();
-            let token = mobile_token.clone();
+            let fp = tls_fingerprint.clone();
+            let token = session_token.clone();
             Box::pin(async move {
                 let port_str = std::env::var("PORPOISE_WS_PORT").unwrap_or_default();
                 let tls_enabled = std::env::var("PORPOISE_WS_TLS").as_deref() == Ok("1");
