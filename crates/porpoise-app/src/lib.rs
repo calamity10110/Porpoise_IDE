@@ -11,6 +11,7 @@ mod commands;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let menu = build_app_menu(app)?;
             app.set_menu(menu)?;
@@ -43,6 +44,13 @@ pub fn run() {
             commands::open_settings_window,
             commands::open_workflow_editor,
         ])
+        .on_menu_event(|app, event| {
+            if event.id().as_ref() == "check-updates" {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.eval("window.__porpoise_check_update && window.__porpoise_check_update()");
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -60,6 +68,9 @@ fn build_app_menu(app: &mut tauri::App) -> Result<tauri::menu::Menu<tauri::Wry>,
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
 
+    let check_updates = MenuItemBuilder::with_id("check-updates", "Check for Updates…")
+        .build(app)?;
+
     let quit = MenuItemBuilder::with_id("quit", "Quit Porpoise")
         .accelerator("CmdOrCtrl+Q")
         .build(app)?;
@@ -71,6 +82,8 @@ fn build_app_menu(app: &mut tauri::App) -> Result<tauri::menu::Menu<tauri::Wry>,
         .item(&new_terminal)
         .separator()
         .item(&settings)
+        .separator()
+        .item(&check_updates)
         .separator()
         .item(&quit)
         .build()?;

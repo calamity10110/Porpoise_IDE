@@ -12,6 +12,9 @@
     "core:window:allow-close",
     "core:menu:default",
     "core:tray:default",
-    "opener:default"
+    "opener:default",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install"
   ]
 }
