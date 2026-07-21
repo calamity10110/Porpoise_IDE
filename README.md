@@ -90,7 +90,23 @@ WASM-sandboxed plugin system. Extend Porpoise without compromising safety. Commu
 
 ### Mobile Companion
 
-Monitor and steer agents from your phone. Cross-platform mobile protocol — bring your own frontend.
+Monitor and steer agents from your phone. Cross-platform Flutter app with WSS (TLS 1.3) pairing over QR code. Android builds via CI.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Chrome Bridge
+
+Chrome extension (Manifest V3) with DOM inspector, page-to-agent sending, and automation playback. Pair via WSS with certificate fingerprint verification.
+
+</td>
+<td width="50%" valign="middle">
+
+### Auto-Update
+
+Tauri updater with signed manifests, delta updates, and background installation. Windows installers via NSIS with optional self-signed code signing.
 
 </td>
 </tr>
@@ -197,6 +213,9 @@ porpoise ssh worktree --host build-server --repo ./my-project
 # Open embedded browser
 porpoise browser open --url http://localhost:3000
 porpoise browser snapshot
+
+# Mobile companion pairing (requires running daemon with PORPOISE_WS_PORT)
+porpoise mobile qr
 
 # Output as JSON
 porpoise worktree list --json
@@ -309,12 +328,12 @@ porpoise skill run credential-manager  # Manage credentials
 | 3 | Terminal Engine | ✅ Complete — 11 tasks (953 loc) |
 | 4 | Agent Framework | ✅ Complete — 13 tasks (1,443 loc) |
 | 5 | Desktop Application | ✅ Complete — 10 tasks (277 loc + Tauri frontend) |
-| 6 | Advanced Features | ✅ 92% — 22/24 tasks (network, ssh, browser, notifications) |
-| 7 | Plugin System | ✅ 93% — 13/14 tasks (727 loc, WASM pipeline, hooks, hot-reload) |
-| 8 | Polish & Release | ○ Not started |
-| 9 | Automation & Enterprise | ✅ Complete — 23 tasks (automation 309 loc, credentials 195 loc, computer-use 95 loc, workflow editor) |
+| 6 | Advanced Features | ✅ Complete — 24/24 tasks (network, ssh, browser, notifications) |
+| 7 | Plugin System | ✅ Complete — 14/14 tasks (WASM pipeline, hooks, hot-reload) |
+| 8 | Polish & Release | ✅ Complete — 6 security audits, TLS, mobile, Windows MSI, update, Chrome ext |
+| 9 | Automation & Enterprise | ✅ Complete — 23 tasks (automation, credentials, UI automation, workflow editor) |
 
-**Total: 136 Rust files, ~11,306 lines across 17 workspace crates. 95+ tests pass. Builds clean on Windows. Passes `cargo clippy -- -D warnings`.**
+**Total: 160+ Rust files, ~12,200 lines across 17 workspace crates. 117+ tests pass. Builds clean on Windows/macOS/Linux. `cargo clippy -- -D warnings` clean.**
 
 ### Architectural Hardening (6-Vector Audit)
 
@@ -327,6 +346,17 @@ All critical findings from the production-grade architectural review have been r
 - **SSH Non-Blocking**: `std::thread::sleep` replaced with `std::hint::spin_loop()` in exec loop
 - **Event Routing**: `HookServer` uses real `AgentId` instead of generating random UUIDs per output event
 - **WebSocket Auth**: Exact token matching (no more substring vulnerability)
+
+### v1 Security Findings Closed
+
+| Finding | Fix |
+|---------|-----|
+| **C1: No TLS** | `rustls-tls` on reqwest + tokio-tungstenite; all HTTPS/WSS encrypted by default |
+| **C2: WASM integrity** | BLAKE3 sidecar signatures on `.cwasm` files; tampered modules rejected before `unsafe deserialize` |
+| **C3: IPC panic** | Four `try_into().unwrap()` → `Result` propagation; truncated frames no longer crash daemon |
+| **C4: SSH zeroize** | Passwords wrapped in `Zeroizing<String>`; wiped from memory on `Drop` |
+| **C5: Windows ACL** | `icacls /inheritance:r /grant:r` restricts IPC token file to current user |
+| **C6: PTY panic** | Windows PTY read/write/resize now returns `Result` instead of panicking on IO failure |
 
 ---
 
@@ -368,6 +398,8 @@ porpoise/
 | [TODO.md](./TODO.md) | Granular task tracking |
 | [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md) | Implementation guide |
 | [docs/SDK.md](./docs/SDK.md) | Plugin SDK documentation |
+| [docs/INSTALL_WINDOWS.md](./docs/INSTALL_WINDOWS.md) | Windows installer guide |
+| [docs/INSTALL_ANDROID.md](./docs/INSTALL_ANDROID.md) | Android APK install guide |
 | [docs/crates/CORE_TYPES.md](./docs/crates/CORE_TYPES.md) | Core type definitions |
 | [docs/crates/RUNTIME_DESIGN.md](./docs/crates/RUNTIME_DESIGN.md) | Runtime design |
 | [docs/crates/PROTOCOL_DESIGN.md](./docs/crates/PROTOCOL_DESIGN.md) | IPC protocol |

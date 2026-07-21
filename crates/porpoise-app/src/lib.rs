@@ -45,10 +45,10 @@ pub fn run() {
             commands::open_workflow_editor,
         ])
         .on_menu_event(|app, event| {
-            if event.id().as_ref() == "check-updates" {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.eval("window.__porpoise_check_update && window.__porpoise_check_update()");
-                }
+            if event.id().as_ref() == "check-updates"
+                && let Some(window) = app.get_webview_window("main")
+            {
+                let _ = window.eval("window.__porpoise_check_update && window.__porpoise_check_update()");
             }
         })
         .run(tauri::generate_context!())

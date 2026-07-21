@@ -497,9 +497,17 @@ Skills/plugins compile to WASM and run in a `wasmtime` instance with:
 ### Secure IPC
 
 - Unix socket permissions: `0o700` (owner only)
-- Windows named pipe ACL: restricted to the creating user
-- Session tokens: 256-bit random, stored encrypted at rest
+- Windows named pipe ACL: restricted via `icacls /inheritance:r /grant:r`
+- Session tokens: 256-bit random hex, stored at `data_dir/ipc-token` (Unix: 0o600, Windows: current-user-only)
+- Protocol version range enforcement on every frame
 - All IPC messages validated against a schema before dispatch
+
+### TLS / Transport Layer Security
+
+- All outbound HTTP/WS connections use TLS 1.3 via `rustls` (ring provider)
+- `reqwest` configured with `rustls-tls`; `tokio-tungstenite` with `rustls-tls-webpki-roots`
+- Mobile WSS server uses `tokio-rustls` with self-signed ECDSA P-256 certificate
+- Certificate generated on first daemon start; SHA-256 fingerprint verified by mobile clients (TOFU)
 
 ---
 

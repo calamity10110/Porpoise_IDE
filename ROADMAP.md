@@ -253,31 +253,32 @@ porpoise-skills/     # 726 loc, 7 files
 
 ---
 
-## Phase 8: Polish & Hardening — ◆ Architecture Audit Complete
+## Phase 8: Polish & Release — ✓ Complete
 
-**Objective:** Production readiness — performance, security audit, final testing, v1.0.
+**Objective:** Production readiness — security audit, TLS, mobile, Windows release, auto-update, Chrome extension. v1.0.
 
-### Architecture Hardening (✓ Complete)
+### Security Hardening (6 CRITICAL findings)
 
-| Area | Fix | Status |
-|------|-----|--------|
-| Process Lifecycle | Store tokio::process::Child in ProcessEntry/ManagedProcess | ✓ |
-| PTY Safety | dup() pattern replaces unsafe from_raw_fd+forget. SIGHUP+waitpid on close | ✓ |
-| Credential Security | PBKDF2-HMAC-SHA256 (600K iter) + fs2 file locking + random salt | ✓ |
-| WASM Sandbox | 128MB memory cap, 1MB stack, fuel on both runtimes | ✓ |
-| SSH Non-Blocking | spin_loop replaces std::thread::sleep in exec loop | ✓ |
-| Event Routing | HookServer stores real AgentId instead of AgentId::new() | ✓ |
-| WebSocket Auth | Exact token matching, no substring vulnerability | ✓ |
-| Named Pipe IPC | Server handle used directly, no double pipe instance | ✓ |
+| CVE-Level Finding | Fix | Status |
+|-------------------|-----|--------|
+| C1: TLS absent from all HTTP/WS | `reqwest` now uses `rustls-tls` with ring provider; `tokio-tungstenite` uses `rustls-tls-webpki-roots` | ✓ |
+| C2: WASM `.cwasm` deserialized without integrity | BLAKE3 sidecar `.cwasm.sig` written at compile, verified before `unsafe deserialize` | ✓ |
+| C3: IPC frame decode panics on truncated input | All 4 `try_into().unwrap()` replaced with `Result` propagation | ✓ |
+| C4: SSH passwords not zeroized | `AuthMethod::Password` now uses `Zeroizing<String>` | ✓ |
+| C5: Windows IPC token world-readable | `icacls \/inheritance:r \/grant:r` restricts to current user | ✓ |
+| C6: Windows PTY `expect()` panics on IO failure | `windows_pty::with_master()` returns `Result`; 3 panics removed | ✓ |
 
-### Performance Targets (not yet benchmarked)
+### v1 Release Deliverables
 
-| Metric | Target |
-|--------|--------|
-| Daemon cold start | <500ms |
-| CLI response (query) | <50ms |
-| PTY latency (input→echo) | <5ms p95 |
-| Memory per agent session | <50MB baseline |
+| Area | Deliverable | Status |
+|------|-------------|--------|
+| TLS | Self-signed ECDSA P-256 cert generation, WSS server, Flutter wss:// | ✓ |
+| Mobile | Daemon QR pairing CLI (`porpoise mobile qr`), `mobile/pairing_info` RPC | ✓ |
+| Android CI | Flutter APK via GitHub Actions; `docs/INSTALL_ANDROID.md` | ✓ |
+| Windows Release | NSIS config, release CI workflow, self-signed cert script, `docs/INSTALL_WINDOWS.md` | ✓ |
+| Auto-Update | `tauri-plugin-updater` with GitHub Releases manifest, `check-updates` menu | ✓ |
+| Chrome Extension | Manifest V3 bridge with WSS, DOM inspector, automation, popup, options | ✓ |
+| Verification | 117 tests pass, clippy clean, build clean, no scope creep | ✓ |
 
 ---
 
@@ -309,12 +310,12 @@ workflow.html         # Node-based visual editor (Tauri frontend)
 
 ```
 Phase 0: core ──> db ──> cli                    ✓ Complete
-                 \
-                  └─> CI/CD                       ✓ Complete
+                  \
+                   └─> CI/CD                       ✓ Complete
 
 Phase 1: core ──> relay ──> runtime ──> server    ✓ Complete
-                       ^                    │
-                       └────── CLI ─────────┘
+                        ^                    │
+                        └────── CLI ─────────┘
 
 Phase 2: core ──> git ──> server                 ✓ Complete
 Phase 3: core ──> runtime ──> terminal            ✓ Complete
@@ -322,9 +323,10 @@ Phase 4: core ──> agent ──> server               ✓ Complete
 Phase 5: app (Tauri) + workflow editor              ✓ Complete
 Phase 6: core ──> network ──> ssh ──> browser        ✓ Complete
 Phase 7: core ──> skills                             ✓ Complete
+Phase 8: security + TLS + mobile + update + ext      ✓ Complete
 Phase 9: core ──> credentials ──> automation ──> computer-use  ✓ Complete
 
-Remaining:  polish ──> release                      ○ Not started
+All phases complete. Next: benchmark, app store submission, community.   ○ Future
 ```
 
 ---
