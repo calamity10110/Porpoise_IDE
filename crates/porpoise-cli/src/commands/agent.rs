@@ -9,9 +9,13 @@ pub async fn handle(args: crate::app::AgentArgs, format: &OutputFormat) -> Resul
             Ok(format.format(&body))
         }
         AgentAction::Run { kind, worktree, prompt } => {
-            let body = daemon::call("agent_run", serde_json::json!({
-                "kind": kind, "worktree": worktree, "prompt": prompt
-            })).await?;
+            let body = daemon::call(
+                "agent_run",
+                serde_json::json!({
+                    "kind": kind, "worktree": worktree, "prompt": prompt
+                }),
+            )
+            .await?;
             Ok(format!("started agent: {body}"))
         }
         AgentAction::Stop { id } => {

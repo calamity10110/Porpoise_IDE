@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use porpoise_core::error::{PorpoiseError, Result};
 use serde::{Deserialize, Serialize};
@@ -67,12 +66,26 @@ pub enum StepDef {
 #[serde(tag = "type")]
 pub enum WebActionType {
     Navigate,
-    Click { selector: String },
-    Fill { selector: String, value: String },
-    Select { selector: String, option: String },
-    Extract { selector: String, attribute: Option<String> },
+    Click {
+        selector: String,
+    },
+    Fill {
+        selector: String,
+        value: String,
+    },
+    Select {
+        selector: String,
+        option: String,
+    },
+    Extract {
+        selector: String,
+        attribute: Option<String>,
+    },
     Screenshot,
-    WaitForSelector { selector: String, timeout_ms: u64 },
+    WaitForSelector {
+        selector: String,
+        timeout_ms: u64,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,12 +121,16 @@ pub struct WorkflowEngine {
 }
 
 impl Default for WorkflowEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl WorkflowEngine {
     pub fn new() -> Self {
-        Self { workflows: Arc::new(RwLock::new(HashMap::new())) }
+        Self {
+            workflows: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     pub async fn register(&self, def: WorkflowDef) -> Result<String> {
@@ -124,11 +141,17 @@ impl WorkflowEngine {
     }
 
     pub async fn execute(&self, def: &WorkflowDef) -> Result<WorkflowState> {
-        let mut state = WorkflowState { status: WorkflowStatus::Running, ..Default::default() };
+        let mut state = WorkflowState {
+            status: WorkflowStatus::Running,
+            ..Default::default()
+        };
 
         let ordered = self.topological_sort(def)?;
         for step_id in &ordered {
-            let step = def.steps.iter().find(|s| s.id() == *step_id)
+            let step = def
+                .steps
+                .iter()
+                .find(|s| s.id() == *step_id)
                 .ok_or_else(|| PorpoiseError::Internal(format!("step {step_id} not found")))?;
 
             match self.execute_step(step, &mut state, def).await {
@@ -147,9 +170,20 @@ impl WorkflowEngine {
         Ok(state)
     }
 
-    async fn execute_step(&self, step: &StepDef, state: &mut WorkflowState, _def: &WorkflowDef) -> Result<serde_json::Value> {
+    async fn execute_step(
+        &self,
+        step: &StepDef,
+        state: &mut WorkflowState,
+        _def: &WorkflowDef,
+    ) -> Result<serde_json::Value> {
         match step {
-            StepDef::AgentCall { id, agent_kind, prompt, timeout_secs, .. } => {
+            StepDef::AgentCall {
+                id,
+                agent_kind,
+                prompt,
+                timeout_secs,
+                ..
+            } => {
                 let resolved = resolve_template(prompt, &state.variables);
                 let timeout = timeout_secs.unwrap_or(300);
                 tracing::info!(step=%id, kind=%agent_kind, timeout=%timeout, prompt=%resolved, "agent call step");
@@ -165,13 +199,22 @@ impl WorkflowEngine {
                 tracing::info!(step=%id, action=%action_desc, "computer action step");
                 Ok(serde_json::json!({ "step": id, "computer_action": action_desc, "status": "recorded" }))
             }
-            StepDef::ApiCall { id, url, method, body, .. } => {
+            StepDef::ApiCall {
+                id, url, method, body, ..
+            } => {
                 let has_body = body.is_some();
                 tracing::info!(step=%id, url=%url, method=%method, has_body=%has_body, "api call step");
                 Ok(serde_json::json!({ "step": id, "called": url, "method": method, "has_body": has_body }))
             }
-            StepDef::CredentialLookup { id, credential_name, output_var, .. } => {
-                state.variables.insert(output_var.clone(), format!("<cred:{credential_name}>"));
+            StepDef::CredentialLookup {
+                id,
+                credential_name,
+                output_var,
+                ..
+            } => {
+                state
+                    .variables
+                    .insert(output_var.clone(), format!("<cred:{credential_name}>"));
                 tracing::info!(step=%id, credential=%credential_name, var=%output_var, "credential lookup step");
                 Ok(serde_json::json!({ "step": id, "lookup": credential_name, "output_var": output_var }))
             }
@@ -180,7 +223,13 @@ impl WorkflowEngine {
                 tokio::time::sleep(std::time::Duration::from_secs(*duration_secs)).await;
                 Ok(serde_json::json!({ "step": id, "delayed_ms": duration_secs * 1000 }))
             }
-            StepDef::Condition { id, expression, if_true, if_false, .. } => {
+            StepDef::Condition {
+                id,
+                expression,
+                if_true,
+                if_false,
+                ..
+            } => {
                 let condition_met = !expression.is_empty();
                 tracing::info!(step=%id, condition=%expression, met=%condition_met, "condition step");
                 let mut sub_state = WorkflowState::default();
@@ -188,12 +237,18 @@ impl WorkflowEngine {
                 for substep in substeps {
                     let sub_id = format!("{id}.sub.{}", substep.id());
                     let sub_result = match substep {
-                        StepDef::Delay { id: sid, duration_secs, .. } => {
+                        StepDef::Delay {
+                            id: sid, duration_secs, ..
+                        } => {
                             tokio::time::sleep(std::time::Duration::from_secs(*duration_secs)).await;
                             serde_json::json!({ "step": sid, "delayed_ms": duration_secs * 1000 })
                         }
-                        StepDef::CredentialLookup { id: sid, output_var, .. } => {
-                            sub_state.variables.insert(output_var.clone(), format!("<cred:{}>", sid));
+                        StepDef::CredentialLookup {
+                            id: sid, output_var, ..
+                        } => {
+                            sub_state
+                                .variables
+                                .insert(output_var.clone(), format!("<cred:{}>", sid));
                             serde_json::json!({ "step": sid, "lookup": sid })
                         }
                         _ => serde_json::json!({ "step": substep.id(), "executed": true }),
@@ -206,8 +261,7 @@ impl WorkflowEngine {
     }
 
     pub fn load_yaml(yaml: &str) -> Result<WorkflowDef> {
-        serde_yaml::from_str(yaml)
-            .map_err(|e| PorpoiseError::Config(format!("workflow parse: {e}")))
+        serde_yaml::from_str(yaml).map_err(|e| PorpoiseError::Config(format!("workflow parse: {e}")))
     }
 
     fn topological_sort(&self, def: &WorkflowDef) -> Result<Vec<String>> {
@@ -290,15 +344,23 @@ mod tests {
             description: None,
             env: HashMap::new(),
             steps: vec![
-                StepDef::Delay { id: "step-1".into(), duration_secs: 0, depends_on: vec![] },
+                StepDef::Delay {
+                    id: "step-1".into(),
+                    duration_secs: 0,
+                    depends_on: vec![],
+                },
                 StepDef::AgentCall {
-                    id: "step-2".into(), agent_kind: "claude".into(),
-                    prompt: "Do something".into(), depends_on: vec!["step-1".into()],
+                    id: "step-2".into(),
+                    agent_kind: "claude".into(),
+                    prompt: "Do something".into(),
+                    depends_on: vec!["step-1".into()],
                     timeout_secs: None,
                 },
                 StepDef::WebAction {
-                    id: "step-3".into(), url: "https://example.com".into(),
-                    action: WebActionType::Navigate, depends_on: vec!["step-2".into()],
+                    id: "step-3".into(),
+                    url: "https://example.com".into(),
+                    action: WebActionType::Navigate,
+                    depends_on: vec!["step-2".into()],
                 },
             ],
         }
@@ -352,8 +414,16 @@ steps:
             description: None,
             env: HashMap::new(),
             steps: vec![
-                StepDef::Delay { id: "a".into(), duration_secs: 0, depends_on: vec!["b".into()] },
-                StepDef::Delay { id: "b".into(), duration_secs: 0, depends_on: vec!["a".into()] },
+                StepDef::Delay {
+                    id: "a".into(),
+                    duration_secs: 0,
+                    depends_on: vec!["b".into()],
+                },
+                StepDef::Delay {
+                    id: "b".into(),
+                    duration_secs: 0,
+                    depends_on: vec!["a".into()],
+                },
             ],
         };
         let engine = WorkflowEngine::new();

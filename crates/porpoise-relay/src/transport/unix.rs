@@ -33,7 +33,9 @@ impl UnixSocketTransport {
             .await
             .map_err(|e| PorpoiseError::Ipc(format!("header: {e}")))?;
         let len = u32::from_le_bytes(
-            header[4..8].try_into().map_err(|_| PorpoiseError::Ipc("header slice misaligned".into()))?,
+            header[4..8]
+                .try_into()
+                .map_err(|_| PorpoiseError::Ipc("header slice misaligned".into()))?,
         ) as usize;
         let mut payload = vec![0u8; len];
         if len > 0 {

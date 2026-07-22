@@ -101,7 +101,10 @@ impl WorktreeProcessManager {
 
         self.processes.write().await.insert(
             process_id,
-            ManagedProcess { info: info.clone(), child: Some(child) },
+            ManagedProcess {
+                info: info.clone(),
+                child: Some(child),
+            },
         );
         self.by_worktree
             .write()
@@ -126,7 +129,9 @@ impl WorktreeProcessManager {
             .cloned()
             .unwrap_or_default();
         let procs = self.processes.read().await;
-        ids.iter().filter_map(|id| procs.get(id).map(|e| e.info.clone())).collect()
+        ids.iter()
+            .filter_map(|id| procs.get(id).map(|e| e.info.clone()))
+            .collect()
     }
 
     pub async fn kill(&self, process_id: ProcessId) -> Result<()> {
@@ -138,8 +143,13 @@ impl WorktreeProcessManager {
             .ok_or_else(|| PorpoiseError::Runtime(format!("process {process_id} not found")))?;
 
         if let Some(ref mut child) = entry.child {
-            child.start_kill().map_err(|e| PorpoiseError::Runtime(format!("kill: {e}")))?;
-            child.wait().await.map_err(|e| PorpoiseError::Runtime(format!("wait: {e}")))?;
+            child
+                .start_kill()
+                .map_err(|e| PorpoiseError::Runtime(format!("kill: {e}")))?;
+            child
+                .wait()
+                .await
+                .map_err(|e| PorpoiseError::Runtime(format!("wait: {e}")))?;
         }
 
         if let Some(ids) = self.by_worktree.write().await.get_mut(&entry.info.worktree_id) {

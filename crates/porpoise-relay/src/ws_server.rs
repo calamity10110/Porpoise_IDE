@@ -25,7 +25,13 @@ pub struct WsRelayServer {
 
 impl WsRelayServer {
     pub fn new(addr: SocketAddr, router: Arc<Router>) -> Self {
-        Self { router, addr, auth_token: None, event_bus: None, tls_acceptor: None }
+        Self {
+            router,
+            addr,
+            auth_token: None,
+            event_bus: None,
+            tls_acceptor: None,
+        }
     }
 
     pub fn with_auth(mut self, token: String) -> Self {
@@ -78,7 +84,13 @@ impl WsRelayServer {
     }
 }
 
-async fn handle_ws<S>(stream: S, peer: SocketAddr, router: Arc<Router>, auth_token: Option<String>, event_bus: Option<EventBus>) -> Result<()>
+async fn handle_ws<S>(
+    stream: S,
+    peer: SocketAddr,
+    router: Arc<Router>,
+    auth_token: Option<String>,
+    event_bus: Option<EventBus>,
+) -> Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
@@ -92,7 +104,8 @@ where
     if let Ok(payload) = serde_json::to_vec(&handshake) {
         let frame = Frame::new(FrameFlags::EVENT, payload);
         if let Ok(encoded) = frame.encode()
-            && let Ok(msg) = serde_json::to_string(&encoded) {
+            && let Ok(msg) = serde_json::to_string(&encoded)
+        {
             let _ = ws_sender.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await;
         }
     }

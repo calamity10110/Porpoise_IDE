@@ -15,13 +15,13 @@ pub struct ComputerUse {
 
 impl ComputerUse {
     pub fn new() -> Result<Self> {
-        let enigo = Enigo::new(&Settings::default())
-            .map_err(|e| PorpoiseError::Runtime(format!("enigo init: {e}")))?;
+        let enigo = Enigo::new(&Settings::default()).map_err(|e| PorpoiseError::Runtime(format!("enigo init: {e}")))?;
         Ok(Self { enigo })
     }
 
     pub fn mouse_move(&mut self, x: i32, y: i32) -> Result<()> {
-        self.enigo.move_mouse(x, y, Coordinate::Abs)
+        self.enigo
+            .move_mouse(x, y, Coordinate::Abs)
             .map_err(|e| PorpoiseError::Runtime(format!("mouse move: {e}")))?;
         Ok(())
     }
@@ -32,13 +32,15 @@ impl ComputerUse {
             ClickButton::Right => Button::Right,
             ClickButton::Middle => Button::Middle,
         };
-        self.enigo.button(btn, Direction::Click)
+        self.enigo
+            .button(btn, Direction::Click)
             .map_err(|e| PorpoiseError::Runtime(format!("mouse click: {e}")))?;
         Ok(())
     }
 
     pub fn type_text(&mut self, text: &str) -> Result<()> {
-        self.enigo.text(text)
+        self.enigo
+            .text(text)
             .map_err(|e| PorpoiseError::Runtime(format!("type: {e}")))?;
         Ok(())
     }
@@ -59,7 +61,8 @@ impl ComputerUse {
             "end" => Key::End,
             _ => return Err(PorpoiseError::Runtime(format!("unknown key: {key}"))),
         };
-        self.enigo.key(k, Direction::Click)
+        self.enigo
+            .key(k, Direction::Click)
             .map_err(|e| PorpoiseError::Runtime(format!("key press: {e}")))?;
         Ok(())
     }
@@ -82,9 +85,7 @@ impl ComputerUse {
                 self.key_press(key)?;
                 Ok(serde_json::json!({"action": "key_press", "key": key}))
             }
-            AutomationAction::Screenshot => {
-                Err(PorpoiseError::Unimplemented("screenshot"))
-            }
+            AutomationAction::Screenshot => Err(PorpoiseError::Unimplemented("screenshot")),
             AutomationAction::Wait { duration_ms } => {
                 tokio::time::sleep(std::time::Duration::from_millis(*duration_ms)).await;
                 Ok(serde_json::json!({"action": "wait", "ms": duration_ms}))

@@ -12,7 +12,7 @@ use porpoise_core::{
     types::event::{AgentEvent, NotificationSeverity, SystemEvent, TerminalEvent},
 };
 use porpoise_db::DbPool;
-use porpoise_relay::{auth::SessionTokenStore, tls, RelayServer, Router, WsRelayServer};
+use porpoise_relay::{RelayServer, Router, WsRelayServer, auth::SessionTokenStore, tls};
 use porpoise_runtime::PtyManager;
 use tokio::sync::broadcast;
 
@@ -42,11 +42,7 @@ impl Daemon {
 
         let notification_service = Arc::new(NotificationService::new(db.clone()));
 
-        let data_dir = config
-            .core
-            .data_dir
-            .clone()
-            .unwrap_or_else(std::env::temp_dir);
+        let data_dir = config.core.data_dir.clone().unwrap_or_else(std::env::temp_dir);
         let socket_path = data_dir.join("porpoise.sock");
 
         let token_store = SessionTokenStore::create(&data_dir)?;
@@ -104,16 +100,24 @@ impl Daemon {
         self.server = Some(server);
 
         if let Ok(port_str) = std::env::var("PORPOISE_WS_PORT")
-            && let Ok(port) = port_str.parse::<u16>() {
+            && let Ok(port) = port_str.parse::<u16>()
+        {
             let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
             let mut ws_server = WsRelayServer::new(addr, router.clone())
                 .with_auth(self.session_token.clone())
                 .with_event_bus(self.state.event_bus().clone());
 
             if std::env::var("PORPOISE_WS_TLS").as_deref() == Ok("1") {
-                let data_dir_for_tls = self.state.config().await.core.data_dir.clone().unwrap_or_else(std::env::temp_dir);
-                let hostnames = std::env::var("PORPOISE_WS_HOSTS")
-                    .unwrap_or_else(|_| "localhost,127.0.0.1".to_string());
+                let data_dir_for_tls = self
+                    .state
+                    .config()
+                    .await
+                    .core
+                    .data_dir
+                    .clone()
+                    .unwrap_or_else(std::env::temp_dir);
+                let hostnames =
+                    std::env::var("PORPOISE_WS_HOSTS").unwrap_or_else(|_| "localhost,127.0.0.1".to_string());
                 let host_list: Vec<&str> = hostnames.split(',').map(|s| s.trim()).collect();
                 match tls::load_or_generate(&data_dir_for_tls, &host_list) {
                     Ok(assets) => match tls::build_tls_acceptor(&assets) {

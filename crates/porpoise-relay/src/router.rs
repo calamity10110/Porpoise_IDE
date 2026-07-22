@@ -4,7 +4,8 @@ use porpoise_core::{error::Result, state::AppState};
 
 use crate::message::{ErrorCode, ProtocolError, Request, Response, StatusCode};
 
-type HandlerFn = Arc<dyn Fn(Request, AppState) -> Pin<Box<dyn Future<Output = Result<serde_json::Value>> + Send>> + Send + Sync>;
+type HandlerFn =
+    Arc<dyn Fn(Request, AppState) -> Pin<Box<dyn Future<Output = Result<serde_json::Value>> + Send>> + Send + Sync>;
 
 pub struct Router {
     handlers: HashMap<String, HandlerFn>,

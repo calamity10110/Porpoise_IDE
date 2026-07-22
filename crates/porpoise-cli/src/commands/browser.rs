@@ -13,11 +13,18 @@ pub async fn handle(args: crate::app::BrowserArgs, _format: &OutputFormat) -> Re
             Ok(format!("{body}"))
         }
         BrowserAction::Click { page_id, selector } => {
-            let _ = page_id; let _ = selector;
+            let _ = page_id;
+            let _ = selector;
             Ok("clicked".into())
         }
-        BrowserAction::Fill { page_id, selector, value } => {
-            let _ = page_id; let _ = selector; let _ = value;
+        BrowserAction::Fill {
+            page_id,
+            selector,
+            value,
+        } => {
+            let _ = page_id;
+            let _ = selector;
+            let _ = value;
             Ok("filled".into())
         }
     }

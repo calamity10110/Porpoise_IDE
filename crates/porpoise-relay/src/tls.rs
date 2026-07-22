@@ -17,10 +17,8 @@ pub fn load_or_generate(data_dir: &Path, hostnames: &[&str]) -> Result<TlsAssets
     let fp_path = data_dir.join("daemon.cert.fp");
 
     if cert_path.exists() && key_path.exists() && fp_path.exists() {
-        let cert_pem = std::fs::read(&cert_path)
-            .map_err(|e| PorpoiseError::Ipc(format!("read cert: {e}")))?;
-        let key_pem = std::fs::read(&key_path)
-            .map_err(|e| PorpoiseError::Ipc(format!("read key: {e}")))?;
+        let cert_pem = std::fs::read(&cert_path).map_err(|e| PorpoiseError::Ipc(format!("read cert: {e}")))?;
+        let key_pem = std::fs::read(&key_path).map_err(|e| PorpoiseError::Ipc(format!("read key: {e}")))?;
         let fingerprint = std::fs::read_to_string(&fp_path)
             .map_err(|e| PorpoiseError::Ipc(format!("read fp: {e}")))?
             .trim()
@@ -37,15 +35,9 @@ pub fn load_or_generate(data_dir: &Path, hostnames: &[&str]) -> Result<TlsAssets
     generate_and_store(&cert_path, &key_path, &fp_path, hostnames)
 }
 
-fn generate_and_store(
-    cert_path: &Path,
-    key_path: &Path,
-    fp_path: &Path,
-    hostnames: &[&str],
-) -> Result<TlsAssets> {
+fn generate_and_store(cert_path: &Path, key_path: &Path, fp_path: &Path, hostnames: &[&str]) -> Result<TlsAssets> {
     let san: Vec<String> = hostnames.iter().map(|s| s.to_string()).collect();
-    let mut params = CertificateParams::new(san)
-        .map_err(|e| PorpoiseError::Ipc(format!("cert params: {e}")))?;
+    let mut params = CertificateParams::new(san).map_err(|e| PorpoiseError::Ipc(format!("cert params: {e}")))?;
     params.distinguished_name = rcgen::DistinguishedName::new();
     params
         .distinguished_name
@@ -54,8 +46,7 @@ fn generate_and_store(
         .distinguished_name
         .push(rcgen::DnType::OrganizationName, "Porpoise");
 
-    let key_pair = KeyPair::generate()
-        .map_err(|e| PorpoiseError::Ipc(format!("keypair: {e}")))?;
+    let key_pair = KeyPair::generate().map_err(|e| PorpoiseError::Ipc(format!("keypair: {e}")))?;
     let cert = params
         .self_signed(&key_pair)
         .map_err(|e| PorpoiseError::Ipc(format!("self_signed: {e}")))?;
@@ -82,8 +73,7 @@ fn generate_and_store(
 fn write_restricted(path: &Path, content: &[u8]) -> Result<()> {
     #[cfg(unix)]
     {
-        use std::io::Write;
-        use std::os::unix::fs::OpenOptionsExt;
+        use std::{io::Write, os::unix::fs::OpenOptionsExt};
         let mut file = std::fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -96,8 +86,7 @@ fn write_restricted(path: &Path, content: &[u8]) -> Result<()> {
     }
     #[cfg(not(unix))]
     {
-        std::fs::write(path, content)
-            .map_err(|e| PorpoiseError::Ipc(format!("write {path:?}: {e}")))?;
+        std::fs::write(path, content).map_err(|e| PorpoiseError::Ipc(format!("write {path:?}: {e}")))?;
     }
     Ok(())
 }
@@ -112,6 +101,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 pub fn build_tls_acceptor(assets: &TlsAssets) -> Result<tokio_rustls::TlsAcceptor> {
     use std::sync::Arc;
+
     use tokio_rustls::rustls::ServerConfig;
 
     let provider = Arc::new(tokio_rustls::rustls::crypto::ring::default_provider());

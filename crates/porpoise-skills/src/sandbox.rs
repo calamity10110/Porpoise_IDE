@@ -147,8 +147,9 @@ impl SandboxedInstance {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use wasmtime::Engine;
+
+    use super::*;
 
     #[test]
     fn test_no_imports_succeeds() {

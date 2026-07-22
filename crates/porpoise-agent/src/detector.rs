@@ -7,7 +7,12 @@ pub struct AgentDetector;
 impl AgentDetector {
     pub fn detect_all() -> Vec<AgentManifest> {
         let agents = vec![
-            ("Claude Code", "claude", AgentKind::ClaudeCode, &["--version"] as &[&str]),
+            (
+                "Claude Code",
+                "claude",
+                AgentKind::ClaudeCode,
+                &["--version"] as &[&str],
+            ),
             ("OpenAI Codex", "codex", AgentKind::Codex, &["--version"]),
             ("Google Gemini", "gemini", AgentKind::Gemini, &["--version"]),
             ("OpenCode", "opencode", AgentKind::OpenCode, &["--version"]),

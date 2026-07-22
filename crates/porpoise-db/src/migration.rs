@@ -113,8 +113,9 @@ pub fn run_migrations(pool: &DbPool) -> Result<u32> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::TempDir;
+
+    use super::*;
 
     fn create_pool() -> DbPool {
         let dir = TempDir::new().unwrap();
@@ -136,10 +137,19 @@ mod tests {
             .filter_map(|r| r.ok())
             .collect();
 
-        assert!(tables.contains(&"notifications".to_string()), "notifications table missing");
+        assert!(
+            tables.contains(&"notifications".to_string()),
+            "notifications table missing"
+        );
         assert!(tables.contains(&"scrollback".to_string()), "scrollback table missing");
-        assert!(tables.contains(&"agent_sessions".to_string()), "agent_sessions table missing");
-        assert!(tables.contains(&"server_metadata".to_string()), "server_metadata table missing");
+        assert!(
+            tables.contains(&"agent_sessions".to_string()),
+            "agent_sessions table missing"
+        );
+        assert!(
+            tables.contains(&"server_metadata".to_string()),
+            "server_metadata table missing"
+        );
     }
 
     #[test]
@@ -163,6 +173,9 @@ mod tests {
             .filter_map(|r| r.ok())
             .collect();
 
-        assert!(cols.contains(&"generation_id".to_string()), "generation_id column missing on sessions");
+        assert!(
+            cols.contains(&"generation_id".to_string()),
+            "generation_id column missing on sessions"
+        );
     }
 }

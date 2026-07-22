@@ -156,8 +156,8 @@ fn write_cwasm_with_integrity(cache_dir: &Path, skill_id: &str, serialized: &[u8
 
 fn verify_cwasm_integrity(cwasm_path: &Path, bytes: &[u8]) -> Result<()> {
     let sig_path = cwasm_path.with_extension("cwasm.sig");
-    let sig_bytes = std::fs::read(&sig_path)
-        .map_err(|e| PorpoiseError::WasmIntegrityFailed(format!("read sig file: {e}")))?;
+    let sig_bytes =
+        std::fs::read(&sig_path).map_err(|e| PorpoiseError::WasmIntegrityFailed(format!("read sig file: {e}")))?;
 
     if sig_bytes.len() != INTEGRITY_HEADER_LEN {
         return Err(PorpoiseError::WasmIntegrityFailed(format!(
@@ -169,13 +169,18 @@ fn verify_cwasm_integrity(cwasm_path: &Path, bytes: &[u8]) -> Result<()> {
         return Err(PorpoiseError::WasmIntegrityFailed("bad sig magic".into()));
     }
     if sig_bytes[8] != 1 {
-        return Err(PorpoiseError::WasmIntegrityFailed(format!("unknown sig version: {}", sig_bytes[8])));
+        return Err(PorpoiseError::WasmIntegrityFailed(format!(
+            "unknown sig version: {}",
+            sig_bytes[8]
+        )));
     }
 
     let stored_hash = &sig_bytes[9..41];
     let actual_hash = blake3::hash(bytes);
     if stored_hash != actual_hash.as_slice() {
-        return Err(PorpoiseError::WasmIntegrityFailed("BLAKE3 hash mismatch — file tampered or corrupted".into()));
+        return Err(PorpoiseError::WasmIntegrityFailed(
+            "BLAKE3 hash mismatch — file tampered or corrupted".into(),
+        ));
     }
     Ok(())
 }
@@ -265,7 +270,10 @@ mod tests {
         }
         let cwasm_path = dir.path().join("tamper.cwasm");
         let result = verify_cwasm_integrity(&cwasm_path, &serialized);
-        assert!(matches!(result, Err(PorpoiseError::WasmIntegrityFailed(_))), "expected integrity failure");
+        assert!(
+            matches!(result, Err(PorpoiseError::WasmIntegrityFailed(_))),
+            "expected integrity failure"
+        );
     }
 
     #[test]

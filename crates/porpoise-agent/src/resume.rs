@@ -239,8 +239,9 @@ pub fn parse_timestamp(ts: &str) -> Option<DateTime<Utc>> {
 
 #[cfg(test)]
 mod tests {
-    use porpoise_db::DbPool;
     use std::path::Path;
+
+    use porpoise_db::DbPool;
     use tempfile::TempDir;
 
     use super::*;

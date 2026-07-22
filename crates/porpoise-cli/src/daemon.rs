@@ -4,8 +4,7 @@ use porpoise_relay::RelayClient;
 pub async fn connect() -> Result<RelayClient> {
     let data_dir = porpoise_core::config::AppConfig::default_data_dir()
         .map_err(|e| PorpoiseError::Config(format!("data dir: {e}")))?;
-    std::fs::create_dir_all(&data_dir)
-        .map_err(|e| PorpoiseError::Config(format!("mkdir: {e}")))?;
+    std::fs::create_dir_all(&data_dir).map_err(|e| PorpoiseError::Config(format!("mkdir: {e}")))?;
     let socket_path = data_dir.join("porpoise.sock");
     let token_path = data_dir.join("ipc-token");
     let token = if token_path.exists() {

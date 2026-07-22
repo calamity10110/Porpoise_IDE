@@ -1,10 +1,7 @@
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use porpoise_core::error::PorpoiseError;
-use porpoise_core::error::Result;
-use porpoise_git::cache::GitStatusCache;
-use porpoise_git::GitEngine;
+use porpoise_core::error::{PorpoiseError, Result};
+use porpoise_git::{GitEngine, cache::GitStatusCache};
 
 pub async fn handle_status(repo_path: &str, cache: &GitStatusCache) -> Result<serde_json::Value> {
     let path = Path::new(repo_path);

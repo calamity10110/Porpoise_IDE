@@ -26,8 +26,7 @@ impl SessionTokenStore {
 
         #[cfg(unix)]
         {
-            use std::io::Write;
-            use std::os::unix::fs::OpenOptionsExt;
+            use std::{io::Write, os::unix::fs::OpenOptionsExt};
             let mut file = std::fs::OpenOptions::new()
                 .write(true)
                 .create(true)
@@ -40,8 +39,7 @@ impl SessionTokenStore {
         }
         #[cfg(not(unix))]
         {
-            std::fs::write(&token_path, &token)
-                .map_err(|e| PorpoiseError::Ipc(format!("write token: {e}")))?;
+            std::fs::write(&token_path, &token).map_err(|e| PorpoiseError::Ipc(format!("write token: {e}")))?;
             restrict_token_acl_windows(&token_path)
                 .map_err(|e| PorpoiseError::Ipc(format!("restrict token acl: {e}")))?;
         }
@@ -54,19 +52,17 @@ impl SessionTokenStore {
 }
 
 pub fn load_token(path: &Path) -> Result<String> {
-    let token = std::fs::read_to_string(path)
-        .map_err(|e| PorpoiseError::Ipc(format!("read token: {e}")))?;
+    let token = std::fs::read_to_string(path).map_err(|e| PorpoiseError::Ipc(format!("read token: {e}")))?;
     Ok(token.trim().to_string())
 }
 
 #[cfg(windows)]
 fn restrict_token_acl_windows(path: &Path) -> std::io::Result<()> {
-    let path_str = path.to_str().ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::InvalidInput, "token path must be valid UTF-8")
-    })?;
-    let username = std::env::var("USERNAME").map_err(|_| {
-        std::io::Error::new(std::io::ErrorKind::NotFound, "USERNAME env var not set")
-    })?;
+    let path_str = path
+        .to_str()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "token path must be valid UTF-8"))?;
+    let username = std::env::var("USERNAME")
+        .map_err(|_| std::io::Error::new(std::io::ErrorKind::NotFound, "USERNAME env var not set"))?;
 
     // /inheritance:r removes inherited ACEs; /grant:r replaces ACEs with current-user-only Full Control.
     let output = std::process::Command::new("icacls")

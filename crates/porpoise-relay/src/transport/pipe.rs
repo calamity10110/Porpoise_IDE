@@ -33,7 +33,9 @@ impl NamedPipeStream {
         read_result.map_err(|e| PorpoiseError::Ipc(format!("pipe read header: {e}")))?;
 
         let length = u32::from_le_bytes(
-            header[4..8].try_into().map_err(|_| PorpoiseError::Ipc("header slice misaligned".into()))?,
+            header[4..8]
+                .try_into()
+                .map_err(|_| PorpoiseError::Ipc("header slice misaligned".into()))?,
         ) as usize;
         let mut payload = vec![0u8; length];
         if length > 0 {
@@ -59,11 +61,15 @@ impl NamedPipeTransport {
         let stream = ClientOptions::new()
             .open(path)
             .map_err(|e| PorpoiseError::Ipc(format!("pipe connect: {e}")))?;
-        Ok(Self { stream: NamedPipeStream::Client(stream) })
+        Ok(Self {
+            stream: NamedPipeStream::Client(stream),
+        })
     }
 
     pub fn from_server(server: NamedPipeServer) -> Self {
-        Self { stream: NamedPipeStream::Server(server) }
+        Self {
+            stream: NamedPipeStream::Server(server),
+        }
     }
 
     pub async fn send(&mut self, frame: &Frame) -> Result<()> {

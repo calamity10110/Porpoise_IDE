@@ -1,6 +1,7 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use porpoise_core::error::{PorpoiseError, Result};
-use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::navigation::{NavigationResult, NavigationStatus};
@@ -145,10 +146,7 @@ impl BrowserEngine for HeadlessBrowser {
         let (url, client) = {
             let st = self.state.read().await;
             if st.history_index > 0 {
-                (
-                    Some(st.history[st.history_index - 1].clone()),
-                    st.client.clone(),
-                )
+                (Some(st.history[st.history_index - 1].clone()), st.client.clone())
             } else {
                 (None, st.client.clone())
             }
@@ -170,16 +168,12 @@ impl BrowserEngine for HeadlessBrowser {
         let (url, client) = {
             let st = self.state.read().await;
             if st.history_index + 1 < st.history.len() {
-                (
-                    Some(st.history[st.history_index + 1].clone()),
-                    st.client.clone(),
-                )
+                (Some(st.history[st.history_index + 1].clone()), st.client.clone())
             } else {
                 (None, st.client.clone())
             }
         };
-        let url =
-            url.ok_or_else(|| PorpoiseError::Browser("no forward history".into()))?;
+        let url = url.ok_or_else(|| PorpoiseError::Browser("no forward history".into()))?;
 
         let (html, title) = Self::fetch_page(&client, &url).await?;
 

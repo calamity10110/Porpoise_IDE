@@ -12,10 +12,18 @@ pub async fn handle(args: crate::app::SshArgs, _format: &OutputFormat) -> Result
             let body = daemon::call("ssh_worktree", serde_json::json!({"session_id": session_id})).await?;
             Ok(format!("{body}"))
         }
-        SshAction::PortForward { session_id, local, remote } => {
-            let body = daemon::call("ssh_port_forward", serde_json::json!({
-                "session_id": session_id, "local": local, "remote": remote
-            })).await?;
+        SshAction::PortForward {
+            session_id,
+            local,
+            remote,
+        } => {
+            let body = daemon::call(
+                "ssh_port_forward",
+                serde_json::json!({
+                    "session_id": session_id, "local": local, "remote": remote
+                }),
+            )
+            .await?;
             Ok(format!("{body}"))
         }
     }

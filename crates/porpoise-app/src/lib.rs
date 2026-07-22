@@ -1,7 +1,9 @@
 use porpoise_relay::RelayClient;
-use tauri::Manager;
-use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
+use tauri::{
+    Manager,
+    menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder},
+};
 
 mod commands;
 
@@ -66,8 +68,7 @@ fn build_app_menu(app: &mut tauri::App) -> Result<tauri::menu::Menu<tauri::Wry>,
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
 
-    let check_updates = MenuItemBuilder::with_id("check-updates", "Check for Updates…")
-        .build(app)?;
+    let check_updates = MenuItemBuilder::with_id("check-updates", "Check for Updates…").build(app)?;
 
     let quit = MenuItemBuilder::with_id("quit", "Quit Porpoise")
         .accelerator("CmdOrCtrl+Q")

@@ -1,19 +1,17 @@
 use std::{path::PathBuf, time::Duration};
 
 use porpoise_core::error::{PorpoiseError, Result};
-use tokio::sync::Mutex;
-use tokio::sync::watch;
+use tokio::sync::{Mutex, watch};
 
-use crate::auth::ConnectionState;
+#[cfg(windows)]
+use crate::transport::pipe::NamedPipeTransport;
+#[cfg(unix)]
+use crate::transport::unix::UnixSocketTransport;
 use crate::{
+    auth::ConnectionState,
     frame::{Frame, FrameFlags},
     message::{Handshake, Request, WireMessage},
 };
-
-#[cfg(unix)]
-use crate::transport::unix::UnixSocketTransport;
-#[cfg(windows)]
-use crate::transport::pipe::NamedPipeTransport;
 
 const BASE_DELAY_MS: u64 = 100;
 const MAX_DELAY_MS: u64 = 30_000;
@@ -60,11 +58,8 @@ impl RelayClient {
             session_token: Some(token.to_string()),
             peer_pid: std::process::id(),
         });
-        let payload = serde_json::to_vec(&auth_hs)
-            .map_err(|e| PorpoiseError::Ipc(format!("serialize auth: {e}")))?;
-        transport
-            .send(&Frame::new(FrameFlags::EVENT, payload))
-            .await?;
+        let payload = serde_json::to_vec(&auth_hs).map_err(|e| PorpoiseError::Ipc(format!("serialize auth: {e}")))?;
+        transport.send(&Frame::new(FrameFlags::EVENT, payload)).await?;
 
         Ok(Self {
             socket_path: path.to_path_buf(),

@@ -2,7 +2,11 @@ use assert_cmd::Command;
 
 #[test]
 fn test_version() {
-    Command::cargo_bin("porpoise").unwrap().arg("version").assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .arg("version")
+        .assert()
+        .success();
 }
 
 #[test]
@@ -12,45 +16,81 @@ fn test_help() {
 
 #[test]
 fn test_worktree_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["worktree", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["worktree", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_agent_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["agent", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["agent", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_terminal_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["terminal", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["terminal", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_git_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["git", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["git", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_skill_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["skill", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["skill", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_ssh_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["ssh", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["ssh", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_config_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["config", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["config", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_browser_help() {
-    Command::cargo_bin("porpoise").unwrap().args(["browser", "--help"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["browser", "--help"])
+        .assert()
+        .success();
 }
 
 #[test]
 fn test_json_flag() {
-    Command::cargo_bin("porpoise").unwrap().args(["--json", "version"]).assert().success();
+    Command::cargo_bin("porpoise")
+        .unwrap()
+        .args(["--json", "version"])
+        .assert()
+        .success();
 }

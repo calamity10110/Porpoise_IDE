@@ -4,10 +4,19 @@ use crate::{app::WorktreeAction, daemon, output::OutputFormat};
 
 pub async fn handle(args: crate::app::WorktreeArgs, format: &OutputFormat) -> Result<String> {
     match args.action {
-        WorktreeAction::Create { name, repo, agent, prompt } => {
-            let body = daemon::call("worktree_create", serde_json::json!({
-                "name": name, "repo": repo, "agent": agent, "prompt": prompt
-            })).await?;
+        WorktreeAction::Create {
+            name,
+            repo,
+            agent,
+            prompt,
+        } => {
+            let body = daemon::call(
+                "worktree_create",
+                serde_json::json!({
+                    "name": name, "repo": repo, "agent": agent, "prompt": prompt
+                }),
+            )
+            .await?;
             Ok(format.format(&body))
         }
         WorktreeAction::List => {

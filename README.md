@@ -396,6 +396,10 @@ porpoise/
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Full system architecture |
 | [ROADMAP.md](./ROADMAP.md) | Phased development roadmap |
 | [TODO.md](./TODO.md) | Granular task tracking |
+| [docs/MARKETING.md](./docs/MARKETING.md) | Marketing package — pitches, competitive analysis, personas |
+| [docs/INTEGRATION.md](./docs/INTEGRATION.md) | Integration guide — CLI, CI/CD, extension, mobile, SDK |
+| [docs/INSTALL.md](./docs/INSTALL.md) | Master install guide — all platforms and deployment modes |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Self-host vs Cloud deployment, Docker, operations |
 | [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md) | Implementation guide |
 | [docs/SDK.md](./docs/SDK.md) | Plugin SDK documentation |
 | [docs/INSTALL_WINDOWS.md](./docs/INSTALL_WINDOWS.md) | Windows installer guide |

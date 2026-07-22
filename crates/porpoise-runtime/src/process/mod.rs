@@ -118,8 +118,13 @@ impl ProcessManager {
             .remove(&id)
             .ok_or_else(|| PorpoiseError::Runtime(format!("process {id} not found")))?;
         if let Some(mut child) = entry.child {
-            child.start_kill().map_err(|e| PorpoiseError::Runtime(format!("kill: {e}")))?;
-            child.wait().await.map_err(|e| PorpoiseError::Runtime(format!("wait: {e}")))?;
+            child
+                .start_kill()
+                .map_err(|e| PorpoiseError::Runtime(format!("kill: {e}")))?;
+            child
+                .wait()
+                .await
+                .map_err(|e| PorpoiseError::Runtime(format!("wait: {e}")))?;
         }
         Ok(())
     }

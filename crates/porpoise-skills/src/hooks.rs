@@ -157,8 +157,9 @@ impl HookRegistry {
 
 #[cfg(test)]
 mod tests {
-    use porpoise_core::PorpoiseError;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use porpoise_core::PorpoiseError;
 
     use super::*;
 
