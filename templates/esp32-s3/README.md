@@ -670,6 +670,296 @@ RUST_LOG=debug espflash flash --monitor target/xtensa-esp32s3-none-elf/release/p
 
 ---
 
+## Build Scripts
+
+Cross-platform build scripts are provided for Windows, Linux, and WSL.
+
+### Quick Start
+
+```bash
+# Linux / WSL / macOS
+./build.sh build waveshare-349       # Build firmware
+./build.sh flash waveshare-349       # Build + flash
+./build.sh monitor                   # Serial monitor
+./build.sh ota waveshare-349         # Build OTA binary
+./build.sh behavior                  # Show behavior config instructions
+./build.sh list                      # List available boards
+
+# Windows PowerShell
+.\build.ps1 build waveshare-349
+.\build.ps1 flash waveshare-349
+.\build.ps1 monitor
+
+# Make (cross-platform)
+make build BOARD=waveshare-349
+make flash BOARD=waveshare-349
+make monitor
+make ota BOARD=waveshare-349
+make behavior FILE=config.json
+```
+
+### Available Boards
+
+| Board Name | Feature Flag | Description |
+|---|---|---|
+| `waveshare-349` | `board-waveshare-349` | Waveshare ESP32-S3 Touch LCD 3.49" (480x480) |
+| `waveshare-349-touch` | `board-waveshare-349-touch` | Same board, audio disabled |
+| `custom-board` | `board-custom` | Template for your custom hardware |
+
+### Build Script Commands
+
+| Command | Description |
+|---|---|
+| `build [board]` | Build firmware for specified board |
+| `flash [board]` | Build + flash via USB |
+| `monitor` | Open serial monitor (115200 baud) |
+| `clean` | Remove build artifacts |
+| `ota [board]` | Build OTA-updateable binary |
+| `behavior [file]` | Show behavior config flash instructions |
+| `list` | List all available board configurations |
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | auto-detect | Serial port (`/dev/ttyUSB0`, `COM3`) |
+| `BAUD` | `115200` | Serial monitor baud rate |
+
+---
+
+## Partition Table
+
+The template uses a custom partition table (`partitions.csv`) with dual OTA slots and a dedicated behavior config partition:
+
+```
+nvs        0x9000    24KB    WiFi credentials, auth token, device settings
+otadata    0xf000    8KB     OTA state (which app slot is active)
+app0       0x10000   1.875MB Factory/OTA firmware slot 0
+app1       0x1F0000  1.875MB OTA firmware slot 1
+behavior   0x3D0000  128KB   Runtime-updatable component configs (survives OTA)
+spiffs     0x3F0000  64KB    General-purpose storage
+```
+
+**Key design**: The `behavior` partition is **independent of firmware OTA**. When you flash a new firmware via OTA, your component configs (brightness, thresholds, enabled/disabled states) are preserved.
+
+### Using the Partition Table
+
+```bash
+# Flash with custom partition table
+espflash flash --partition-table partitions.csv target/xtensa-esp32s3-none-elf/release/porpoise-esp32s3
+
+# Or set in .cargo/config.toml (already configured)
+# runner = "espflash flash --partition-table partitions.csv --monitor"
+```
+
+---
+
+## OTA (Over-The-Air) Updates
+
+Two OTA modes are supported:
+
+### 1. Full Firmware OTA
+
+Update the entire firmware binary over WebSocket. The device has dual app slots (A/B) for safe rollback.
+
+```bash
+# Build OTA binary
+./build.sh ota waveshare-349
+
+# Upload via WebSocket (from host script or web UI)
+# The device receives chunks, verifies SHA-256 checksum, and reboots into new firmware
+```
+
+**OTA Protocol** (WebSocket):
+1. Host sends `OtaStartMsg { total_size, checksum }` → device enters `OtaState::Receiving`
+2. Host sends `OtaChunkMsg { offset, data }` chunks → device writes to inactive OTA slot
+3. Host sends `OtaFinalizeMsg {}` → device verifies checksum, marks slot active, reboots
+
+### 2. Behavior-Only OTA (No Reboot)
+
+Update component configurations without touching firmware. Changes take effect immediately.
+
+```bash
+# Via WebSocket command:
+# { "target": "behavior", "action": "update", "args": { "components": [...] } }
+
+# Via build script (generates config instructions):
+./build.sh behavior
+```
+
+**Behavior OTA Protocol** (WebSocket):
+1. Host sends behavior config as JSON chunks
+2. Device validates and applies to `BehaviorConfig`
+3. Components reconfigure at runtime (no reboot)
+
+---
+
+## Behavior Config System
+
+The behavior config system allows **runtime modification of component parameters** without re-flashing firmware. This is the ESP32-S3 equivalent of Android's resource overlays or iOS's configuration profiles.
+
+### What Can Be Changed
+
+| Parameter | Example | Reboot Required? |
+|---|---|---|
+| Component enabled/disabled | Turn off audio input | No |
+| Display brightness | Set to 80% | No |
+| IMU sample rate | 100Hz → 200Hz | No |
+| Touch sensitivity | Threshold 50 → 80 | No |
+| WiFi SSID/password | Change network | Yes (reconnect) |
+| Custom key-value params | Any component-specific | Depends on component |
+
+### WebSocket Commands
+
+```json
+// Get current behavior config
+{"target": "behavior", "action": "get", "args": {}}
+
+// Update component configs (partial update, merges with existing)
+{
+  "target": "behavior",
+  "action": "update",
+  "args": {
+    "components": [
+      {
+        "name": "display",
+        "enabled": true,
+        "params": [
+          {"key": "brightness", "value": "80"},
+          {"key": "orientation", "value": "landscape"}
+        ]
+      },
+      {
+        "name": "audio_in",
+        "enabled": false,
+        "params": []
+      }
+    ]
+  }
+}
+
+// Enable a specific component
+{"target": "behavior", "action": "enable", "args": {"component": "audio_in"}}
+
+// Disable a specific component
+{"target": "behavior", "action": "disable", "args": {"component": "audio_in"}}
+
+// Reset to board defaults
+{"target": "behavior", "action": "reset", "args": {}}
+```
+
+### Behavior Config Persistence
+
+- **On boot**: Device reads behavior config from the `behavior` partition (flash at 0x3D0000)
+- **On update**: Config is written to flash immediately (persists across reboots)
+- **On firmware OTA**: Behavior partition is **not touched** — your configs survive
+- **On reset**: Falls back to compile-time board defaults
+
+### Board Default Configs
+
+Each board has built-in defaults that are used when no behavior config exists in flash:
+
+| Board | Display | Touch | IMU | Audio | Battery |
+|---|---|---|---|---|---|
+| waveshare-349 | ON, 100% brightness | ON | ON, 100Hz | ON | ON |
+| waveshare-349-touch | ON, 100% brightness | ON | ON, 100Hz | OFF | ON |
+| custom-board | OFF | OFF | OFF | OFF | OFF |
+
+### Programmatic Access (Rust)
+
+```rust
+use crate::orchestration::{Orchestrator, behavior::BehaviorConfig};
+
+// Create orchestrator with board defaults
+let mut orch = Orchestrator::with_board_defaults("waveshare-349");
+
+// Check if a component is enabled
+if orch.is_component_enabled("display") {
+    // Initialize display
+}
+
+// Get a component parameter
+if let Some(brightness) = orch.get_component_param("display", "brightness") {
+    // Apply brightness setting
+}
+
+// Update behavior at runtime (from WebSocket handler)
+let update = BehaviorConfig::from_json(json_str);
+orch.update_behavior(&update);
+```
+
+---
+
+## Component Management
+
+### Runtime Enable/Disable
+
+Components can be toggled via behavior config without recompilation:
+
+```json
+{"target": "behavior", "action": "disable", "args": {"component": "audio_in"}}
+```
+
+The component's `deinit()` is called when disabled, and `init()` when re-enabled.
+
+### Adding Custom Components
+
+1. Create a struct implementing the `Peripheral` trait
+2. Register in `PeripheralRegistry`
+3. Add default config in `behavior::default_*()` functions
+4. The component is now controllable via behavior commands
+
+```rust
+struct MySensor { /* ... */ }
+
+impl Peripheral for MySensor {
+    fn name(&self) -> &str { "my_sensor" }
+    fn init(&mut self) -> Result<(), PeripheralError> { /* ... */ Ok(()) }
+    fn deinit(&mut self) -> Result<(), PeripheralError> { /* ... */ Ok(()) }
+    fn is_ready(&self) -> bool { true }
+}
+```
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| `espflash` not found | `cargo install espflash` |
+| Build fails on `xtensa` target | Install toolchain: `espup install` |
+| WiFi won't connect | Check SSID/password; try AP mode first |
+| Auth token rejected | Regenerate: reboot device; check token copy |
+| Rate limited | Wait 60s; reduce request frequency |
+| Display blank | Check pin mapping in `config.toml` |
+| Touch not working | Verify I2C address with logic analyzer |
+| OTA fails checksum | Re-download binary; check serial connection |
+| Behavior config not persisting | Verify partition table includes `behavior` partition |
+| Component won't disable | Check component name matches exactly (case-sensitive) |
+
+### Debug Logging
+
+```bash
+# Enable verbose logging
+RUST_LOG=debug espflash flash --monitor target/xtensa-esp32s3-none-elf/release/porpoise-esp32s3
+
+# UART output shows:
+# === Porpoise ESP32-S3 Template ===
+# Board: my_board
+# CPU: 240 MHz
+# WiFi: Connected (192.168.1.100)
+# Auth: enabled (token: a1b2c3d4...)
+# HTTP :80 (auth), WebSocket :81 (auth)
+# Behavior config: 5 components
+#   [ON] display
+#   [ON] touch
+#   [ON] imu
+#   [OFF] audio_in
+#   [ON] battery
+```
+
+---
+
 ## License
 
 MIT

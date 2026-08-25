@@ -73,10 +73,14 @@ fn main() -> ! {
     ws.listen().ok();
     println!("HTTP :80 (auth), WebSocket :81 (auth)");
 
-    // --- Step 6: Orchestrator ---
-    let mut orch = Orchestrator::new();
+    // --- Step 6: Orchestrator (with behavior config from flash or board defaults) ---
+    let mut orch = Orchestrator::with_board_defaults("waveshare-349");
     orch.set_running();
-    println!("System running. Entering main loop.");
+    println!("System running. Behavior config: {} components", orch.behavior.components.len());
+    for comp in &orch.behavior.components {
+        println!("  [{}] {}", if comp.enabled { "ON" } else { "OFF" }, comp.name);
+    }
+    println!("Entering main loop.");
 
     // --- Step 7: Main loop ---
     loop {
@@ -85,8 +89,20 @@ fn main() -> ! {
 
         // Process any pending WebSocket commands
         // while let Some(cmd) = ws.recv_command() {
-        //     let result = orch.dispatch_command(&cmd, &mut registry);
-        //     ws.send_response(&result).ok();
+        //     match cmd.target.as_str() {
+        //         "behavior" => {
+        //             // Handle behavior config updates (no reboot needed)
+        //             if cmd.action == "update" {
+        //                 if let Err(e) = orch.update_behavior(&parsed_update) {
+        //                     println!("Behavior update error: {:?}", e);
+        //                 }
+        //             }
+        //         }
+        //         _ => {
+        //             let result = orch.dispatch_command(&cmd, &mut registry);
+        //             ws.send_response(&result).ok();
+        //         }
+        //     }
         // }
 
         // Send periodic telemetry (every ~1s)

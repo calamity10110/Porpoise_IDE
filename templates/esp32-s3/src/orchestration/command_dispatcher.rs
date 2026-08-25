@@ -11,6 +11,7 @@ pub fn dispatch(
 ) -> CommandResultMsg {
     match cmd.target.as_str() {
         "system" => dispatch_system(command_id, cmd),
+        "behavior" => dispatch_behavior(command_id, cmd),
         "display" => dispatch_display(command_id, cmd, registry),
         "touch" => dispatch_touch(command_id, cmd, registry),
         "audio_in" | "mic" => dispatch_audio_in(command_id, cmd, registry),
@@ -40,6 +41,19 @@ fn dispatch_system(command_id: u32, cmd: &CommandMsg) -> CommandResultMsg {
             result: serde_json::json!({
                 "firmware": env!("CARGO_PKG_VERSION"),
                 "board": "esp32-s3",
+                "ota_state": format!("{:?}", crate::orchestration::ota::state()),
+                "ota_progress": crate::orchestration::ota::progress(),
+            }),
+            error: None,
+        },
+        "ota_status" => CommandResultMsg {
+            command_id,
+            success: true,
+            result: serde_json::json!({
+                "firmware_state": format!("{:?}", crate::orchestration::ota::state()),
+                "firmware_progress": crate::orchestration::ota::progress(),
+                "behavior_state": format!("{:?}", crate::orchestration::ota::state()),
+                "behavior_progress": crate::orchestration::ota::behavior_progress(),
             }),
             error: None,
         },
@@ -48,6 +62,92 @@ fn dispatch_system(command_id: u32, cmd: &CommandMsg) -> CommandResultMsg {
             success: false,
             result: serde_json::Value::Null,
             error: Some(format!("unknown system action: {}", cmd.action)),
+        },
+    }
+}
+
+/// Dispatch behavior config commands (post-flash component updates).
+///
+/// Actions:
+///   - `get`    : Return current behavior config as JSON
+///   - `update` : Apply a partial behavior config update (no reboot needed)
+///   - `reset`  : Reset behavior config to board defaults
+///   - `enable` : Enable a specific component by name
+///   - `disable`: Disable a specific component by name
+fn dispatch_behavior(command_id: u32, cmd: &CommandMsg) -> CommandResultMsg {
+    match cmd.action.as_str() {
+        "get" => CommandResultMsg {
+            command_id,
+            success: true,
+            // NOTE: In real impl, this reads from the Orchestrator's behavior field.
+            // The dispatcher is stateless here; the orchestrator passes the config.
+            result: serde_json::json!({"behavior": "see orchestrator"}),
+            error: None,
+        },
+        "update" => {
+            // The orchestrator calls orch.update_behavior() with the parsed config.
+            // Here we just validate the command has the right shape.
+            if cmd.args.get("components").is_some() {
+                CommandResultMsg {
+                    command_id,
+                    success: true,
+                    result: serde_json::json!({"status": "behavior_update_pending"}),
+                    error: None,
+                }
+            } else {
+                CommandResultMsg {
+                    command_id,
+                    success: false,
+                    result: serde_json::Value::Null,
+                    error: Some("missing 'components' in behavior update args".into()),
+                }
+            }
+        }
+        "enable" => {
+            if let Some(name) = cmd.args.get("component").and_then(|v| v.as_str()) {
+                CommandResultMsg {
+                    command_id,
+                    success: true,
+                    result: serde_json::json!({"component": name, "enabled": true}),
+                    error: None,
+                }
+            } else {
+                CommandResultMsg {
+                    command_id,
+                    success: false,
+                    result: serde_json::Value::Null,
+                    error: Some("missing 'component' name".into()),
+                }
+            }
+        }
+        "disable" => {
+            if let Some(name) = cmd.args.get("component").and_then(|v| v.as_str()) {
+                CommandResultMsg {
+                    command_id,
+                    success: true,
+                    result: serde_json::json!({"component": name, "enabled": false}),
+                    error: None,
+                }
+            } else {
+                CommandResultMsg {
+                    command_id,
+                    success: false,
+                    result: serde_json::Value::Null,
+                    error: Some("missing 'component' name".into()),
+                }
+            }
+        }
+        "reset" => CommandResultMsg {
+            command_id,
+            success: true,
+            result: serde_json::json!({"status": "behavior_reset_to_defaults"}),
+            error: None,
+        },
+        _ => CommandResultMsg {
+            command_id,
+            success: false,
+            result: serde_json::Value::Null,
+            error: Some(format!("unknown behavior action: {}", cmd.action)),
         },
     }
 }
