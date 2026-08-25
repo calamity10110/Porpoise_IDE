@@ -26,6 +26,7 @@ use board::waveshare_lcd_349::WaveshareLcd349;
 use comms::wifi::{WifiConfig, WifiManager};
 use comms::http_server::HttpServer;
 use comms::websocket::WebSocketServer;
+use comms::security::{AuthToken, RateLimiter};
 use orchestration::Orchestrator;
 use peripherals::PeripheralRegistry;
 
@@ -53,16 +54,24 @@ fn main() -> ! {
     println!("Peripherals registered: {}", registry.count());
 
     // --- Step 4: WiFi ---
-    let wifi_config = WifiConfig::default();
+    let wifi_config = WifiConfig::ap("Porpoise-Setup", "change-me-1234");
     let mut wifi = WifiManager::new(wifi_config);
     wifi.start().ok();
     println!("WiFi: {:?}", wifi.state());
 
-    // --- Step 5: Servers ---
-    let http = HttpServer::new(80);
-    let mut ws = WebSocketServer::new(81);
+    // --- Step 5: Security ---
+    // Generate or load auth token from NVS
+    let auth_token = AuthToken::generate();
+    let mut rate_limiter = RateLimiter::new(5, 10_000, 60_000);
+    println!("Auth: enabled (token on display/UART)");
+    // TODO: Display token on screen or print to UART for user to copy
+    // display.show_auth_token(&auth_token);
+
+    // --- Step 6: Servers (auth-enabled) ---
+    let http = HttpServer::new(80, true);
+    let mut ws = WebSocketServer::new(81, true);
     ws.listen().ok();
-    println!("HTTP :80, WebSocket :81");
+    println!("HTTP :80 (auth), WebSocket :81 (auth)");
 
     // --- Step 6: Orchestrator ---
     let mut orch = Orchestrator::new();

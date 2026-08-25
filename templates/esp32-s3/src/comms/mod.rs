@@ -7,6 +7,7 @@ pub mod wifi;
 pub mod http_server;
 pub mod websocket;
 pub mod protocol;
+pub mod security;
 
 /// Device identity sent during handshake.
 #[derive(Debug, Clone)]

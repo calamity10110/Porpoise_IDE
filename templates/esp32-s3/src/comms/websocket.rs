@@ -51,22 +51,31 @@ pub struct CommandResponse {
     pub error: Option<heapless::String<128>>,
 }
 
-/// WebSocket server for real-time control.
+/// WebSocket server for real-time control with token-based auth.
 pub struct WebSocketServer {
     port: u16,
     state: WsState,
+    auth_enabled: bool,
+    auth_deadline_ms: u64,
 }
 
 impl WebSocketServer {
-    pub fn new(port: u16) -> Self {
+    pub fn new(port: u16, auth_enabled: bool) -> Self {
         Self {
             port,
             state: WsState::Disconnected,
+            auth_enabled,
+            auth_deadline_ms: 10_000, // 10s to authenticate after connect
         }
     }
 
     pub fn state(&self) -> WsState {
         self.state
+    }
+
+    /// Whether auth is required for this server.
+    pub fn requires_auth(&self) -> bool {
+        self.auth_enabled
     }
 
     /// Start WebSocket listener.

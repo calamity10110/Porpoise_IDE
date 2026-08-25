@@ -39,6 +39,10 @@ pub enum MsgType {
     GetLogs,
     // Errors
     Error,
+    // Auth
+    AuthRequired,
+    AuthSuccess,
+    AuthFailed,
 }
 
 /// Hello message (device → orchestrator on connect).
@@ -49,6 +53,10 @@ pub struct HelloMsg {
     pub firmware_version: String,
     pub protocol_version: u8,
     pub capabilities: CapabilitiesMsg,
+    /// Authentication token (hex-encoded, 64 chars).
+    /// Required if device has auth enabled. Empty string = no auth.
+    #[serde(default)]
+    pub auth_token: String,
 }
 
 /// Device capabilities.

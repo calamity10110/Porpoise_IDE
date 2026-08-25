@@ -19,10 +19,12 @@ serde = { version = "1", default-features = false, features = ["derive"] }
 serde-json-core = { version = "0.5" }
 heapless = { version = "0.8", default-features = false }
 format-no-std = "0.1"
+sha2 = { version = "0.10", default-features = false }
 
 [features]
 default = ["waveshare-349"]
 waveshare-349 = []
+waveshare-349-touch = []
 custom-board = []
 
 [profile.release]

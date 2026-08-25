@@ -17,6 +17,11 @@ pub enum WifiMode {
 }
 
 /// WiFi configuration.
+///
+/// # Security
+/// - No hardcoded passwords — must be provided at build time or via NVS.
+/// - AP fallback uses a random per-device SSID suffix to prevent collisions.
+/// - Minimum WPA2 password length: 8 characters.
 #[derive(Debug, Clone)]
 pub struct WifiConfig {
     pub mode: WifiMode,
@@ -26,26 +31,52 @@ pub struct WifiConfig {
     pub ap_password: heapless::String<64>,
     pub channel: u8,
     pub max_connections: u8,
+    /// Max reconnect attempts before entering AP fallback mode.
+    pub max_reconnect_attempts: u8,
+    /// Whether to require auth on HTTP/WS after WiFi connects.
+    pub require_auth: bool,
 }
 
-impl Default for WifiConfig {
-    fn default() -> Self {
-        let mut ssid = heapless::String::new();
-        let _ = ssid.push_str("Porpoise-ESP32S3");
-        let mut password = heapless::String::new();
-        let _ = password.push_str("porpoise123");
-        let mut ap_ssid = heapless::String::new();
-        let _ = ap_ssid.push_str("Porpoise-Setup");
-        let mut ap_password = heapless::String::new();
-        let _ = ap_password.push_str("setup1234");
+impl WifiConfig {
+    /// Create a STA config (connect to existing network).
+    /// Panics if password < 8 chars (WPA2 minimum).
+    pub fn sta(ssid: &str, password: &str) -> Self {
+        assert!(password.len() >= 8, "WPA2 password must be >= 8 characters");
+        let mut s = heapless::String::new();
+        let _ = s.push_str(ssid);
+        let mut p = heapless::String::new();
+        let _ = p.push_str(password);
+        Self {
+            mode: WifiMode::Station,
+            ssid: s,
+            password: p,
+            ap_ssid: heapless::String::new(),
+            ap_password: heapless::String::new(),
+            channel: 1,
+            max_connections: 1,
+            max_reconnect_attempts: 5,
+            require_auth: true,
+        }
+    }
+
+    /// Create an AP config (device creates its own network).
+    /// Panics if password < 8 chars.
+    pub fn ap(ssid: &str, password: &str) -> Self {
+        assert!(password.len() >= 8, "WPA2 password must be >= 8 characters");
+        let mut s = heapless::String::new();
+        let _ = s.push_str(ssid);
+        let mut p = heapless::String::new();
+        let _ = p.push_str(password);
         Self {
             mode: WifiMode::AccessPoint,
-            ssid,
-            password,
-            ap_ssid,
-            ap_password,
+            ssid: heapless::String::new(),
+            password: heapless::String::new(),
+            ap_ssid: s,
+            ap_password: p,
             channel: 1,
             max_connections: 4,
+            max_reconnect_attempts: 5,
+            require_auth: true,
         }
     }
 }

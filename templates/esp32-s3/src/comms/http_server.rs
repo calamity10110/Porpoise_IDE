@@ -89,14 +89,41 @@ impl Response {
 /// Route handler function type.
 pub type RouteHandler = fn(&Request) -> Response;
 
-/// HTTP server with registered routes.
+/// HTTP server with registered routes and token-based auth.
 pub struct HttpServer {
     port: u16,
+    auth_enabled: bool,
 }
 
 impl HttpServer {
-    pub fn new(port: u16) -> Self {
-        Self { port }
+    pub fn new(port: u16, auth_enabled: bool) -> Self {
+        Self { port, auth_enabled }
+    }
+
+    /// Check if a request carries a valid auth token.
+    /// Returns true if auth is disabled or token matches.
+    pub fn check_auth(&self, req: &Request, token: &crate::comms::security::AuthToken) -> bool {
+        if !self.auth_enabled {
+            return true;
+        }
+        // Extract Bearer token from Authorization header
+        if let Some(auth_header) = req.headers.iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case("authorization"))
+            .map(|(_, v)| *v)
+        {
+            if let Some(bearer) = auth_header.strip_prefix("Bearer ") {
+                return token.verify(bearer);
+            }
+        }
+        false
+    }
+
+    /// Build a 401 Unauthorized response.
+    pub fn unauthorized() -> Response {
+        Response {
+            status: 401,
+            body: heapless::String::from("Unauthorized: valid Bearer token required"),
+        }
     }
 
     pub fn port(&self) -> u16 {
