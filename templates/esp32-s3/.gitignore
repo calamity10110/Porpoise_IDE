@@ -1,0 +1,36 @@
+# === Rust / Cargo ===
+target/
+Cargo.lock
+*.d
+*.o
+*.elf
+*.bin
+*.map
+
+# === ESP-IDF / toolchain ===
+.esp-idf/
+managed_components/
+dependencies.lock
+sdkconfig.old
+
+# === IDE / editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+\#*\#
+.#*
+
+# === OS ===
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# === Build artifacts ===
+*.firmware
+*.ota.bin
+build_output/
+
+# === Logs ===
+*.log
