@@ -1,0 +1,76 @@
+# Waveshare ESP32-S3 Touch LCD 1.28" (SKU 349)
+# Board configuration for Porpoise IDE template
+
+[board]
+name = "Waveshare ESP32-S3 Touch LCD 1.28\""
+sku = "349"
+cpu = "esp32-s3"
+cpu_mhz = 240
+psram_mb = 8
+flash_mb = 16
+
+[display]
+enabled = true
+driver = "GC9A01"
+width = 240
+height = 240
+spi_sclk = 10
+spi_mosi = 11
+spi_cs = 12
+dc = 13
+rst = 14
+bl = 21
+spi_freq_mhz = 80
+
+[touch]
+enabled = true
+driver = "CST816S"
+i2c_sda = 1
+i2c_scl = 2
+i2c_freq_hz = 400000
+irq = 3
+rst = 4
+
+[audio_in]
+enabled = false
+# No onboard microphone on this board
+
+[audio_out]
+enabled = false
+# No onboard speaker on this board
+
+[camera]
+enabled = false
+# No onboard camera on this board
+
+[imu]
+enabled = true
+driver = "QMI8658"
+i2c_sda = 1
+i2c_scl = 2
+i2c_freq_hz = 400000
+address = 0x6B
+
+[mouse]
+enabled = false
+
+[keyboard]
+enabled = false
+
+[battery]
+enabled = true
+driver = "AXP2101"
+i2c_sda = 1
+i2c_scl = 2
+address = 0x34
+
+[wifi]
+mode = "ap"
+ssid = "Porpoise-ESP32S3"
+password = "porpoise123"
+ap_ssid = "Porpoise-Setup"
+ap_password = "setup1234"
+
+[ota]
+enabled = true
+partition_size_kb = 1536

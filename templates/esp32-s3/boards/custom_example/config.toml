@@ -1,0 +1,88 @@
+//! Custom board example — template for user-defined hardware.
+//!
+//! Copy this directory and modify pin assignments for your ESP32-S3 board.
+//! Then add a Cargo feature in the workspace Cargo.toml.
+
+[board]
+name = "Custom ESP32-S3 Board"
+sku = "custom"
+cpu = "esp32-s3"
+cpu_mhz = 240
+psram_mb = 2
+flash_mb = 4
+
+[display]
+enabled = false
+# driver = "ST7789"
+# width = 240
+# height = 320
+# spi_sclk = 12
+# spi_mosi = 11
+# spi_cs = 10
+# dc = 8
+# rst = 9
+# bl = 7
+
+[touch]
+enabled = false
+# driver = "CST816S"
+# i2c_sda = 4
+# i2c_scl = 5
+# i2c_freq_hz = 400000
+# address = 0x15
+# int_pin = 6
+
+[audio]
+enabled = false
+# mic_driver = "I2S"
+# speaker_driver = "I2S"
+# i2s_bclk = 15
+# i2s_ws = 16
+# i2s_dout = 17
+# i2s_din = 18
+
+[camera]
+enabled = false
+# driver = "OV2640"
+# i2c_sda = 4
+# i2c_scl = 5
+# d0 = 11
+# d1 = 9
+# d2 = 8
+# d3 = 10
+# d4 = 12
+# d5 = 18
+# d6 = 17
+# d7 = 16
+# pclk = 13
+# vsync = 5
+# href = 23
+# xclk = 15
+
+[imu]
+enabled = false
+# driver = "BMI270"
+# i2c_sda = 1
+# i2c_scl = 2
+# i2c_freq_hz = 400000
+# address = 0x68
+
+[mouse]
+enabled = false
+
+[keyboard]
+enabled = false
+
+[battery]
+enabled = false
+
+[wifi]
+mode = "ap"
+ssid = "Porpoise-ESP32S3"
+password = "porpoise123"
+ap_ssid = "Porpoise-Setup"
+ap_password = "setup1234"
+
+[ota]
+enabled = true
+partition_size_kb = 1024

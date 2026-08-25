@@ -584,4 +584,62 @@ pub fn register_all(
             })
         }),
     );
+
+    // ── ESP32-S3 Device Management ──────────────────────────────────
+    let esp_registry = esp32_service::new_registry();
+
+    {
+        let reg = esp_registry.clone();
+        router.register(
+            "esp32/list",
+            Arc::new(move |_, _| {
+                let reg = reg.clone();
+                Box::pin(async move { esp32_service::handle_list(&reg).await })
+            }),
+        );
+    }
+    {
+        let reg = esp_registry.clone();
+        router.register(
+            "esp32/get",
+            Arc::new(move |req, _| {
+                let reg = reg.clone();
+                Box::pin(async move {
+                    let id = req.params.get("device_id")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    esp32_service::handle_get(&reg, id).await
+                })
+            }),
+        );
+    }
+    router.register(
+        "esp32/command",
+        Arc::new(|req, _| {
+            Box::pin(async move {
+                let id = req.params.get("device_id").and_then(|v| v.as_str()).unwrap_or("");
+                let target = req.params.get("target").and_then(|v| v.as_str()).unwrap_or("");
+                let action = req.params.get("action").and_then(|v| v.as_str()).unwrap_or("");
+                let args = req.params.get("args").cloned().unwrap_or(serde_json::Value::Null);
+                esp32_service::handle_command(id, target, action, args).await
+            })
+        }),
+    );
+    router.register(
+        "esp32/ota_push",
+        Arc::new(|req, _| {
+            Box::pin(async move {
+                let id = req.params.get("device_id").and_then(|v| v.as_str()).unwrap_or("");
+                let url = req.params.get("firmware_url").and_then(|v| v.as_str()).unwrap_or("");
+                let ck = req.params.get("checksum").and_then(|v| v.as_str()).unwrap_or("");
+                esp32_service::handle_ota_push(id, url, ck).await
+            })
+        }),
+    );
+    router.register(
+        "esp32/board_templates",
+        Arc::new(|_, _| {
+            Box::pin(async move { esp32_service::handle_board_templates().await })
+        }),
+    );
 }

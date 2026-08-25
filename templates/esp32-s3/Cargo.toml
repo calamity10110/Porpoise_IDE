@@ -1,0 +1,32 @@
+[package]
+name = "porpoise-esp32s3"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Porpoise IDE ESP32-S3 no_std template with modular peripherals"
+
+[dependencies]
+esp-hal = { version = "0.23", features = ["esp32s3", "unstable"] }
+esp-backtrace = { version = "0.15", features = ["esp32s3", "panic-handler", "println"] }
+esp-println = { version = "0.13", features = ["esp32s3", "uart"] }
+esp-alloc = { version = "0.7", features = ["esp32s3"] }
+esp-wifi = { version = "0.12", features = ["esp32s3", "wifi", "embedded-svc", "utils"] }
+embassy-executor = { version = "0.7", features = ["task-arena-size-32768"] }
+embassy-time = { version = "0.4" }
+embassy-net = { version = "0.6", features = ["tcp", "udp", "dhcpv4", "medium-ethernet"] }
+smoltcp = { version = "0.12", default-features = false, features = ["proto-ipv4", "socket-tcp"] }
+serde = { version = "1", default-features = false, features = ["derive"] }
+serde-json-core = { version = "0.5" }
+heapless = { version = "0.8", default-features = false }
+format-no-std = "0.1"
+
+[features]
+default = ["waveshare-349"]
+waveshare-349 = []
+custom-board = []
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

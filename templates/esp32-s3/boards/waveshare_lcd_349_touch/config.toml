@@ -1,0 +1,107 @@
+# Waveshare ESP32-S3 Touch LCD 3.49" board configuration
+# 480x480 IPS LCD (ST7701S RGB565), GT911 touch, QMI8658 IMU
+# NOTE: Verify pin mapping against your board revision (check Waveshare wiki)
+
+[board]
+name = "Waveshare ESP32-S3 Touch LCD 3.49\""
+sku = "waveshare-esp32s3-touch-lcd-3.49"
+cpu = "esp32-s3"
+cpu_mhz = 240
+psram_mb = 8
+flash_mb = 16
+
+[display]
+enabled = true
+driver = "ST7701S"
+interface = "rgb565"
+width = 480
+height = 480
+# SPI init channel (used to send ST7701S commands before switching to RGB)
+spi_cs = 7
+spi_sck = 6
+spi_sda = 5
+# RGB parallel interface
+de = 40
+vsync = 41
+hsync = 42
+pclk = 45
+pclk_freq_mhz = 16
+# RGB565 data pins (16-bit: R5 + G6 + B5)
+r0 = 46
+r1 = 3
+r2 = 8
+r3 = 18
+r4 = 17
+g0 = 14
+g1 = 21
+g2 = 47
+g3 = 48
+g4 = 0
+g5 = 9
+b0 = 10
+b1 = 11
+b2 = 12
+b3 = 13
+b4 = 16
+rst = 15
+bl = 46
+
+[touch]
+enabled = true
+driver = "GT911"
+i2c_sda = 39
+i2c_scl = 38
+i2c_freq_hz = 400000
+irq = 44
+rst = -1
+
+[audio_in]
+enabled = false
+# Verify with your board revision
+# driver = "MSM261"
+# i2s_sck = 41
+# i2s_ws = 42
+# i2s_sd = 2
+
+[audio_out]
+enabled = false
+# Verify with your board revision
+# driver = "MAX98357A"
+# i2s_bclk = 47
+# i2s_lrclk = 48
+# i2s_din = 15
+
+[camera]
+enabled = false
+
+[imu]
+enabled = true
+driver = "QMI8658"
+i2c_sda = 39
+i2c_scl = 38
+i2c_freq_hz = 400000
+address = 0x6B
+
+[mouse]
+enabled = false
+
+[keyboard]
+enabled = false
+
+[battery]
+enabled = true
+driver = "AXP2101"
+i2c_sda = 39
+i2c_scl = 38
+address = 0x34
+
+[wifi]
+mode = "ap"
+ssid = "Porpoise-ESP32S3"
+password = "porpoise123"
+ap_ssid = "Porpoise-Setup"
+ap_password = "setup1234"
+
+[ota]
+enabled = true
+partition_size_kb = 1536

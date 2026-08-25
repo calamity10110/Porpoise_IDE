@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod browser_service;
 pub mod config;
+pub mod esp32_service;
 pub mod git;
 pub mod health;
 pub mod notifications;
