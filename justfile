@@ -1,68 +1,88 @@
 # Porpoise development commands
 # Usage: just <command>
 
-# Build all crates
-build:
-    cargo build --workspace
+# === Setup ===
+setup: install-deps setup-hooks
+    @echo "Setup complete!"
 
-# Build release
+install-deps:
+    cargo install cargo-watch cargo-audit cargo-llvm-cov
+
+setup-hooks:
+    ln -sf ../../pre-commit.sh .git/hooks/pre-commit
+
+# === Build ===
+build: build-workspace
+build-workspace:
+    cargo build --workspace
 build-release:
     cargo build --release --workspace
+build-cli:
+    cargo build --release -p porpoise-cli
+build-server:
+    cargo build --release -p porpoise-server
+build-app:
+    cargo tauri build --verbose
+build-esp32 BOARD="waveshare_lcd_349":
+    cd templates/esp32-s3 && ./build.sh build {{BOARD}}
 
-# Run all tests
-test:
+# === Test ===
+test: test-workspace
+test-workspace:
     cargo test --workspace
-
-# Run clippy lints
-clippy:
-    cargo clippy --all-targets -- -D warnings
-
-# Check formatting
-fmt:
-    cargo fmt --check
-
-# Fix formatting
-fmt-fix:
-    cargo fmt
-
-# Build docs
-doc:
-    cargo doc --no-deps
-
-# Full CI check (build + test + clippy + fmt)
-check: build test clippy fmt
-
-# Run a specific crate
-run *args:
-    cargo run -p {{args}}
-
-# Build specific crate
-build-p *crate:
-    cargo build -p {{crate}}
-
-# Run tests for specific crate
 test-p *crate:
     cargo test -p {{crate}}
+test-coverage:
+    cargo llvm-cov --workspace --lcov --output-path lcov.info
 
-# Clean build artifacts
-clean:
-    cargo clean
-
-# Audit dependencies
+# === Quality ===
+clippy:
+    cargo clippy --all-targets -- -D warnings
+fmt:
+    cargo fmt --check
+fmt-fix:
+    cargo fmt
 audit:
     cargo audit
+check: build test clippy fmt
 
-# Watch mode for development
-watch:
+# === Dev ===
+dev:
     cargo watch -x check
+dev-cli:
+    cargo watch -x 'run -p porpoise-cli'
+dev-server:
+    cargo watch -x 'run -p porpoise-server'
 
-# Generate knowledge graph
-graphify:
-    /graphify .
+# === Docker ===
+docker-build:
+    docker build -t porpoise .
+docker-run:
+    docker run -d -p 9876:9876 -v ~/.config/porpoise:/root/.config/porpoise porpoise
 
-# Show outdated dependencies
-outdated:
-    cargo outdated
+# === Release ===
+release version:
+    #!/usr/bin/env bash
+    set -e
+    echo "Releasing v{{version}}..."
+    sed -i "s/^version = .*/version = \"{{version}}\"/" Cargo.toml
+    cargo build --release --workspace
+    git add -A
+    git commit -m "release: v{{version}}"
+    git tag "v{{version}}"
+    git push origin main --tags
 
+# === Install ===
+install: build-release
+    cp target/release/porpoise /usr/local/bin/
+    cp target/release/porpoise-server /usr/local/bin/
+
+# === Clean ===
+clean:
+    cargo clean
+clean-all: clean
+    rm -rf target/ mobile/build/ graphify-out/
+
+# === Info ===
 default:
     @just --list
