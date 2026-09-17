@@ -29,6 +29,11 @@ libc.workspace = true
 rusqlite.workspace = true
 uuid.workspace = true
 notify-rust = "4"
+reqwest.workspace = true
+
+[features]
+esp32 = []
 
 [dev-dependencies]
+porpoise-agent = { path = "../porpoise-agent", features = ["test-helpers"] }
 tempfile.workspace = true

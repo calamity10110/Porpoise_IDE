@@ -2,27 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7aa2f7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Porpoise">
+  <meta name="description" content="AI-native IDE with multi-agent orchestration">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon.png">
+  <link rel="stylesheet" href="vendor/xterm.css">
   <title>Porpoise</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
+      --bg: #0a0a0f;
+      --bg-elevated: #1a1a2e;
+      --bg-hover: #252540;
+      --fg: #e0e0ff;
+      --fg-muted: #6a6a8a;
+      --accent: #00f0ff;
+      --border: #1e3a5f;
+      --green: #39ff14;
+      --red: #ff003c;
+      --cyan: #00f0ff;
+      --magenta: #ff00ff;
+      --yellow: #fcee09;
+      --neon-glow: 0 0 8px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.3);
+      --neon-glow-magenta: 0 0 8px rgba(255, 0, 255, 0.6), 0 0 20px rgba(255, 0, 255, 0.3);
+    }
+    [data-theme="tokyo-night"] {
       --bg: #1a1b26;
       --bg-elevated: #24283b;
-      --bg-hover: #2f334d;
+      --bg-hover: #2e334d;
       --fg: #c0caf5;
       --fg-muted: #565f89;
       --accent: #7aa2f7;
-      --border: #2a2e44;
+      --border: #414868;
+      --cyan: #7dcfff;
       --green: #9ece6a;
-      --red: #f7768e;
+      --magenta: #bb9af7;
+    }
+    [data-theme="dracula"] {
+      --bg: #282a36;
+      --bg-elevated: #44475a;
+      --bg-hover: #50546a;
+      --fg: #f8f8f2;
+      --fg-muted: #6272a4;
+      --accent: #bd93f9;
+      --border: #6272a4;
+      --cyan: #8be9fd;
+      --green: #50fa7b;
+      --magenta: #ff79c6;
+    }
+    [data-theme="solarized-dark"] {
+      --bg: #002b36;
+      --bg-elevated: #073642;
+      --bg-hover: #0a4a5a;
+      --fg: #839496;
+      --fg-muted: #586e75;
+      --accent: #268bd2;
+      --border: #586e75;
+      --cyan: #2aa198;
+      --green: #859900;
+      --magenta: #d33682;
     }
     body {
-      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
       background: var(--bg);
       color: var(--fg);
       overflow: hidden;
       height: 100vh;
+      position: relative;
+    }
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 240, 255, 0.015) 2px,
+        rgba(0, 240, 255, 0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+    /* Subtle vignette */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+      pointer-events: none;
+      z-index: 9998;
     }
     .app { display: flex; height: 100vh; }
 
@@ -31,30 +105,40 @@
       width: 260px;
       min-width: 200px;
       background: var(--bg-elevated);
-      border-right: 1px solid var(--border);
+      border-right: 2px solid var(--cyan);
       display: flex;
       flex-direction: column;
       resize: horizontal;
+      box-shadow: inset -1px 0 15px rgba(0, 240, 255, 0.05);
     }
     .sidebar-header {
       padding: 12px 16px;
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--fg-muted);
+      letter-spacing: 2px;
+      color: var(--cyan);
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      text-shadow: var(--neon-glow);
     }
     .btn-new {
-      background: var(--accent);
-      color: var(--bg);
-      border: none;
-      border-radius: 4px;
-      padding: 2px 8px;
+      background: transparent;
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+      border-radius: 2px;
+      padding: 2px 10px;
       cursor: pointer;
       font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s;
+      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+    }
+    .btn-new:hover {
+      background: var(--cyan);
+      color: var(--bg);
+      box-shadow: var(--neon-glow);
     }
     .sidebar-list { flex: 1; overflow-y: auto; }
     .worktree-item {
@@ -64,10 +148,18 @@
       flex-direction: column;
       gap: 2px;
       border-bottom: 1px solid transparent;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
     }
-    .worktree-item:hover { background: var(--bg-hover); }
-    .worktree-item.active { background: var(--bg-hover); border-left: 3px solid var(--accent); }
-    .worktree-name { font-size: 13px; font-weight: 500; }
+    .worktree-item:hover {
+      background: var(--bg-hover);
+      border-left-color: var(--cyan);
+    }
+    .worktree-item.active {
+      background: rgba(0, 240, 255, 0.08);
+      border-left-color: var(--magenta);
+    }
+    .worktree-name { font-size: 13px; font-weight: 600; color: var(--fg); }
     .worktree-meta { font-size: 11px; color: var(--fg-muted); }
 
     /* Main Panel */
@@ -80,38 +172,85 @@
       align-items: center;
       padding: 0 12px;
       gap: 8px;
+      box-shadow: 0 2px 10px rgba(0, 240, 255, 0.05);
     }
     .toolbar-btn {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--fg);
       padding: 4px 10px;
-      border-radius: 4px;
+      border-radius: 2px;
       cursor: pointer;
       font-size: 12px;
+      font-family: inherit;
+      transition: all 0.2s;
+      clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px));
     }
-    .toolbar-btn:hover { background: var(--bg-hover); }
+    .toolbar-btn:hover {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: var(--neon-glow);
+    }
 
     /* Terminal Panel */
-    .terminal-area { flex: 1; display: flex; }
+    .terminal-area { flex: 1; display: flex; min-height: 0; }
+    .terminal-area.split-v { flex-direction: column; }
+    .pane-divider {
+      background: var(--border);
+      z-index: 5;
+      flex-shrink: 0;
+    }
+    .pane-divider.horizontal { width: 4px; cursor: col-resize; }
+    .pane-divider.horizontal:hover { background: var(--cyan); }
+    .pane-divider.vertical { height: 4px; cursor: row-resize; }
+    .pane-divider.vertical:hover { background: var(--cyan); }
     .terminal-pane {
       flex: 1;
-      background: #000;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 13px;
-      padding: 8px;
-      overflow-y: auto;
+      background: #050510;
+      overflow: hidden;
       border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
     .terminal-pane:last-child { border-right: none; }
-    .terminal-content { white-space: pre-wrap; word-break: break-all; line-height: 1.4; }
+    .terminal-pane-header {
+      height: 22px; min-height: 22px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 6px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px; color: var(--fg-muted);
+      user-select: none;
+    }
+    .terminal-pane-title {
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .terminal-pane-close {
+      background: transparent; border: none; color: var(--fg-muted);
+      cursor: pointer; width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 2px; font-size: 14px; line-height: 1;
+    }
+    .terminal-pane-close:hover { background: var(--red); color: #fff; }
+    .terminal-content { flex: 1; min-height: 0; overflow: hidden; }
+    .terminal-content .xterm { height: 100%; width: 100%; padding: 4px; }
+    .terminal-content .xterm { height: 100%; width: 100%; }
 
     /* Editor Panel */
+    .editor-divider {
+      height: 4px; background: var(--border); cursor: row-resize;
+      display: none; flex-shrink: 0;
+    }
+    .editor-divider.visible { display: block; }
+    .editor-divider:hover { background: var(--cyan); }
     .editor-pane {
       flex: 1;
       background: var(--bg);
-      border-left: 1px solid var(--border);
+      border-top: 1px solid var(--border);
       display: none;
+      min-height: 100px;
     }
     .editor-pane.visible { display: flex; flex-direction: column; }
     .editor-header {
@@ -119,14 +258,15 @@
       background: var(--bg-elevated);
       border-bottom: 1px solid var(--border);
       font-size: 12px;
-      color: var(--fg-muted);
+      color: var(--cyan);
+      text-shadow: var(--neon-glow);
     }
 
     /* Settings Modal */
     .settings-modal {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.7);
       display: none;
       align-items: center;
       justify-content: center;
@@ -135,20 +275,29 @@
     .settings-modal.visible { display: flex; }
     .settings-content {
       background: var(--bg-elevated);
-      border-radius: 8px;
+      border: 1px solid var(--cyan);
+      border-radius: 2px;
       padding: 24px;
       width: 500px;
       max-height: 80vh;
       overflow-y: auto;
+      box-shadow: var(--neon-glow), 0 0 40px rgba(0, 240, 255, 0.1);
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
     }
     .settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
     .settings-tab {
       padding: 6px 12px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 2px;
       font-size: 12px;
+      font-family: inherit;
+      transition: all 0.2s;
     }
-    .settings-tab.active { background: var(--accent); color: var(--bg); }
+    .settings-tab.active {
+      background: var(--cyan);
+      color: var(--bg);
+      box-shadow: var(--neon-glow);
+    }
     .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
     .settings-label { font-size: 13px; }
     .settings-input {
@@ -156,9 +305,16 @@
       border: 1px solid var(--border);
       color: var(--fg);
       padding: 4px 8px;
-      border-radius: 4px;
+      border-radius: 2px;
       font-size: 13px;
+      font-family: inherit;
       width: 200px;
+      transition: border-color 0.2s;
+    }
+    .settings-input:focus {
+      border-color: var(--cyan);
+      outline: none;
+      box-shadow: var(--neon-glow);
     }
 
     /* Status bar */
@@ -172,44 +328,231 @@
       font-size: 11px;
       color: var(--fg-muted);
       gap: 16px;
+      box-shadow: 0 -2px 10px rgba(0, 240, 255, 0.05);
     }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green), 0 0 12px var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* ===== PWA: Mobile Responsive ===== */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        bottom: 0;
+        z-index: 200;
+        transition: left 0.25s ease;
+        width: 260px;
+      }
+      .sidebar.open { left: 0; }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 199;
+      }
+      .sidebar-overlay.visible { display: block; }
+      .toolbar {
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 6px 8px;
+      }
+      .toolbar-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+        min-height: 36px;
+      }
+      .terminal-pane { font-size: 12px; padding: 4px; }
+      .settings-content { width: 95vw; padding: 16px; }
+      .statusbar { font-size: 10px; gap: 8px; }
+      .mobile-menu-btn { display: block !important; }
+    }
+
+    @media (max-width: 480px) {
+      .toolbar-btn { font-size: 10px; padding: 3px 6px; }
+      .terminal-pane { font-size: 11px; }
+      .settings-content { padding: 12px; }
+    }
+
+    /* Touch-friendly targets */
+    @media (pointer: coarse) {
+      .toolbar-btn { min-height: 44px; min-width: 44px; }
+      .worktree-item { min-height: 48px; padding: 12px 16px; }
+      .settings-row { min-height: 48px; }
+      .btn-new { width: 44px; height: 44px; }
+    }
+
+    /* Safe area for notched devices */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .statusbar {
+        padding-bottom: env(safe-area-inset-bottom);
+        height: calc(24px + env(safe-area-inset-bottom));
+      }
+      .sidebar { padding-top: env(safe-area-inset-top); }
+    }
+
+    /* Mobile menu button (hidden on desktop) */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--fg);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    /* Offline indicator */
+    .offline-banner {
+      display: none;
+      background: var(--yellow);
+      color: #000;
+      text-align: center;
+      padding: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .offline-banner.visible { display: block; }
+
+    /* Install prompt */
+    .install-prompt {
+      display: none;
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-elevated);
+      border: 2px solid var(--cyan);
+      border-radius: 2px;
+      padding: 16px 24px;
+      z-index: 300;
+      box-shadow: var(--neon-glow), 0 8px 32px rgba(0,0,0,0.6);
+      text-align: center;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    }
+    .install-prompt.visible { display: block; }
+    .install-prompt button {
+      background: var(--cyan);
+      color: #000;
+      border: none;
+      padding: 8px 24px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-weight: 700;
+      margin-top: 8px;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+    .install-prompt button:hover {
+      box-shadow: var(--neon-glow);
+      transform: scale(1.05);
+    }
+
+    /* Inline-style replacement classes (CSP nonce disables style attributes) */
+    .brand-cyan { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+    .btn-run-agent { color: var(--green); border-color: var(--green); }
+    .btn-run-agent:hover { background: rgba(57,255,20,0.1); color: var(--green); box-shadow: 0 0 8px rgba(57,255,20,0.5); }
+    .status-online { color: var(--green); text-shadow: 0 0 5px var(--green); }
+    .status-agents { color: var(--cyan); }
+    .status-terminals { color: var(--magenta); }
+    .status-version { margin-left: auto; color: var(--yellow); }
+    .editor-title { color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; }
+    .editor-body { flex: 1; padding: 12px; font-family: monospace; font-size: 13px; }
+    .editor-input { outline: none; height: 100%; }
+    .settings-title { margin-bottom: 16px; }
+    .settings-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .btn-save { background: var(--accent); color: var(--bg); }
+    .settings-input[type="checkbox"] { width: auto; }
+    .install-title { font-weight: 600; margin-bottom: 4px; }
+    .install-sub { font-size: 13px; color: var(--fg-muted); }
+    .install-later { background: transparent; color: var(--fg-muted); margin-left: 8px; }
+    .tab-panel { display: none; }
+    .input-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center; z-index: 110;
+    }
+    .input-modal.visible { display: flex; }
+    .input-modal-box {
+      background: var(--bg-elevated); border: 1px solid var(--cyan); border-radius: 2px;
+      padding: 20px; width: 420px; box-shadow: var(--neon-glow);
+    }
+    .input-modal-title { font-size: 13px; margin-bottom: 12px; color: var(--cyan); }
+    .input-modal-box .settings-input { width: 100%; }
+    .telemetry-pre {
+      max-height: 55vh; overflow-y: auto; background: #050510; border: 1px solid var(--border);
+      padding: 8px; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all;
+      color: var(--fg-muted); margin-bottom: 8px;
+    }
+
+    /* Glitch animation for title */
+    @keyframes glitch {
+      0%, 100% { text-shadow: 2px 0 var(--cyan), -2px 0 var(--magenta); }
+      25% { text-shadow: -2px -1px var(--cyan), 2px 1px var(--magenta); }
+      50% { text-shadow: 1px 2px var(--cyan), -1px -2px var(--magenta); }
+      75% { text-shadow: -1px 1px var(--magenta), 1px -1px var(--cyan); }
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.8; }
+      94% { opacity: 1; }
+      96% { opacity: 0.9; }
+      97% { opacity: 1; }
+    }
+    .sidebar-header span {
+      animation: flicker 4s infinite;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <span>Worktrees</span>
-        <button class="btn-new" onclick="createWorktree()">+</button>
+        <span class="brand-cyan">⬡ WORKTREES</span>
+        <button class="btn-new" id="btn-new-worktree" aria-label="New worktree">+</button>
       </div>
       <div class="sidebar-list" id="worktree-list">
-        <div class="worktree-item" onclick="selectWorktree(this, 'main')">
-          <span class="worktree-name">main</span>
-          <span class="worktree-meta">claude - running</span>
-        </div>
+        <div class="worktree-item"><span class="worktree-meta">loading…</span></div>
       </div>
     </div>
 
     <div class="main">
-      <div class="toolbar">
-        <button class="toolbar-btn" onclick="splitHorizontal()">Split H</button>
-        <button class="toolbar-btn" onclick="splitVertical()">Split V</button>
-        <button class="toolbar-btn" onclick="toggleEditor()">Editor</button>
-        <button class="toolbar-btn" onclick="showSettings()">Settings</button>
-        <button class="toolbar-btn" onclick="openWorkflowEditor()">Workflows</button>
+      <div class="toolbar" id="main-toolbar">
+        <button class="toolbar-btn btn-run-agent" id="btn-run-agent">▶ RUN AGENT</button>
+        <button class="toolbar-btn" id="btn-split-h">⊞ SPLIT H</button>
+        <button class="toolbar-btn" id="btn-split-v">⊞ SPLIT V</button>
+        <button class="toolbar-btn" id="btn-editor">◈ EDITOR</button>
+        <button class="toolbar-btn" id="btn-settings">⚙ SETTINGS</button>
+        <button class="toolbar-btn" id="btn-workflows">⬡ WORKFLOWS</button>
+        <button class="toolbar-btn" id="btn-telemetry">📈 TELEMETRY</button>
       </div>
 
       <div class="terminal-area" id="terminal-area">
         <div class="terminal-pane">
-          <div class="terminal-content" id="terminal-0">$ porpoise worktree list</div>
+          <div class="terminal-content" id="terminal-0">          <span class="brand-cyan">$</span> porpoise worktree list</div>
         </div>
       </div>
 
+      <div class="editor-divider" id="editor-divider"></div>
       <div class="editor-pane" id="editor-pane">
-        <div class="editor-header">README.md</div>
-        <div style="flex:1; padding:12px; font-family:monospace; font-size:13px;">
-          <div contenteditable="true" style="outline:none; height:100%;">
+        <div class="editor-header editor-title">◈ README.md</div>
+        <div class="editor-body">
+          <div contenteditable="true" class="editor-input">
             # Porpoise Worktree
           </div>
         </div>
@@ -217,69 +560,409 @@
 
       <div class="statusbar">
         <span class="status-dot"></span>
-        <span>Connected</span>
-        <span id="agent-count">0 agents</span>
-        <span id="terminal-count">1 terminal</span>
-        <span style="margin-left:auto;">v0.1.0</span>
+        <span class="status-online">ONLINE</span>
+        <span id="agent-count" class="status-agents">0 AGENTS</span>
+        <span id="terminal-count" class="status-terminals">1 TERMINAL</span>
+        <span class="status-version">v0.1.0</span>
       </div>
     </div>
   </div>
 
   <div class="settings-modal" id="settings-modal">
     <div class="settings-content">
-      <h2 style="margin-bottom:16px;">Settings</h2>
+      <h2 class="settings-title">Settings</h2>
       <div class="settings-tabs">
-        <div class="settings-tab active" onclick="switchTab('general', event)">General</div>
-        <div class="settings-tab" onclick="switchTab('agent', event)">Agent</div>
-        <div class="settings-tab" onclick="switchTab('git', event)">Git</div>
-        <div class="settings-tab" onclick="switchTab('keyboard', event)">Keyboard</div>
+        <div class="settings-tab active" data-tab="general">General</div>
+        <div class="settings-tab" data-tab="agent">Agent</div>
+        <div class="settings-tab" data-tab="git">Git</div>
+        <div class="settings-tab" data-tab="keyboard">Keyboard</div>
       </div>
       <div id="settings-general">
         <div class="settings-row">
           <span class="settings-label">Theme</span>
-          <select class="settings-input">
-            <option>Tokyo Night</option>
-            <option>Dracula</option>
-            <option>Solarized Dark</option>
+          <select class="settings-input" id="set-theme">
+            <option value="dark">Dark</option>
+            <option value="tokyo-night">Tokyo Night</option>
+            <option value="dracula">Dracula</option>
+            <option value="solarized-dark">Solarized Dark</option>
           </select>
         </div>
         <div class="settings-row">
           <span class="settings-label">Default Agent</span>
-          <select class="settings-input">
-            <option>claude</option>
-            <option>codex</option>
-            <option>gemini</option>
+          <select class="settings-input" id="set-agent">
+            <option value="opencode">opencode</option>
+            <option value="claude">claude</option>
+            <option value="codex">codex</option>
+            <option value="gemini">gemini</option>
           </select>
         </div>
         <div class="settings-row">
           <span class="settings-label">Max Concurrent Agents</span>
-          <input type="number" class="settings-input" value="5">
+          <input type="number" min="1" max="32" class="settings-input" id="set-max-agents" value="5">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Terminal Font</span>
+          <input type="text" class="settings-input" id="set-font" value="JetBrains Mono">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Terminal Font Size</span>
+          <input type="number" min="8" max="32" class="settings-input" id="set-font-size" value="14">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Terminal Shell</span>
+          <select class="settings-input" id="set-shell">
+            <option value="powershell">powershell</option>
+            <option value="pwsh">pwsh</option>
+            <option value="cmd">cmd</option>
+            <option value="bash">bash</option>
+            <option value="zsh">zsh</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Enable Notifications</span>
+          <input type="checkbox" class="settings-input" id="set-notifications" checked>
         </div>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
-        <button class="toolbar-btn" onclick="hideSettings()">Cancel</button>
-        <button class="toolbar-btn" style="background:var(--accent); color:var(--bg);" onclick="hideSettings()">Save</button>
+      <div id="settings-agent" class="tab-panel">
+        <div class="settings-row">
+          <label class="settings-label" for="set-agent2">Default Agent</label>
+          <select class="settings-input" id="set-agent2" name="default-agent">
+            <option value="opencode">opencode</option>
+            <option value="claude">claude</option>
+            <option value="codex">codex</option>
+            <option value="gemini">gemini</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="set-agent-prompt">Agent Prompt on Run</label>
+          <input type="checkbox" class="settings-input" id="set-agent-prompt" name="agent-prompt-on-run" checked>
+        </div>
+      </div>
+      <div id="settings-git" class="tab-panel">
+        <div class="settings-row">
+          <label class="settings-label" for="set-git-branch">Default Branch</label>
+          <input type="text" class="settings-input" id="set-git-branch" name="default-branch" value="main" autocomplete="off">
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="set-git-autofetch">Auto-fetch</label>
+          <input type="checkbox" class="settings-input" id="set-git-autofetch" name="git-auto-fetch">
+        </div>
+      </div>
+      <div id="settings-keyboard" class="tab-panel">
+        <div class="settings-row"><span class="settings-label">New Worktree</span><span class="settings-input">Ctrl+N</span></div>
+        <div class="settings-row"><span class="settings-label">New Terminal</span><span class="settings-input">Ctrl+T</span></div>
+        <div class="settings-row"><span class="settings-label">Settings</span><span class="settings-input">Ctrl+,</span></div>
+      </div>
+      <div class="settings-actions">
+        <button class="toolbar-btn" id="btn-cancel-settings">Cancel</button>
+        <button class="toolbar-btn btn-save" id="btn-save-settings">Save</button>
       </div>
     </div>
   </div>
 
+  <div class="input-modal" id="input-modal">
+    <div class="input-modal-box">
+      <div class="input-modal-title" id="input-modal-title">Input</div>
+      <input type="text" class="settings-input" id="input-modal-field" name="input-modal-field"
+             autocomplete="off" aria-labelledby="input-modal-title">
+      <div class="settings-actions">
+        <button class="toolbar-btn" id="input-modal-cancel">Cancel</button>
+        <button class="toolbar-btn btn-save" id="input-modal-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-modal" id="telemetry-modal">
+    <div class="input-modal-box" aria-label="Telemetry">
+      <div class="input-modal-title">📈 Telemetry — UI / connection / usage</div>
+      <pre id="telemetry-body" aria-label="Telemetry log"
+           class="telemetry-pre">loading…</pre>
+      <div class="settings-actions">
+        <button class="toolbar-btn" id="btn-telemetry-refresh">Refresh</button>
+        <button class="toolbar-btn btn-save" id="btn-telemetry-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA: Offline banner -->
+  <div class="offline-banner" id="offline-banner">⚡ You are offline — cached data available</div>
+
+  <!-- PWA: Install prompt -->
+  <div class="install-prompt" id="install-prompt">
+    <div class="install-title">Install Porpoise</div>
+    <div class="install-sub">Add to home screen for the best experience</div>
+    <button id="btn-install-pwa">Install</button>
+    <button id="btn-install-later" class="install-later">Later</button>
+  </div>
+
+  <script src="vendor/xterm.js"></script>
+  <script src="vendor/addon-fit.js"></script>
   <script>
-    function createWorktree() {
-      const name = prompt('Worktree name:');
-      if (name) {
-        const list = document.getElementById('worktree-list');
-        const item = document.createElement('div');
-        item.className = 'worktree-item';
-        item.onclick = () => selectWorktree(item, name);
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'worktree-name';
-        nameSpan.textContent = name;
-        const metaSpan = document.createElement('span');
-        metaSpan.className = 'worktree-meta';
-        metaSpan.textContent = 'idle';
-        item.appendChild(nameSpan);
-        item.appendChild(metaSpan);
-        list.appendChild(item);
+    const tauri = window.__TAURI__;
+    // Tauri v2 exposes invoke under the `core` namespace; v1 had it top-level
+    const rawInvoke = tauri ? ((tauri.core && tauri.core.invoke) || tauri.invoke || null) : null;
+    const listen = tauri && tauri.event ? tauri.event.listen : null;
+
+    function logTelemetry(kind, detail) {
+      if (rawInvoke) rawInvoke('telemetry_log', { kind, detail }).catch(() => {});
+    }
+
+    // every backend call is timed and logged: `invoke:<name>` ok=<ms> / err
+    const invoke = rawInvoke ? ((name, args) => {
+      const t0 = performance.now();
+      return rawInvoke(name, args).then(
+        r => { logTelemetry('invoke:' + name, 'ok ' + Math.round(performance.now() - t0) + 'ms'); return r; },
+        e => { logTelemetry('invoke:' + name, 'err ' + String(e).slice(0, 200)); throw e; }
+      );
+    }) : null;
+
+    // ── Terminal engine (xterm.js — real VT emulation) ─────────────
+    const terminals = new Map();   // termId -> { term, fitAddon, paneEl }
+    let activeTermId = null;
+
+    function currentSettings() {
+      return (window.__porpoise_settings_cache ||= {
+        fontSize: 14, fontFamily: "'JetBrains Mono', 'Fira Code', monospace"
+      });
+    }
+
+    function clipboardCopy(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(e => console.error('copy:', e));
+      }
+    }
+
+    function clipboardPaste(termId) {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText()
+          .then(text => { if (text) sendInput(termId, text); })
+          .catch(e => console.error('paste (clipboard blocked):', e));
+      }
+    }
+
+    // A dead PTY (shell exited) fails every write with os error 232 — mark the
+    // pane exited once instead of spamming errors on every keystroke.
+    function markExited(id) {
+      const t = terminals.get(id);
+      if (!t || t.exited) return;
+      t.exited = true;
+      t.term.write('\r\n\x1b[31m[process exited]\x1b[0m\r\n');
+      t.paneEl.style.opacity = '0.45';
+      updateTerminalCount();
+    }
+
+    function sendInput(id, data) {
+      const t = terminals.get(id);
+      if (!t || t.exited || !invoke) return;
+      invoke('terminal_input', { id, data }).catch(e => {
+        const msg = String(e);
+        if (msg.includes('pipe is being closed') || msg.includes('broken pipe') || msg.includes('os error 232')) {
+          markExited(id);
+        } else {
+          console.error('terminal_input:', e);
+        }
+      });
+    }
+
+    async function createTerminalPane(shell) {
+      if (!invoke || typeof Terminal === 'undefined') return;
+      try {
+        const id = await invoke('terminal_new', { shell: shell || null });
+        const area = document.getElementById('terminal-area');
+        // Insert a draggable divider before the new pane if not the first
+        if (area.children.length > 0) {
+          const isVertical = area.classList.contains('split-v');
+          const divider = document.createElement('div');
+          divider.className = isVertical ? 'pane-divider vertical' : 'pane-divider horizontal';
+          makeDividerDraggable(divider, isVertical);
+          area.appendChild(divider);
+        }
+        const pane = document.createElement('div');
+        pane.className = 'terminal-pane';
+        pane.dataset.termId = id;
+        const header = document.createElement('div');
+        header.className = 'terminal-pane-header';
+        const title = document.createElement('span');
+        title.className = 'terminal-pane-title';
+        title.textContent = shell || 'terminal';
+        title.title = id;
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'terminal-pane-close';
+        closeBtn.textContent = '×';
+        closeBtn.title = 'Close pane (Ctrl+Shift+W)';
+        closeBtn.setAttribute('aria-label', 'Close terminal pane');
+        closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closePane(id); });
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+        pane.appendChild(header);
+        const holder = document.createElement('div');
+        holder.className = 'terminal-content';
+        pane.appendChild(holder);
+        area.appendChild(pane);
+
+        const s = currentSettings();
+        const term = new Terminal({
+          convertEol: false,
+          cursorBlink: true,
+          scrollback: 2000,
+          fontSize: s.fontSize,
+          fontFamily: s.fontFamily,
+          theme: {
+            background: '#050510',
+            foreground: '#39ff14',
+            cursor: '#39ff14',
+            selectionBackground: 'rgba(0, 240, 255, 0.25)',
+          },
+        });
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(holder);
+        requestAnimationFrame(() => {
+          try { fitAddon.fit(); } catch (e) { console.warn('initial fit failed:', e); }
+          const dims = fitAddon.proposeDimensions();
+          if (dims) invoke('terminal_resize', { id, cols: dims.cols, rows: dims.rows }).catch(() => {});
+        });
+
+        // keystrokes/resize flow to the PTY
+        term.onData(data => sendInput(id, data));
+        term.onResize(({ cols, rows }) => {
+          invoke('terminal_resize', { id, cols, rows }).catch(() => {});
+        });
+
+        // Ctrl+C copies when text is selected, else passes SIGINT to the shell.
+        // Ctrl+V / Ctrl+Shift+V paste from the clipboard.
+        term.attachCustomKeyEventHandler((ev) => {
+          if (ev.type !== 'keydown') return true;
+          const mod = ev.ctrlKey || ev.metaKey;
+          if (!mod) return true;
+          const k = ev.key.toLowerCase();
+          if (k === 'c' && ev.shiftKey && term.hasSelection()) { clipboardCopy(term.getSelection()); return false; }
+          if (k === 'c' && term.hasSelection()) { clipboardCopy(term.getSelection()); return false; }
+          if (k === 'v') { clipboardPaste(id); return false; }
+          if (k === 'x' && term.hasSelection()) { clipboardCopy(term.getSelection()); term.clearSelection(); return false; }
+          if (k === 'w' && ev.shiftKey) { closePane(id); return false; }
+          return true;
+        });
+
+        pane.onclick = () => focusTerminal(id);
+        term._porpoise_id = id;
+        terminals.set(id, { term, fitAddon, paneEl: pane, titleEl: title });
+        activeTermId = id;
+        focusTerminal(id);
+        updateTerminalCount();
+        refitAllPanes();
+      } catch (e) {
+        console.error('terminal_new failed:', e);
+      }
+    }
+
+    async function closePane(id) {
+      const t = terminals.get(id);
+      if (!t) return;
+      try { await invoke('terminal_close', { id }); } catch (e) { console.error('terminal_close:', e); }
+      try { t.term.dispose(); } catch (e) {}
+      t.paneEl.remove();
+      const wasActive = activeTermId === id;
+      terminals.delete(id);
+      if (wasActive) {
+        const remaining = [...terminals.keys()];
+        if (remaining.length) focusTerminal(remaining[remaining.length - 1]);
+        else activeTermId = null;
+      }
+      updateTerminalCount();
+      refitAllPanes();
+    }
+
+    // xterm must re-measure whenever pane layout changes: adding/removing a
+    // pane or resizing the window alters pane width — without re-fit the
+    // grid desyncs from the PTY and TUI apps render broken.
+    function refitAllPanes() {
+      requestAnimationFrame(() => {
+        terminals.forEach(({ fitAddon }) => {
+          try { fitAddon.fit(); } catch (e) { /* pane not laid out yet */ }
+        });
+      });
+    }
+    window.addEventListener('resize', refitAllPanes);
+
+    function focusTerminal(id) {
+      activeTermId = id;
+      document.querySelectorAll('.terminal-pane').forEach(p => p.style.outline = 'none');
+      const t = terminals.get(id);
+      if (t) {
+        t.paneEl.style.outline = '1px solid var(--cyan)';
+        t.term.focus();
+      }
+    }
+
+    // ── Worktrees (real backend) ───────────────────────────────────
+    async function refreshWorktrees() {
+      if (!invoke) return;
+      try {
+        const list = await invoke('list_worktrees');
+        const el = document.getElementById('worktree-list');
+        el.innerHTML = '';
+        if (!list.length) {
+          const empty = document.createElement('div');
+          empty.className = 'worktree-item';
+          empty.innerHTML = '<span class="worktree-meta">no worktrees — press + to create</span>';
+          el.appendChild(empty);
+          return;
+        }
+        for (const wt of list) {
+          const item = document.createElement('div');
+          item.className = 'worktree-item';
+          const name = document.createElement('span');
+          name.className = 'worktree-name';
+          name.textContent = wt.name;
+          const meta = document.createElement('span');
+          meta.className = 'worktree-meta';
+          meta.textContent = wt.status ? wt.status.toLowerCase() : 'idle';
+          item.appendChild(name);
+          item.appendChild(meta);
+          item.onclick = () => selectWorktree(item, wt.name);
+          el.appendChild(item);
+        }
+      } catch (e) {
+        console.error('list_worktrees:', e);
+      }
+    }
+
+    // window.prompt() does not render in Tauri v2 WebView — inline modal instead
+    function inputModal(title, defaultValue = '') {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('input-modal');
+        const field = document.getElementById('input-modal-field');
+        const titleEl = document.getElementById('input-modal-title');
+        const ok = document.getElementById('input-modal-ok');
+        const cancel = document.getElementById('input-modal-cancel');
+        titleEl.textContent = title;
+        field.value = defaultValue;
+        modal.classList.add('visible');
+        field.focus();
+        const done = (val) => {
+          modal.classList.remove('visible');
+          ok.onclick = cancel.onclick = field.onkeydown = null;
+          resolve(val);
+        };
+        ok.onclick = () => done(field.value);
+        cancel.onclick = () => done(null);
+        field.onkeydown = (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); done(field.value); }
+          if (e.key === 'Escape') { e.preventDefault(); done(null); }
+        };
+      });
+    }
+
+    async function createWorktree() {
+      if (!invoke) return;
+      const name = await inputModal('New worktree — name:');
+      if (!name) return;
+      try {
+        await invoke('create_worktree', { name });
+        await refreshWorktrees();
+      } catch (e) {
+        alert('Failed to create worktree: ' + e);
       }
     }
 
@@ -290,58 +973,490 @@
 
     function splitHorizontal() {
       const area = document.getElementById('terminal-area');
-      const pane = document.createElement('div');
-      pane.className = 'terminal-pane';
-      pane.innerHTML = '<div class="terminal-content">$ </div>';
-      area.appendChild(pane);
-      updateTerminalCount();
+      area.classList.remove('split-v');
+      area.style.flexDirection = 'row';
+      createTerminalPane();
     }
-
     function splitVertical() {
-      splitHorizontal();
+      const area = document.getElementById('terminal-area');
+      area.classList.add('split-v');
+      area.style.flexDirection = 'column';
+      createTerminalPane();
     }
 
     function toggleEditor() {
-      document.getElementById('editor-pane').classList.toggle('visible');
+      const pane = document.getElementById('editor-pane');
+      const divider = document.getElementById('editor-divider');
+      const isVisible = pane.classList.toggle('visible');
+      divider.classList.toggle('visible', isVisible);
+      if (isVisible) {
+        // ensure terminal area doesn't collapse
+        document.getElementById('terminal-area').style.flex = '1';
+        pane.style.flex = '1';
+      }
+      refitAllPanes();
     }
 
-    function showSettings() {
+    function makeDividerDraggable(divider, isVertical) {
+      let isDragging = false;
+      let startPos = 0;
+      let prevPane = null;
+      let nextPane = null;
+      let startPrevSize = 0;
+      let startNextSize = 0;
+
+      divider.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startPos = isVertical ? e.clientY : e.clientX;
+        prevPane = divider.previousElementSibling;
+        nextPane = divider.nextElementSibling;
+        if (prevPane) startPrevSize = isVertical ? prevPane.offsetHeight : prevPane.offsetWidth;
+        if (nextPane) startNextSize = isVertical ? nextPane.offsetHeight : nextPane.offsetWidth;
+        document.body.style.cursor = isVertical ? 'row-resize' : 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging || !prevPane || !nextPane) return;
+        const delta = (isVertical ? e.clientY : e.clientX) - startPos;
+        const newPrevSize = Math.max(100, startPrevSize + delta);
+        const newNextSize = Math.max(100, startNextSize - delta);
+        prevPane.style.flex = 'none';
+        nextPane.style.flex = 'none';
+        if (isVertical) {
+          prevPane.style.height = newPrevSize + 'px';
+          nextPane.style.height = newNextSize + 'px';
+        } else {
+          prevPane.style.width = newPrevSize + 'px';
+          nextPane.style.width = newNextSize + 'px';
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        refitAllPanes();
+      });
+    }
+
+    // Draggable divider between terminal and editor
+    (function setupEditorResize() {
+      const divider = document.getElementById('editor-divider');
+      const terminalArea = document.getElementById('terminal-area');
+      const editorPane = document.getElementById('editor-pane');
+      if (!divider || !terminalArea || !editorPane) return;
+      let isDragging = false;
+      let startY = 0;
+      let startTerminalHeight = 0;
+      let startEditorHeight = 0;
+
+      divider.addEventListener('mousedown', (e) => {
+        if (!editorPane.classList.contains('visible')) return;
+        isDragging = true;
+        startY = e.clientY;
+        startTerminalHeight = terminalArea.offsetHeight;
+        startEditorHeight = editorPane.offsetHeight;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dy = e.clientY - startY;
+        const newTerminalHeight = Math.max(100, startTerminalHeight + dy);
+        const newEditorHeight = Math.max(100, startEditorHeight - dy);
+        terminalArea.style.flex = 'none';
+        terminalArea.style.height = newTerminalHeight + 'px';
+        editorPane.style.flex = 'none';
+        editorPane.style.height = newEditorHeight + 'px';
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        refitAllPanes();
+      });
+    })();
+
+    // ── Settings (real load/save) ──────────────────────────────────
+    async function showSettings() {
       document.getElementById('settings-modal').classList.add('visible');
+      if (!invoke) return;
+      try {
+        const s = await invoke('get_settings');
+        document.getElementById('set-theme').value = s.theme;
+        document.getElementById('set-agent').value = s.default_agent;
+        document.getElementById('set-max-agents').value = s.max_concurrent_agents;
+        document.getElementById('set-font').value = s.terminal_font;
+        document.getElementById('set-font-size').value = s.terminal_font_size;
+        document.getElementById('set-shell').value = s.terminal_shell;
+        document.getElementById('set-notifications').checked = s.enable_notifications;
+      } catch (e) {
+        console.error('get_settings:', e);
+      }
     }
 
     function hideSettings() {
       document.getElementById('settings-modal').classList.remove('visible');
     }
 
+    async function saveSettings() {
+      if (!invoke) { hideSettings(); return; }
+      const settings = {
+        theme: document.getElementById('set-theme').value,
+        default_agent: document.getElementById('set-agent').value,
+        max_concurrent_agents: parseInt(document.getElementById('set-max-agents').value, 10) || 5,
+        terminal_font: document.getElementById('set-font').value,
+        terminal_font_size: parseInt(document.getElementById('set-font-size').value, 10) || 14,
+        terminal_shell: document.getElementById('set-shell').value,
+        enable_notifications: document.getElementById('set-notifications').checked,
+      };
+      try {
+        await invoke('save_settings', { settings });
+        applySettings(settings);
+        hideSettings();
+      } catch (e) {
+        alert('Failed to save settings: ' + e);
+      }
+    }
+
+    function applySettings(s) {
+      const cache = currentSettings();
+      cache.fontSize = s.terminal_font_size || 14;
+      cache.fontFamily = `'${s.terminal_font}', 'Fira Code', monospace`;
+      cache.theme = s.theme || 'dark';
+      window.__porpoise_settings_cache = cache;
+      if (cache.theme === 'dark') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', cache.theme);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) {
+        const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a0a0f';
+        meta.setAttribute('content', bg);
+      }
+      const themeMap = {
+        dark: { background: '#050510', foreground: '#39ff14', cursor: '#39ff14' },
+        'tokyo-night': { background: '#1a1b26', foreground: '#c0caf5', cursor: '#7aa2f7' },
+        dracula: { background: '#282a36', foreground: '#f8f8f2', cursor: '#bd93f9' },
+        'solarized-dark': { background: '#002b36', foreground: '#839496', cursor: '#268bd2' },
+      };
+      const tTheme = themeMap[cache.theme] || themeMap.dark;
+      tTheme.selectionBackground = 'rgba(0, 240, 255, 0.25)';
+      terminals.forEach(({ term, fitAddon }) => {
+        term.options.fontSize = cache.fontSize;
+        term.options.fontFamily = cache.fontFamily;
+        term.options.theme = tTheme;
+        try { fitAddon.fit(); } catch (e) {}
+      });
+    }
+
     function switchTab(tab, ev) {
       document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
       if (ev && ev.target) ev.target.classList.add('active');
-      document.querySelectorAll('[id^="settings-"]').forEach(p => p.style.display = 'none');
-      const panel = document.getElementById('settings-' + tab);
-      if (panel) panel.style.display = '';
+      ['general', 'agent', 'git', 'keyboard'].forEach(name => {
+        const panel = document.getElementById('settings-' + name);
+        if (panel) panel.classList.toggle('tab-panel', name !== tab);
+      });
     }
 
     function updateTerminalCount() {
-      const count = document.querySelectorAll('.terminal-pane').length;
-      document.getElementById('terminal-count').textContent = count + ' terminal' + (count > 1 ? 's' : '');
+      const count = terminals.size;
+      document.getElementById('terminal-count').textContent = count + ' terminal' + (count === 1 ? '' : 's');
+      const agents = [...terminals.values()].filter(t => t.isAgentPane).length;
+      const el = document.getElementById('agent-count');
+      el.textContent = agents + ' agent' + (agents === 1 ? '' : 's');
+      el.style.color = agents ? 'var(--green)' : 'var(--cyan)';
     }
 
-    function openWorkflowEditor() {
-      if (window.__TAURI__) {
-        window.__TAURI__.invoke('open_workflow_editor').catch(e => {
+    async function refreshStatus() {
+      if (!invoke) return;
+      try {
+        const st = await invoke('get_status');
+        const ver = document.querySelector('.statusbar span:last-child');
+        if (ver) ver.textContent = 'v' + st.version;
+      } catch (e) { /* daemon down */ }
+    }
+
+    // Per the project objective, CLI agents run INSIDE terminal PTYs — visible
+    // and interactive (opencode TUI). Spawning them headless in the daemon
+    // leaves nothing the user can see or type into.
+    // New PTYs need their shell to finish booting; input sent before the
+    // first banner output is swallowed by PowerShell's startup.
+    function waitForShell(id, timeoutMs = 8000) {
+      return new Promise((resolve) => {
+        const started = Date.now();
+        const timer = setInterval(() => {
+          const t = terminals.get(id);
+          const ready = t && t.term.buffer.active.length > 0;
+          if (ready || Date.now() - started > timeoutMs) {
+            clearInterval(timer);
+            // grace period so the prompt itself is drawn
+            setTimeout(resolve, ready ? 400 : 1200);
+          }
+        }, 100);
+      });
+    }
+
+    async function runAgent() {
+      if (!invoke) return;
+      let kind = 'opencode';
+      try { kind = (await invoke('get_settings')).default_agent || 'opencode'; }
+      catch (e) { /* defaults */ }
+      const promptText = await inputModal(`Prompt for ${kind} (empty = interactive TUI):`);
+      if (promptText === null) return;
+
+      await createTerminalPane();
+      const id = activeTermId;
+      const t = terminals.get(id);
+      if (!t) { alert('failed to open terminal for agent'); return; }
+      t.isAgentPane = true;
+      await waitForShell(id);
+      const cmd = promptText.trim()
+        ? `${kind} run "${promptText.replace(/"/g, '\\"')}"`
+        : kind;
+      t.term.write(`\x1b[36m▶ launching ${cmd}\x1b[0m\r\n`);
+      invoke('terminal_input', { id, data: cmd + '\r' })
+        .catch(e => console.error('agent launch:', e));
+      updateTerminalCount();
+    }
+
+    async function openWorkflowEditor() {
+      if (invoke) {
+        invoke('open_workflow_editor').catch(e => {
           window.open('workflow.html', '_blank');
         });
       } else {
         window.open('workflow.html', '_blank');
       }
     }
+    // CSP (nonce mode) blocks inline onclick attributes — all handlers are
+    // bound here instead.
+    function bindUi() {
+      const on = (id, fn) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', () => {
+          logTelemetry('ui:click', id);
+          fn();
+        });
+      };
+      on('btn-new-worktree', createWorktree);
+      on('btn-run-agent', runAgent);
+      on('btn-split-h', splitHorizontal);
+      on('btn-split-v', splitVertical);
+      on('btn-editor', toggleEditor);
+      on('btn-settings', showSettings);
+      on('btn-workflows', openWorkflowEditor);
+      on('btn-cancel-settings', hideSettings);
+      on('btn-save-settings', saveSettings);
+      on('btn-install-pwa', installPWA);
+      on('btn-install-later', dismissInstall);
+      on('btn-telemetry', showTelemetry);
+      on('btn-telemetry-refresh', showTelemetry);
+      on('btn-telemetry-close', () => document.getElementById('telemetry-modal').classList.remove('visible'));
+      document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', (ev) => { logTelemetry('ui:tab', tab.dataset.tab); switchTab(tab.dataset.tab, ev); });
+      });
+      const modal = document.getElementById('input-modal');
+      if (modal) modal.addEventListener('mousedown', (e) => { if (e.target === modal) e.preventDefault(); });
+    }
+
+    async function showTelemetry() {
+      document.getElementById('telemetry-modal').classList.add('visible');
+      const body = document.getElementById('telemetry-body');
+      body.textContent = 'loading…';
+      if (!invoke) { body.textContent = 'invoke unavailable'; return; }
+      try {
+        const t = await invoke('get_telemetry', { limit: 300 });
+        const counts = Object.entries(t.counts || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, v]) => `${String(v).padStart(5)}  ${k}`)
+          .join('\n');
+        const byKind = (prefix) => Object.entries(t.counts || {}).filter(([k]) => k.startsWith(prefix)).map(([k,v]) => `${String(v).padStart(5)}  ${k}`).join('\n') || '(none)';
+        const errors = byKind('error:') + '\n' + byKind('warning:');
+        const dataFlow = byKind('data_flow:');
+        const system = byKind('system:') + '\n' + byKind('connection') + '\n' + byKind('app');
+        const recent = (t.recent || []).slice(-120).map(e => `${e.ts}  ${e.kind}  ${e.detail}`).join('\n');
+        body.textContent =
+          `log file : ${t.path}\n` +
+          `events   : ${t.total_events} total, ${t.error_count_recent} errors in recent window\n\n` +
+          `── counts by kind ──\n${counts || '(none)'}\n\n` +
+          `── errors / warnings ──\n${errors.trim() || '(none)'}\n\n` +
+          `── data flow ──\n${dataFlow || '(none)'}\n\n` +
+          `── system usage ──\n${system.trim() || '(none)'}\n\n` +
+          `── recent events ──\n${recent || '(none)'}`;
+      } catch (e) {
+        body.textContent = 'telemetry load failed: ' + e;
+      }
+    }
+
+    window.__porpoise_invoke = invoke;
+    window.__porpoise_terms = terminals;
 
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === ',') { showSettings(); e.preventDefault(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 'n') { createWorktree(); e.preventDefault(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 't') { splitHorizontal(); e.preventDefault(); }
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'w') {
+        if (activeTermId) closePane(activeTermId);
+        e.preventDefault();
+      }
       if (e.key === 'Escape') { hideSettings(); }
     });
+
+    // clicking anywhere outside form controls returns focus to the terminal
+    document.addEventListener('mousedown', (e) => {
+      const tag = (e.target && e.target.tagName) || '';
+      if (!['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(tag) && !e.target.closest('.settings-modal, .input-modal')) {
+        const t = terminals.get(activeTermId);
+        if (t) t.term.focus();
+      }
+    }, true);
+
+    // ── Boot ───────────────────────────────────────────────────────
+    (async function boot() {
+      bindUi();
+      if (window.__TAURI__ && navigator.serviceWorker) {
+        // stale SW from an older build intercepts ipc.localhost — remove it
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) r.unregister();
+      }
+      if (listen) {
+        try {
+          await listen('terminal-output', (event) => {
+            const { id, data } = event.payload;
+            const t = terminals.get(id);
+            if (t) t.term.write(data);
+          });
+        } catch (e) {
+          console.error('terminal-output listener failed:', e);
+        }
+      }
+      // replace the static fake pane with a real PTY
+      const fake = document.querySelector('#terminal-area .terminal-pane');
+      if (fake) fake.remove();
+      await createTerminalPane();
+      await refreshWorktrees();
+      refreshStatus();
+      setInterval(refreshStatus, 10000);
+      try {
+        const s = await invoke('get_settings');
+        applySettings(s);
+      } catch (e) { /* defaults */ }
+    })();
+
+    // ===== PWA: Service Worker Registration (browser deploys only) =====
+    // Inside Tauri the SW would intercept ipc.localhost fetches and break IPC.
+    if (!window.__TAURI__ && 'serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
+          .catch(err => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+
+    // ===== PWA: Offline Detection =====
+    const offlineBanner = document.getElementById('offline-banner');
+    function updateOnlineStatus() {
+      if (navigator.onLine) {
+        offlineBanner.classList.remove('visible');
+        document.title = 'Porpoise';
+      } else {
+        offlineBanner.classList.add('visible');
+        document.title = 'Porpoise (Offline)';
+      }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // ===== PWA: Install Prompt =====
+    let deferredPrompt = null;
+    const installPrompt = document.getElementById('install-prompt');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(() => {
+        if (deferredPrompt && !localStorage.getItem('porpoise-install-dismissed')) {
+          installPrompt.classList.add('visible');
+        }
+      }, 30000);
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('[PWA] User accepted install');
+          }
+          deferredPrompt = null;
+          installPrompt.classList.remove('visible');
+        });
+      }
+    }
+
+    function dismissInstall() {
+      installPrompt.classList.remove('visible');
+      localStorage.setItem('porpoise-install-dismissed', '1');
+    }
+
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] App installed');
+      installPrompt.classList.remove('visible');
+      deferredPrompt = null;
+    });
+
+    // ===== PWA: Mobile Sidebar Toggle =====
+    const sidebar = document.getElementById('sidebar');
+    let overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    overlay.id = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible');
+    }
+
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+    });
+
+    const toolbar = document.querySelector('.toolbar');
+    if (toolbar) {
+      const menuBtn = document.createElement('button');
+      menuBtn.className = 'mobile-menu-btn';
+      menuBtn.textContent = '☰';
+      menuBtn.onclick = toggleSidebar;
+      toolbar.insertBefore(menuBtn, toolbar.firstChild);
+    }
+
+    // ===== PWA: Touch Gestures =====
+    let touchStartX = 0;
+    let touchStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (touchStartX < 30 && dx > 80 && Math.abs(dy) < 50) {
+        sidebar.classList.add('open');
+        overlay.classList.add('visible');
+      }
+      if (sidebar.classList.contains('open') && dx < -80 && Math.abs(dy) < 50) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('visible');
+      }
+    }, { passive: true });
   </script>
 </body>
 </html>

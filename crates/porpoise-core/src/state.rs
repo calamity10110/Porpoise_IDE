@@ -26,7 +26,6 @@ struct AppStateInner {
     pub event_bus: EventBus,
     pub worktrees: RwLock<HashMap<WorktreeId, WorktreeState>>,
     pub agents: RwLock<HashMap<AgentId, AgentState>>,
-    #[allow(dead_code)]
     pub sessions: RwLock<HashMap<SessionId, SessionState>>,
 }
 
@@ -80,6 +79,16 @@ impl AppState {
     /// Acquires a write guard on the agent map.
     pub async fn agents_mut(&self) -> tokio::sync::RwLockWriteGuard<'_, HashMap<AgentId, AgentState>> {
         self.inner.agents.write().await
+    }
+
+    /// Acquires a read guard on the session map.
+    pub async fn sessions(&self) -> tokio::sync::RwLockReadGuard<'_, HashMap<SessionId, SessionState>> {
+        self.inner.sessions.read().await
+    }
+
+    /// Acquires a write guard on the session map.
+    pub async fn sessions_mut(&self) -> tokio::sync::RwLockWriteGuard<'_, HashMap<SessionId, SessionState>> {
+        self.inner.sessions.write().await
     }
 }
 

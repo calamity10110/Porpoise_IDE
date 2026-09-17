@@ -1,4 +1,5 @@
 pub mod account;
+pub mod adapters;
 pub mod detector;
 pub mod generic;
 pub mod hook;
@@ -9,6 +10,7 @@ pub mod types;
 pub mod usage;
 
 pub use account::AccountSwitcher;
+pub use adapters::{AdapterCapabilities, AdapterRegistry, AgentAdapter, OutputParser};
 pub use detector::AgentDetector;
 pub use hook::HookServer;
 pub use pool::AgentPool;

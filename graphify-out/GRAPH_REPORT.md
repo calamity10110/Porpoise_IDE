@@ -1,427 +1,422 @@
-# Graph Report - .  (2026-07-10)
+# Graph Report - C:/Users/vuanh/Downloads/porpoises/Porpoise_ide  (2026-09-13)
 
 ## Corpus Check
-- 16 files · ~3 words
-- Verdict: corpus is large enough that graph structure adds value.
+- Large corpus: 280 files · ~122,047 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder, or use --no-semantic to run AST-only.
 
 ## Summary
-- 1279 nodes · 2329 edges · 82 communities (79 shown, 3 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
+- 1903 nodes · 4140 edges · 67 communities detected
+- Extraction: 56% EXTRACTED · 44% INFERRED · 0% AMBIGUOUS · INFERRED: 1835 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Community 0|Community 0]]
-- [[_COMMUNITY_Community 1|Community 1]]
-- [[_COMMUNITY_Community 2|Community 2]]
-- [[_COMMUNITY_Community 3|Community 3]]
-- [[_COMMUNITY_Community 4|Community 4]]
-- [[_COMMUNITY_Community 5|Community 5]]
-- [[_COMMUNITY_Community 6|Community 6]]
-- [[_COMMUNITY_Community 7|Community 7]]
-- [[_COMMUNITY_Community 8|Community 8]]
-- [[_COMMUNITY_Community 9|Community 9]]
-- [[_COMMUNITY_Community 10|Community 10]]
-- [[_COMMUNITY_Community 11|Community 11]]
-- [[_COMMUNITY_Community 12|Community 12]]
-- [[_COMMUNITY_Community 13|Community 13]]
-- [[_COMMUNITY_Community 14|Community 14]]
-- [[_COMMUNITY_Community 15|Community 15]]
-- [[_COMMUNITY_Community 16|Community 16]]
-- [[_COMMUNITY_Community 17|Community 17]]
-- [[_COMMUNITY_Community 18|Community 18]]
-- [[_COMMUNITY_Community 19|Community 19]]
-- [[_COMMUNITY_Community 20|Community 20]]
-- [[_COMMUNITY_Community 21|Community 21]]
-- [[_COMMUNITY_Community 22|Community 22]]
-- [[_COMMUNITY_Community 23|Community 23]]
-- [[_COMMUNITY_Community 24|Community 24]]
-- [[_COMMUNITY_Community 25|Community 25]]
-- [[_COMMUNITY_Community 26|Community 26]]
-- [[_COMMUNITY_Community 27|Community 27]]
-- [[_COMMUNITY_Community 28|Community 28]]
-- [[_COMMUNITY_Community 29|Community 29]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 34|Community 34]]
-- [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
-- [[_COMMUNITY_Community 37|Community 37]]
-- [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
-- [[_COMMUNITY_Community 40|Community 40]]
-- [[_COMMUNITY_Community 41|Community 41]]
-- [[_COMMUNITY_Community 42|Community 42]]
-- [[_COMMUNITY_Community 43|Community 43]]
-- [[_COMMUNITY_Community 44|Community 44]]
-- [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
-- [[_COMMUNITY_Community 51|Community 51]]
-- [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
-- [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
-- [[_COMMUNITY_Community 56|Community 56]]
-- [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 60|Community 60]]
-- [[_COMMUNITY_Community 61|Community 61]]
-- [[_COMMUNITY_Community 62|Community 62]]
-- [[_COMMUNITY_Community 63|Community 63]]
-- [[_COMMUNITY_Community 64|Community 64]]
-- [[_COMMUNITY_Community 65|Community 65]]
-- [[_COMMUNITY_Community 66|Community 66]]
-- [[_COMMUNITY_Community 67|Community 67]]
-- [[_COMMUNITY_Community 68|Community 68]]
-- [[_COMMUNITY_Community 69|Community 69]]
-- [[_COMMUNITY_Community 70|Community 70]]
-- [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
-- [[_COMMUNITY_Community 74|Community 74]]
-- [[_COMMUNITY_Community 81|Community 81]]
+- [[_COMMUNITY_ESP32 Comms|ESP32 Comms]]
+- [[_COMMUNITY_App Core|App Core]]
+- [[_COMMUNITY_Agent Adapters|Agent Adapters]]
+- [[_COMMUNITY_Adapter Registry|Adapter Registry]]
+- [[_COMMUNITY_Browser & Skills|Browser & Skills]]
+- [[_COMMUNITY_Mobile Shell|Mobile Shell]]
+- [[_COMMUNITY_Agent Models|Agent Models]]
+- [[_COMMUNITY_ESP32 WiFi|ESP32 WiFi]]
+- [[_COMMUNITY_Process Pools|Process Pools]]
+- [[_COMMUNITY_Notifications|Notifications]]
+- [[_COMMUNITY_HTTP Server|HTTP Server]]
+- [[_COMMUNITY_Design Canvas|Design Canvas]]
+- [[_COMMUNITY_CLI Commands|CLI Commands]]
+- [[_COMMUNITY_Behavior Orchestration|Behavior Orchestration]]
+- [[_COMMUNITY_Extension Background|Extension Background]]
+- [[_COMMUNITY_Runtime|Runtime]]
+- [[_COMMUNITY_Agent|Agent]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Cli|Cli]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Skills|Skills]]
+- [[_COMMUNITY_Extension|Extension]]
+- [[_COMMUNITY_Docs|Docs]]
+- [[_COMMUNITY_Runtime|Runtime]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Mobile|Mobile]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Docs|Docs]]
+- [[_COMMUNITY_App|App]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Git|Git]]
+- [[_COMMUNITY_Design|Design]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Agent|Agent]]
+- [[_COMMUNITY_Design|Design]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Network|Network]]
+- [[_COMMUNITY_Skills|Skills]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Agent|Agent]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Terminal|Terminal]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Opencode|Opencode]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Db|Db]]
+- [[_COMMUNITY_Runtime|Runtime]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Agent|Agent]]
+- [[_COMMUNITY_Browser|Browser]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_Docs|Docs]]
+- [[_COMMUNITY_Extension|Extension]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Core|Core]]
+- [[_COMMUNITY_Runtime|Runtime]]
+- [[_COMMUNITY_Templates|Templates]]
+- [[_COMMUNITY_App|App]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `DbPool` - 40 edges
-2. `EventBus` - 26 edges
-3. `AppState` - 23 edges
-4. `Agent` - 21 edges
-5. `ProcessManager` - 21 edges
-6. `GitEngine` - 18 edges
-7. `PtyManager` - 17 edges
-8. `Daemon` - 17 edges
-9. `PorpoiseError` - 15 edges
-10. `SystemEvent` - 15 edges
+1. `register_all()` - 45 edges
+2. `Agent` - 23 edges
+3. `NotificationService` - 22 edges
+4. `call()` - 22 edges
+5. `main()` - 20 edges
+6. `build()` - 20 edges
+7. `Terminal` - 19 edges
+8. `run()` - 17 edges
+9. `GitEngine` - 16 edges
+10. `run_migrations()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `CodexAgent` --implements--> `Agent`  [EXTRACTED]
-  crates/porpoise-agent/src/codex.rs → crates/porpoise-agent/src/traits.rs
-- `CodexHandle` --implements--> `AgentHandle`  [EXTRACTED]
-  crates/porpoise-agent/src/codex.rs → crates/porpoise-agent/src/traits.rs
-- `GeminiAgent` --implements--> `Agent`  [EXTRACTED]
-  crates/porpoise-agent/src/gemini.rs → crates/porpoise-agent/src/traits.rs
-- `do_spawn()` --calls--> `Agent`  [EXTRACTED]
-  crates/porpoise-agent/src/gemini.rs → crates/porpoise-agent/src/traits.rs
-- `do_spawn()` --references--> `AgentHandle`  [EXTRACTED]
-  crates/porpoise-agent/src/gemini.rs → crates/porpoise-agent/src/traits.rs
+- `build_tray_icon()` --calls--> `Icon`  [INFERRED]
+  crates\porpoise-app\src\lib.rs → mobile\lib\screens\pair_screen.dart
+- `make_store()` --calls--> `run_migrations()`  [INFERRED]
+  crates\porpoise-agent\src\resume.rs → crates\porpoise-db\src\migration.rs
+- `main()` --calls--> `build()`  [INFERRED]
+  crates\porpoise-app\build.rs → templates\esp32-s3\src\orchestration\telemetry.rs
+- `create_worktree()` --calls--> `call()`  [INFERRED]
+  crates\porpoise-app\src\commands.rs → extension\chrome\background.js
+- `run()` --calls--> `log_event()`  [INFERRED]
+  crates\porpoise-app\src\lib.rs → crates\porpoise-app\src\commands.rs
 
-## Import Cycles
-- 1-file cycle: `crates/porpoise-core/src/error.rs -> crates/porpoise-core/src/error.rs`
+## Communities
 
-## Communities (82 total, 3 thin omitted)
+### Community 0 - "ESP32 Comms"
+Cohesion: 0.02
+Nodes (60): Text, WebSocketServer, begin_behavior_ota(), finalize(), finalize_behavior_ota(), OtaState, OtaTarget, process_behavior_chunk() (+52 more)
 
-### Community 0 - "Community 0"
+### Community 1 - "App Core"
+Cohesion: 0.03
+Nodes (78): annotate(), DiffSummary, build(), main(), ProcessManager, OrientationFilter, handle_open(), handle_snapshot() (+70 more)
+
+### Community 2 - "Agent Adapters"
+Cohesion: 0.02
+Nodes (55): AiderAdapter, AiderOutputParser, ClaudeAdapter, ClaudeOutputParser, CodexAdapter, CodexOutputParser, OpenCodeAdapter, OpenCodeOutputParser (+47 more)
+
+### Community 3 - "Adapter Registry"
+Cohesion: 0.03
+Nodes (52): AdapterRegistry, appendOutput, Terminal, TerminalProvider, update, saveConfig(), loadSettings(), AgentRow (+44 more)
+
+### Community 4 - "Browser & Skills"
 Cohesion: 0.05
-Nodes (40): AgentRow, Option, Result, Self, String, Vec, ConfigEntry, Option (+32 more)
+Nodes (42): AccountSwitcher, AgentAccount, test_account(), test_add_and_list(), test_get_default(), test_persistence(), test_remove(), test_switch() (+34 more)
 
-### Community 1 - "Community 1"
+### Community 5 - "Mobile Shell"
+Cohesion: 0.03
+Nodes (71): build, HomeScreen, _HomeScreenState, main, MultiProvider, PorpoiseApp, Scaffold, AgentsScreen (+63 more)
+
+### Community 6 - "Agent Models"
+Cohesion: 0.05
+Nodes (36): Agent, AgentProvider, appendOutput, update, OpenCodeAgent, OpenCodeHandle, test_build_run_args(), test_resolve_binary_default() (+28 more)
+
+### Community 7 - "ESP32 WiFi"
+Cohesion: 0.04
+Nodes (33): WifiConfig, WifiError, WifiManager, WifiMode, WifiState, AppConfig, home_dir(), discover_config_path() (+25 more)
+
+### Community 8 - "Process Pools"
+Cohesion: 0.05
+Nodes (24): ProcessPool, handle_detect(), handle_list(), handle_logs(), handle_run(), handle_stop(), AgentDetector, test_detect_all() (+16 more)
+
+### Community 9 - "Notifications"
+Cohesion: 0.06
+Nodes (26): make_svc(), NotificationAction, NotificationChannel, NotificationPreferences, NotificationRecord, NotificationService, RichNotification, test_agent_completion_notification() (+18 more)
+
+### Community 10 - "HTTP Server"
+Cohesion: 0.05
+Nodes (24): HttpError, HttpServer, Method, Request, Response, AuthSession, AuthState, AuthToken (+16 more)
+
+### Community 11 - "Design Canvas"
+Cohesion: 0.05
+Nodes (30): auto_layout(), canvas_from_graph(), CanvasState, NodeSize, RenderedEdge, RenderedNode, Viewport, viewport_zoom_clamp() (+22 more)
+
+### Community 12 - "CLI Commands"
+Cohesion: 0.05
+Nodes (41): call(), handle(), handle(), handle(), handle(), handle(), handle(), handle_qr() (+33 more)
+
+### Community 13 - "Behavior Orchestration"
 Cohesion: 0.07
-Nodes (35): HealthChecker, Arc, Duration, Result, Self, ProcessHandle, DateTime, ProcessId (+27 more)
+Nodes (24): apply_update(), BehaviorConfig, BehaviorError, ComponentConfig, ConfigValue, default_waveshare_349(), default_waveshare_349_touch(), load_from_flash() (+16 more)
 
-### Community 2 - "Community 2"
+### Community 14 - "Extension Background"
 Cohesion: 0.06
-Nodes (30): Channel, AuthMethod, Debug, Formatter, Option, Result, String, HostConfig (+22 more)
+Nodes (20): connect(), disconnect(), getWsUrl(), loadConfig(), scheduleReconnect(), updateBadge(), handle_connect(), handle_port_forward() (+12 more)
 
-### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (31): Connection, AppConfig, home_dir(), PathBuf, Result, PorpoiseError, Display, PathBuf (+23 more)
+### Community 15 - "Runtime"
+Cohesion: 0.1
+Nodes (15): alloc_pty_impl(), lookup(), pty_read_impl(), pty_resize_impl(), pty_write_impl(), PtyHandle, PtyManager, PtySession (+7 more)
 
-### Community 4 - "Community 4"
+### Community 16 - "Agent"
+Cohesion: 0.13
+Nodes (14): AudioConfig, AudioInput, AudioOutput, SampleFormat, build_capability_linker(), SandboxedRuntime, test_no_imports_succeeds(), test_with_import_denied() (+6 more)
+
+### Community 17 - "Core"
+Cohesion: 0.12
+Nodes (13): update, Worktree, WorktreeProvider, EventBus, test_event_bus_clone(), test_multiple_subscribers(), test_publish_subscribe(), HookServer (+5 more)
+
+### Community 18 - "Cli"
 Cohesion: 0.09
-Nodes (30): from_octo_issue(), from_octo_pr(), GitHubProvider, pr_state(), Option, Result, Self, Vec (+22 more)
+Nodes (22): AgentAction, AgentArgs, BrowserAction, BrowserArgs, Cli, Commands, ConfigAction, ConfigArgs (+14 more)
 
-### Community 5 - "Community 5"
-Cohesion: 0.07
-Nodes (25): AgentDetector, Option, String, Vec, test_detect_all(), generate_completions(), Error, Path (+17 more)
+### Community 19 - "Core"
+Cohesion: 0.1
+Nodes (11): AgentConfig, AppConfig, BrowserConfig, CliConfig, ColorChoice, CoreConfig, DbConfig, GitConfig (+3 more)
 
-### Community 6 - "Community 6"
-Cohesion: 0.12
-Nodes (22): alloc_pty_impl(), pty_read_impl(), pty_resize_impl(), pty_write_impl(), PtyManager, PtySession, Arc, HashMap (+14 more)
+### Community 20 - "Skills"
+Cohesion: 0.22
+Nodes (7): HookContext, HookRegistry, HookResults, HookType, test_hook_error_collection(), test_register_and_fire(), test_unregister()
 
-### Community 7 - "Community 7"
+### Community 21 - "Extension"
 Cohesion: 0.17
-Nodes (23): Arc, ComputerActionType, resolve_template(), Result, Self, String, Value, Vec (+15 more)
+Nodes (12): injectContentScript(), createOverlay(), getComputedSnapshot(), getSelector(), onKeyDown(), onMouseClick(), playSequence(), setInspectMode() (+4 more)
 
-### Community 8 - "Community 8"
-Cohesion: 0.14
-Nodes (22): AgentState, AppStateInner, AgentId, AppConfig, Arc, DateTime, HashMap, Option (+14 more)
-
-### Community 9 - "Community 9"
-Cohesion: 0.11
-Nodes (15): Option, Path, PathBuf, Result, Self, Vec, ScrollbackPersister, Self (+7 more)
-
-### Community 10 - "Community 10"
-Cohesion: 0.11
-Nodes (16): AtomicBool, ConnectivityMonitor, Arc, Default, Duration, Self, String, Vec (+8 more)
-
-### Community 11 - "Community 11"
-Cohesion: 0.21
-Nodes (15): CredentialEntry, CredentialStore, CredentialVault, Result, Self, String, Vec, test_delete() (+7 more)
-
-### Community 12 - "Community 12"
+### Community 22 - "Docs"
 Cohesion: 0.16
-Nodes (12): GitEngine, Option, Path, PathBuf, Result, Self, String, Vec (+4 more)
+Nodes (18): Porpoise — AGENTS.md, Porpoise Architecture Guide, Contributing to Porpoise, Porpoise Deployment Guide, Porpoise Development Plan, Installing Porpoise Mobile Companion on Android, Porpoise Installation Guide, Installing Porpoise on Windows (+10 more)
 
-### Community 13 - "Community 13"
-Cohesion: 0.16
-Nodes (18): AgentConfig, AppConfig, BrowserConfig, CliConfig, ColorChoice, CoreConfig, DbConfig, GitConfig (+10 more)
+### Community 23 - "Runtime"
+Cohesion: 0.22
+Nodes (7): create_rotating_log(), Inner, LogRotationConfig, RotatingLogFile, test_max_files_enforced(), test_no_rotation_under_limit(), test_write_and_rotate()
 
-### Community 14 - "Community 14"
-Cohesion: 0.14
-Nodes (13): ClaudeCodeAgent, ClaudeHandle, Box, Child, Default, Option, Result, Self (+5 more)
-
-### Community 15 - "Community 15"
-Cohesion: 0.14
-Nodes (11): do_spawn(), GeminiAgent, GeminiHandle, Box, Child, Default, Option, Path (+3 more)
-
-### Community 16 - "Community 16"
-Cohesion: 0.14
-Nodes (10): CodexAgent, CodexHandle, Box, Child, Default, Option, Path, Result (+2 more)
-
-### Community 17 - "Community 17"
-Cohesion: 0.15
-Nodes (10): BrowserEngine, HeadlessBrowser, Result, Send, String, Sync, Vec, NavigationResult (+2 more)
-
-### Community 18 - "Community 18"
-Cohesion: 0.19
-Nodes (21): AgentEvent, AgentStatusKind, BrowserEvent, GitEvent, NotificationSeverity, OutputKind, AgentId, Option (+13 more)
-
-### Community 19 - "Community 19"
-Cohesion: 0.23
-Nodes (14): CorrelationId, ErrorCode, Handshake, ProtocolError, Request, Response, Default, Into (+6 more)
-
-### Community 20 - "Community 20"
-Cohesion: 0.14
-Nodes (10): GenericAgent, GenericHandle, Box, Child, Into, Option, Path, Result (+2 more)
-
-### Community 21 - "Community 21"
-Cohesion: 0.21
-Nodes (10): Client, HttpClient, F, Proxy, Result, Self, String, T (+2 more)
-
-### Community 22 - "Community 22"
-Cohesion: 0.14
-Nodes (10): Path, RemoteProvider, Send, Sync, ColorScheme, Default, Self, String (+2 more)
-
-### Community 23 - "Community 23"
-Cohesion: 0.20
-Nodes (10): HookServer, Self, EventBus, Into, Receiver, Self, Sender, test_event_bus_clone() (+2 more)
-
-### Community 24 - "Community 24"
-Cohesion: 0.18
-Nodes (9): HashMap, Option, Self, TerminalId, Vec, TerminalLayout, SessionId, TerminalId (+1 more)
-
-### Community 25 - "Community 25"
-Cohesion: 0.19
-Nodes (14): Vec, AgentInfo, AgentKind, AgentManifest, AgentOutput, AgentStatus, OutputType, AgentId (+6 more)
-
-### Community 26 - "Community 26"
-Cohesion: 0.21
-Nodes (8): Daemon, AppConfig, DateTime, Option, PathBuf, Result, Self, Utc
-
-### Community 27 - "Community 27"
-Cohesion: 0.18
-Nodes (8): Default, HashMap, Option, Self, String, Vec, SkillManifest, SkillRegistry
-
-### Community 28 - "Community 28"
+### Community 24 - "Templates"
 Cohesion: 0.12
-Nodes (15): MaterialPageRoute, PorpoiseApp, AgentsScreen, build, _iconFor, _showSpawnDialog, _statusDot, build (+7 more)
+Nodes (1): CustomBoard
 
-### Community 29 - "Community 29"
-Cohesion: 0.23
-Nodes (11): AgentEntry, AgentPool, AgentId, Arc, Box, HashMap, Option, Path (+3 more)
+### Community 25 - "Templates"
+Cohesion: 0.29
+Nodes (13): Get-BoardFeature(), Get-SerialPort(), Invoke-Behavior(), Invoke-Build(), Invoke-Clean(), Invoke-Flash(), Invoke-Monitor(), Invoke-Ota() (+5 more)
 
-### Community 30 - "Community 30"
-Cohesion: 0.20
-Nodes (12): AppState, handle_get(), Result, Value, handle_create(), Result, Value, handle_create() (+4 more)
+### Community 26 - "Mobile"
+Cohesion: 0.14
+Nodes (13): disconnect, dispose, _doConnect, Exception, _generateId, _onDone, _onError, _onMessage (+5 more)
 
-### Community 31 - "Community 31"
-Cohesion: 0.19
-Nodes (11): CompiledModule, Result, Self, Vec, WasmInstance, WasmRuntime, Engine, Instance (+3 more)
-
-### Community 32 - "Community 32"
-Cohesion: 0.25
-Nodes (12): CliSettings, Default, OutputFormat, PathBuf, Self, discover_config_path(), home_dir(), load_config() (+4 more)
-
-### Community 33 - "Community 33"
-Cohesion: 0.26
-Nodes (8): AutomationAction, ClickButton, ComputerUse, Result, Self, String, Value, Enigo
-
-### Community 34 - "Community 34"
-Cohesion: 0.21
-Nodes (8): NamedPipeListener, NamedPipeTransport, F, Path, Result, Self, String, NamedPipeClient
-
-### Community 35 - "Community 35"
+### Community 27 - "Templates"
 Cohesion: 0.15
-Nodes (13): build, createState, HomeScreen, _HomeScreenState, main, _screens, _selectedIndex, screens/agents_screen.dart (+5 more)
+Nodes (1): WaveshareLcd349
 
-### Community 36 - "Community 36"
+### Community 28 - "Docs"
+Cohesion: 0.14
+Nodes (14): Module Design: porpoise-agent, Module Design: porpoise-app, Module Design: porpoise-browser, Module Design: porpoise-cli, Module Design: porpoise-core, Module Design: porpoise-db, Module Design: porpoise-git, Module Design: porpoise-network (+6 more)
+
+### Community 29 - "App"
+Cohesion: 0.14
+Nodes (14): 128X128@2X, 128X128, 32X32, Icon, Square107X107Logo, Square142X142Logo, Square150X150Logo, Square284X284Logo (+6 more)
+
+### Community 30 - "Core"
 Cohesion: 0.15
-Nodes (12): bool get, dart:async, dart:convert, _authToken, call, _channel, connect, disconnect (+4 more)
+Nodes (12): AgentEvent, AgentStatusKind, BrowserEvent, GitEvent, NotificationSeverity, OutputKind, SshEvent, SystemEvent (+4 more)
 
-### Community 37 - "Community 37"
-Cohesion: 0.28
-Nodes (7): OutputParser, ParsedOutput, Option, String, Vec, test_parse_newline(), test_parse_plain_text()
+### Community 32 - "Git"
+Cohesion: 0.17
+Nodes (11): BranchInfo, Change, ChangeStatus, CommitEntry, Issue, IssueState, PrState, PullRequest (+3 more)
 
-### Community 38 - "Community 38"
-Cohesion: 0.33
-Nodes (12): from_bincode(), from_json(), Result, String, T, Vec, test_bincode_roundtrip(), test_json_pretty_has_newlines() (+4 more)
+### Community 33 - "Design"
+Cohesion: 0.35
+Nodes (10): agent_props_count(), make_node(), merge_has_no_props(), PropDef, props_for_kind(), PropType, validate_bad_select(), validate_missing_required() (+2 more)
 
-### Community 39 - "Community 39"
-Cohesion: 0.19
-Nodes (8): Router, HashMap, Self, String, register_all(), DateTime, Utc, HandlerFn
-
-### Community 40 - "Community 40"
-Cohesion: 0.23
-Nodes (6): RateLimitConfig, RateLimiter, Default, Self, test_rate_limiter_consume(), Instant
-
-### Community 41 - "Community 41"
-Cohesion: 0.33
-Nodes (9): read_frame(), RelayServer, Arc, PathBuf, Result, Self, UnixStream, write_frame() (+1 more)
-
-### Community 42 - "Community 42"
-Cohesion: 0.20
-Nodes (9): ChangeNotifier, AgentProvider, TerminalProvider, WorktreeProvider, build, build, ../models/terminal.dart, ../models/worktree.dart (+1 more)
-
-### Community 43 - "Community 43"
-Cohesion: 0.22
-Nodes (7): Platform, Display, Formatter, Result, Self, test_current_platform_is_unix(), test_display()
-
-### Community 44 - "Community 44"
-Cohesion: 0.42
-Nodes (10): Capabilities, Capability, CapabilityScope, HostPattern, ProcessPattern, Option, PathBuf, String (+2 more)
-
-### Community 45 - "Community 45"
+### Community 34 - "Templates"
 Cohesion: 0.18
-Nodes (10): Agent, _agents, appendOutput, fromJson, id, kind, _lastOutput, status (+2 more)
+Nodes (1): WaveshareLcd349Touch
 
-### Community 46 - "Community 46"
+### Community 35 - "Templates"
 Cohesion: 0.18
-Nodes (10): appendOutput, cols, fromJson, id, output, rows, sessionId, Terminal (+2 more)
+Nodes (10): CapabilitiesMsg, CommandMsg, CommandResultMsg, Envelope, HelloMsg, MsgType, OtaChunkMsg, PeripheralInfoMsg (+2 more)
 
-### Community 47 - "Community 47"
-Cohesion: 0.24
-Nodes (10): build, createState, _hostController, _pair, PairScreen, _PairScreenState, _portController, WsService (+2 more)
+### Community 36 - "Templates"
+Cohesion: 0.18
+Nodes (7): KeyboardPeripheral, KeyboardReport, KeyEvent, Modifiers, MouseButtons, MousePeripheral, MouseReport
 
-### Community 48 - "Community 48"
-Cohesion: 0.22
-Nodes (7): ProxyConfig, Default, Option, Proxy, Self, String, Vec
+### Community 37 - "Agent"
+Cohesion: 0.2
+Nodes (8): AdapterCapabilities, AgentAdapter, DiffPatch, InputMode, OutputParser, ParsedEvent, RawOutput, ToolCall
 
-### Community 49 - "Community 49"
-Cohesion: 0.38
-Nodes (6): RelayClient, Mutex, PathBuf, Result, Self, Value
+### Community 38 - "Design"
+Cohesion: 0.29
+Nodes (6): agent_component_has_two_outputs(), ComponentDef, end_has_no_outputs(), merge_accepts_multi_input(), Port, start_has_no_inputs()
 
-### Community 50 - "Community 50"
-Cohesion: 0.38
-Nodes (6): Frame, Result, Self, Vec, test_roundtrip(), FrameFlags
+### Community 39 - "Core"
+Cohesion: 0.36
+Nodes (7): from_bincode(), from_json(), test_bincode_roundtrip(), test_json_pretty_has_newlines(), test_json_roundtrip(), to_bincode(), to_json_pretty()
 
-### Community 51 - "Community 51"
-Cohesion: 0.33
-Nodes (7): Cli, DaemonAction, DaemonArgs, handle(), OutputFormat, Result, String
-
-### Community 52 - "Community 52"
+### Community 40 - "Network"
 Cohesion: 0.31
-Nodes (5): Path, Result, Self, UnixStream, UnixSocketTransport
+Nodes (3): RateLimitConfig, RateLimiter, test_rate_limiter_consume()
 
-### Community 53 - "Community 53"
+### Community 41 - "Skills"
+Cohesion: 0.25
+Nodes (2): SkillManifest, SkillRegistry
+
+### Community 42 - "Templates"
 Cohesion: 0.22
-Nodes (8): List, branch, fromJson, name, path, update, Worktree, _worktrees
+Nodes (8): BoardConfig, DisplayInterface, DvpConfig, I2cConfig, I2sConfig, PeripheralMap, SpiConfig, TouchConfig
 
-### Community 54 - "Community 54"
-Cohesion: 0.36
-Nodes (7): AgentAction, AgentArgs, Option, handle(), OutputFormat, Result, String
+### Community 43 - "Agent"
+Cohesion: 0.25
+Nodes (6): AgentInfo, AgentKind, AgentManifest, AgentOutput, AgentStatus, OutputType
 
-### Community 55 - "Community 55"
-Cohesion: 0.36
-Nodes (7): BrowserAction, BrowserArgs, String, handle(), OutputFormat, Result, String
+### Community 44 - "Core"
+Cohesion: 0.25
+Nodes (7): AnnotatedDiff, DiffLine, FilePatch, FileStatus, Hunk, LineAnnotation, LineKind
 
-### Community 56 - "Community 56"
-Cohesion: 0.50
-Nodes (7): Commands, handle_command(), page_output(), OutputFormat, Result, String, should_page()
+### Community 45 - "Core"
+Cohesion: 0.38
+Nodes (3): Platform, test_current_platform_is_unix(), test_display()
 
-### Community 57 - "Community 57"
-Cohesion: 0.36
-Nodes (6): TerminalAction, TerminalArgs, handle(), OutputFormat, Result, String
+### Community 46 - "Core"
+Cohesion: 0.29
+Nodes (6): Capabilities, Capability, CapabilityScope, HostPattern, ProcessPattern, UrlPattern
 
-### Community 59 - "Community 59"
-Cohesion: 0.43
-Nodes (6): ConfigAction, ConfigArgs, handle(), OutputFormat, Result, String
+### Community 47 - "Terminal"
+Cohesion: 0.29
+Nodes (5): ColorScheme, OutputLine, SplitDirection, TerminalConfig, TerminalPane
 
-### Community 60 - "Community 60"
-Cohesion: 0.43
-Nodes (6): GitAction, GitArgs, handle(), OutputFormat, Result, String
+### Community 48 - "Templates"
+Cohesion: 0.29
+Nodes (6): CommandResponse, RemoteCommand, TelemetryFrame, WsError, WsMessage, WsState
 
-### Community 61 - "Community 61"
-Cohesion: 0.43
-Nodes (6): SkillAction, SkillArgs, handle(), OutputFormat, Result, String
+### Community 49 - "Opencode"
+Cohesion: 0.33
+Nodes (3): OpenCodeConfig, OpenCodeOutputFormat, OpenCodeServerConfig
 
-### Community 62 - "Community 62"
-Cohesion: 0.43
-Nodes (6): SshAction, SshArgs, handle(), OutputFormat, Result, String
+### Community 50 - "Templates"
+Cohesion: 0.33
+Nodes (4): CameraInfo, CameraPeripheral, PixelFormat, Resolution
 
-### Community 63 - "Community 63"
-Cohesion: 0.43
-Nodes (6): WorktreeAction, WorktreeArgs, handle(), OutputFormat, Result, String
+### Community 51 - "Templates"
+Cohesion: 0.33
+Nodes (5): DataRate, ImuChip, ImuPeripheral, ImuReading, Vec3
 
-### Community 64 - "Community 64"
-Cohesion: 0.57
-Nodes (4): OutputFormat, plain_line(), String, Value
-
-### Community 65 - "Community 65"
-Cohesion: 0.40
-Nodes (5): handle_health(), DateTime, Result, Utc, Value
-
-### Community 66 - "Community 66"
-Cohesion: 0.40
+### Community 52 - "Db"
+Cohesion: 0.4
 Nodes (4): Create, Delete, Read, Update
 
-### Community 67 - "Community 67"
-Cohesion: 0.70
-Nodes (4): handle_detect(), handle_list(), Result, Value
+### Community 53 - "Runtime"
+Cohesion: 0.4
+Nodes (4): ProcessCommand, ProcessEntry, ProcessKind, ProcessStatus
 
-### Community 68 - "Community 68"
-Cohesion: 0.70
-Nodes (4): handle_clone(), handle_status(), Result, Value
+### Community 54 - "Templates"
+Cohesion: 0.4
+Nodes (4): ColorFormat, DisplayInfo, DisplayPeripheral, Orientation
 
-### Community 69 - "Community 69"
-Cohesion: 0.50
-Nodes (3): EventHandler, Send, Sync
+### Community 55 - "Templates"
+Cohesion: 0.4
+Nodes (1): GestureRecognizer
 
-### Community 70 - "Community 70"
+### Community 56 - "Templates"
+Cohesion: 0.5
+Nodes (3): TouchEvent, TouchInfo, TouchPeripheral
+
+### Community 57 - "Agent"
 Cohesion: 0.67
-Nodes (3): handle_open(), Result, Value
+Nodes (2): Agent, AgentHandle
 
-### Community 71 - "Community 71"
+### Community 58 - "Browser"
 Cohesion: 0.67
-Nodes (3): handle_list(), Result, Value
+Nodes (2): NavigationResult, NavigationStatus
 
-### Community 72 - "Community 72"
+### Community 59 - "Templates"
 Cohesion: 0.67
-Nodes (3): handle_connect(), Result, Value
+Nodes (2): DeviceCapabilities, DeviceIdentity
+
+### Community 60 - "Templates"
+Cohesion: 0.67
+Nodes (2): Gesture, Orientation
+
+### Community 61 - "Docs"
+Cohesion: 0.67
+Nodes (3): porpoise-core: Core Type System, porpoise-relay: IPC Protocol Design, porpoise-runtime: Process & PTY Management
+
+### Community 62 - "Extension"
+Cohesion: 0.67
+Nodes (3): Icon128, Icon16, Icon48
+
+### Community 63 - "Core"
+Cohesion: 1.0
+Nodes (1): Command
+
+### Community 64 - "Core"
+Cohesion: 1.0
+Nodes (1): EventHandler
+
+### Community 65 - "Runtime"
+Cohesion: 1.0
+Nodes (1): ProcessHandle
+
+### Community 67 - "Templates"
+Cohesion: 1.0
+Nodes (1): CustomPeripheral
+
+### Community 68 - "App"
+Cohesion: 1.0
+Nodes (2): Index, Workflow
 
 ## Knowledge Gaps
-- **54 isolated node(s):** `OutputFormat`, `Create`, `Read`, `Update`, `Delete` (+49 more)
+- **345 isolated node(s):** `AgentAccount`, `AgentEntry`, `SessionRecord`, `SessionStatus`, `Agent` (+340 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **Thin community `Templates`** (16 nodes): `CustomBoard`, `.audio_config()`, `.camera_config()`, `.display_config()`, `.has_camera()`, `.has_display()`, `.has_imu()`, `.has_keyboard()`, `.has_mic()`, `.has_mouse()`, `.has_speaker()`, `.has_touch()`, `.imu_config()`, `.name()`, `.touch_config()`, `mod.rs`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Templates`** (14 nodes): `mod.rs`, `WaveshareLcd349`, `.cpu_frequency_mhz()`, `.default()`, `.description()`, `.display_config()`, `.display_resolution()`, `.flash_size()`, `.imu_i2c_config()`, `.name()`, `.new()`, `.peripheral_map()`, `.psram_size()`, `.touch_config()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Templates`** (11 nodes): `mod.rs`, `WaveshareLcd349Touch`, `.cpu_frequency_mhz()`, `.description()`, `.display_config()`, `.display_resolution()`, `.flash_size()`, `.imu_i2c_config()`, `.peripheral_map()`, `.psram_size()`, `.touch_config()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Skills`** (9 nodes): `registry.rs`, `SkillManifest`, `SkillRegistry`, `.default()`, `.disable()`, `.enable()`, `.list()`, `.new()`, `.register()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Templates`** (5 nodes): `GestureRecognizer`, `.feed()`, `.last()`, `.new()`, `gesture.rs`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Agent`** (3 nodes): `traits.rs`, `Agent`, `AgentHandle`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Browser`** (3 nodes): `navigation.rs`, `NavigationResult`, `NavigationStatus`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Templates`** (3 nodes): `DeviceCapabilities`, `DeviceIdentity`, `mod.rs`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Templates`** (3 nodes): `Gesture`, `Orientation`, `mod.rs`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Core`** (2 nodes): `command.rs`, `Command`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Core`** (2 nodes): `event_handler.rs`, `EventHandler`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Runtime`** (2 nodes): `handle.rs`, `ProcessHandle`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Templates`** (2 nodes): `CustomPeripheral`, `mod.rs`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `App`** (2 nodes): `Index`, `Workflow`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PorpoiseError` connect `Community 3` to `Community 0`, `Community 5`?**
-  _High betweenness centrality (0.148) - this node is a cross-community bridge._
-- **Why does `DbPool` connect `Community 0` to `Community 26`, `Community 3`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
-- **What connects `OutputFormat`, `Create`, `Read` to the rest of the system?**
-  _54 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.0532724505327245 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.06745098039215686 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.06382978723404255 - nodes in this community are weakly interconnected._
-- **Should `Community 3` be split into smaller, more focused modules?**
-  _Cohesion score 0.05939716312056738 - nodes in this community are weakly interconnected._
+- **Why does `Text` connect `ESP32 Comms` to `Notifications`, `Agent Adapters`, `Browser & Skills`, `Mobile Shell`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Are the 44 inferred relationships involving `register_all()` (e.g. with `.start()` and `.clone()`) actually correct?**
+  _`register_all()` has 44 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 22 inferred relationships involving `Agent` (e.g. with `.switch()` and `.load_accounts()`) actually correct?**
+  _`Agent` has 22 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 21 inferred relationships involving `call()` (e.g. with `list_worktrees()` and `create_worktree()`) actually correct?**
+  _`call()` has 21 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 16 inferred relationships involving `main()` (e.g. with `.run()` and `.parse()`) actually correct?**
+  _`main()` has 16 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `AgentAccount`, `AgentEntry`, `SessionRecord` to the rest of the system?**
+  _345 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `ESP32 Comms` be split into smaller, more focused modules?**
+  _Cohesion score 0.02 - nodes in this community are weakly interconnected._

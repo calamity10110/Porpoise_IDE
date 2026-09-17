@@ -17,6 +17,8 @@ pub mod state;
 pub mod traits;
 /// Domain types — ID newtypes, event enums, capability model.
 pub mod types;
+/// Diff annotation — unified diff parsing with agent attribution.
+pub mod diff;
 /// Application version tracking — parsed from `CARGO_PKG_VERSION`.
 pub mod version;
 

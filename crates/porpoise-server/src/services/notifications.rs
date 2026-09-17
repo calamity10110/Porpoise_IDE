@@ -7,7 +7,35 @@ use porpoise_core::{
 };
 use porpoise_db::DbPool;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::{broadcast, Mutex};
+
+/// A notification action button shown in the UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationAction {
+    pub id: String,
+    pub label: String,
+    pub action_type: String, // "open_url", "run_command", "dismiss"
+    pub payload: Option<String>,
+}
+
+/// Rich notification with actions, grouping, and metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RichNotification {
+    pub record: NotificationRecord,
+    pub actions: Vec<NotificationAction>,
+    pub group_key: Option<String>,
+    pub icon: Option<String>,
+    pub link: Option<String>,
+}
+
+/// Delivery channel for notifications.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum NotificationChannel {
+    Desktop,
+    Sound,
+    Webhook { url: String },
+    InApp,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationRecord {
@@ -46,14 +74,26 @@ impl NotificationPreferences {
 pub struct NotificationService {
     db: DbPool,
     prefs: Arc<Mutex<NotificationPreferences>>,
+    /// SSE broadcast channel for real-time notification push to frontend.
+    event_tx: broadcast::Sender<RichNotification>,
+    /// HTTP client for webhook delivery.
+    http: reqwest::Client,
 }
 
 impl NotificationService {
     pub fn new(db: DbPool) -> Self {
+        let (event_tx, _) = broadcast::channel(256);
         Self {
             db,
             prefs: Arc::new(Mutex::new(NotificationPreferences::defaults())),
+            event_tx,
+            http: reqwest::Client::new(),
         }
+    }
+
+    /// Subscribe to the SSE notification stream.
+    pub fn subscribe(&self) -> broadcast::Receiver<RichNotification> {
+        self.event_tx.subscribe()
     }
 
     pub async fn notify(
@@ -83,131 +123,174 @@ impl NotificationService {
         if prefs.desktop_notifications && self.should_notify(severity.clone(), &prefs) {
             self.show_desktop_notification(&record);
         }
+        if prefs.sound && self.should_notify(severity.clone(), &prefs) {
+            self.play_notification_sound(&severity);
+        }
+
+        // Broadcast to SSE subscribers (ignore if no receivers)
+        let rich = RichNotification {
+            record: record.clone(),
+            actions: vec![],
+            group_key: None,
+            icon: None,
+            link: None,
+        };
+        let _ = self.event_tx.send(rich);
 
         Ok(record)
     }
 
     async fn store(&self, record: &NotificationRecord) -> Result<()> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        conn.execute(
-            "INSERT INTO notifications (id, title, message, level, source, created_at, read)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            rusqlite::params![
-                record.id,
-                record.title,
-                record.body,
-                record.severity,
-                record.source,
-                record.timestamp,
-                record.read as i32,
-            ],
-        )
-        .map_err(|e| PorpoiseError::Internal(format!("insert notification: {e}")))?;
-        Ok(())
+        let db = self.db.clone();
+        let rec = record.clone();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            conn.execute(
+                "INSERT INTO notifications (id, title, message, level, source, created_at, read)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                rusqlite::params![
+                    rec.id,
+                    rec.title,
+                    rec.body,
+                    rec.severity,
+                    rec.source,
+                    rec.timestamp,
+                    rec.read as i32,
+                ],
+            )
+            .map_err(|e| PorpoiseError::Internal(format!("insert notification: {e}")))?;
+            Ok(())
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn list_unread(&self) -> Result<Vec<NotificationRecord>> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, title, message, level, source, created_at, read
-                 FROM notifications WHERE read = 0 ORDER BY created_at DESC LIMIT 100",
-            )
-            .map_err(|e| PorpoiseError::Internal(format!("prepare: {e}")))?;
+        let db = self.db.clone();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, title, message, level, source, created_at, read
+                     FROM notifications WHERE read = 0 ORDER BY created_at DESC LIMIT 100",
+                )
+                .map_err(|e| PorpoiseError::Internal(format!("prepare: {e}")))?;
 
-        let rows = stmt
-            .query_map([], |row| {
-                Ok(NotificationRecord {
-                    id: row.get(0)?,
-                    title: row.get(1)?,
-                    body: row.get(2)?,
-                    severity: row.get(3)?,
-                    source: row.get(4)?,
-                    timestamp: row.get::<_, i64>(5)?,
-                    read: row.get::<_, i32>(6)? != 0,
+            let rows = stmt
+                .query_map([], |row| {
+                    Ok(NotificationRecord {
+                        id: row.get(0)?,
+                        title: row.get(1)?,
+                        body: row.get(2)?,
+                        severity: row.get(3)?,
+                        source: row.get(4)?,
+                        timestamp: row.get::<_, i64>(5)?,
+                        read: row.get::<_, i32>(6)? != 0,
+                    })
                 })
-            })
-            .map_err(|e| PorpoiseError::Internal(format!("query: {e}")))?;
+                .map_err(|e| PorpoiseError::Internal(format!("query: {e}")))?;
 
-        rows.filter_map(|r| r.ok()).map(Ok).collect()
+            rows.filter_map(|r| r.ok()).map(Ok).collect()
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn list_all(&self, limit: usize) -> Result<Vec<NotificationRecord>> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        let mut stmt = conn
-            .prepare(
-                "SELECT id, title, message, level, source, created_at, read
-                 FROM notifications ORDER BY created_at DESC LIMIT ?1",
-            )
-            .map_err(|e| PorpoiseError::Internal(format!("prepare: {e}")))?;
+        let db = self.db.clone();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, title, message, level, source, created_at, read
+                     FROM notifications ORDER BY created_at DESC LIMIT ?1",
+                )
+                .map_err(|e| PorpoiseError::Internal(format!("prepare: {e}")))?;
 
-        let rows = stmt
-            .query_map(rusqlite::params![limit as i64], |row| {
-                Ok(NotificationRecord {
-                    id: row.get(0)?,
-                    title: row.get(1)?,
-                    body: row.get(2)?,
-                    severity: row.get(3)?,
-                    source: row.get(4)?,
-                    timestamp: row.get::<_, i64>(5)?,
-                    read: row.get::<_, i32>(6)? != 0,
+            let rows = stmt
+                .query_map(rusqlite::params![limit as i64], |row| {
+                    Ok(NotificationRecord {
+                        id: row.get(0)?,
+                        title: row.get(1)?,
+                        body: row.get(2)?,
+                        severity: row.get(3)?,
+                        source: row.get(4)?,
+                        timestamp: row.get::<_, i64>(5)?,
+                        read: row.get::<_, i32>(6)? != 0,
+                    })
                 })
-            })
-            .map_err(|e| PorpoiseError::Internal(format!("query: {e}")))?;
+                .map_err(|e| PorpoiseError::Internal(format!("query: {e}")))?;
 
-        rows.filter_map(|r| r.ok()).map(Ok).collect()
+            rows.filter_map(|r| r.ok()).map(Ok).collect()
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn mark_read(&self, id: &str) -> Result<()> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        conn.execute("UPDATE notifications SET read = 1 WHERE id = ?1", rusqlite::params![id])
-            .map_err(|e| PorpoiseError::Internal(format!("mark read: {e}")))?;
-        Ok(())
+        let db = self.db.clone();
+        let id = id.to_string();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            conn.execute("UPDATE notifications SET read = 1 WHERE id = ?1", rusqlite::params![id])
+                .map_err(|e| PorpoiseError::Internal(format!("mark read: {e}")))?;
+            Ok(())
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn mark_all_read(&self) -> Result<()> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        conn.execute("UPDATE notifications SET read = 1", [])
-            .map_err(|e| PorpoiseError::Internal(format!("mark all read: {e}")))?;
-        Ok(())
+        let db = self.db.clone();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            conn.execute("UPDATE notifications SET read = 1", [])
+                .map_err(|e| PorpoiseError::Internal(format!("mark all read: {e}")))?;
+            Ok(())
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn clear(&self) -> Result<()> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        conn.execute("DELETE FROM notifications", [])
-            .map_err(|e| PorpoiseError::Internal(format!("clear: {e}")))?;
-        Ok(())
+        let db = self.db.clone();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            conn.execute("DELETE FROM notifications", [])
+                .map_err(|e| PorpoiseError::Internal(format!("clear: {e}")))?;
+            Ok(())
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn unread_count(&self) -> Result<usize> {
-        let conn = self
-            .db
-            .get()
-            .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM notifications WHERE read = 0", [], |row| {
-                row.get(0)
-            })
-            .map_err(|e| PorpoiseError::Internal(format!("count: {e}")))?;
-        Ok(count as usize)
+        let db = self.db.clone();
+        tokio::task::spawn_blocking(move || {
+            let conn = db
+                .get()
+                .map_err(|e| PorpoiseError::Internal(format!("db pool: {e}")))?;
+            let count: i64 = conn
+                .query_row("SELECT COUNT(*) FROM notifications WHERE read = 0", [], |row| {
+                    row.get(0)
+                })
+                .map_err(|e| PorpoiseError::Internal(format!("count: {e}")))?;
+            Ok(count as usize)
+        })
+        .await
+        .map_err(|e| PorpoiseError::Internal(format!("spawn_blocking: {e}")))?
     }
 
     pub async fn set_preferences(&self, prefs: NotificationPreferences) {
@@ -259,6 +342,85 @@ impl NotificationService {
                 .timeout(timeout)
                 .show();
         });
+    }
+
+    /// Play a system sound based on notification severity.
+    fn play_notification_sound(&self, severity: &NotificationSeverity) {
+        use std::process::Command;
+        let sound = match severity {
+            NotificationSeverity::Error => "SystemHand",
+            NotificationSeverity::Warning => "SystemExclamation",
+            NotificationSeverity::Info => "SystemNotification",
+        };
+        // Windows: use PowerShell to play system sound
+        let _ = Command::new("powershell")
+            .args(["-c", &format!("(New-Object Media.SoundPlayer 'C:\\Windows\\Media\\{}.wav').Play()", sound)])
+            .spawn();
+    }
+
+    /// Deliver a notification via webhook (HTTP POST JSON).
+    pub async fn deliver_webhook(&self, url: &str, record: &NotificationRecord) -> Result<()> {
+        let payload = serde_json::json!({
+            "title": record.title,
+            "body": record.body,
+            "severity": record.severity,
+            "source": record.source,
+            "timestamp": record.timestamp,
+            "id": record.id,
+        });
+        self.http
+            .post(url)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| PorpoiseError::Internal(format!("webhook delivery failed: {e}")))?;
+        Ok(())
+    }
+
+    /// Send a rich notification with actions, grouping, and optional webhook delivery.
+    pub async fn notify_rich(
+        &self,
+        title: &str,
+        body: &str,
+        severity: NotificationSeverity,
+        source: &str,
+        actions: Vec<NotificationAction>,
+        group_key: Option<String>,
+        link: Option<String>,
+        webhook_url: Option<&str>,
+    ) -> Result<RichNotification> {
+        let record = self.notify(title, body, severity.clone(), source).await?;
+
+        // Deliver to webhook if configured
+        if let Some(url) = webhook_url {
+            if let Err(e) = self.deliver_webhook(url, &record).await {
+                tracing::warn!(url, error=%e, "webhook delivery failed");
+            }
+        }
+
+        let rich = RichNotification {
+            record,
+            actions,
+            group_key,
+            icon: None,
+            link,
+        };
+
+        // Broadcast rich version to SSE
+        let _ = self.event_tx.send(rich.clone());
+        Ok(rich)
+    }
+
+    /// Get grouped unread notifications (groups by group_key).
+    pub async fn list_grouped(&self) -> Result<Vec<(String, Vec<NotificationRecord>)>> {
+        let all = self.list_unread().await?;
+        let mut groups: std::collections::HashMap<String, Vec<NotificationRecord>> =
+            std::collections::HashMap::new();
+        for rec in all {
+            let key = rec.source.clone(); // group by source as default
+            groups.entry(key).or_default().push(rec);
+        }
+        Ok(groups.into_iter().collect())
     }
 
     pub async fn notify_agent_completion(

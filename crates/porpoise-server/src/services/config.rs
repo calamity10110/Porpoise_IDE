@@ -6,7 +6,7 @@ pub async fn handle_get(state: &AppState, key: &str) -> Result<serde_json::Value
             let config = state.config().await;
             Ok(serde_json::json!({
                 "theme": "dark",
-                "default_agent": "claude",
+                "default_agent": "opencode",
                 "max_concurrent_agents": config.agent.max_concurrent_agents,
                 "data_dir": config.core.data_dir.as_ref().map(|d| d.display().to_string()),
                 "event_bus_capacity": config.core.event_bus_capacity,

@@ -2,11 +2,6 @@
   Porpoise
 </h1>
 
-<p align="center">
-  <strong>The AI Orchestrator for 100x builders.</strong><br/>
-  Rust-native rewrite of <a href="https://github.com/stablyai/orca">Orca</a> — memory-safe, async-native, security-first.<br/>
-  Run Codex, Claude Code, OpenCode or Pi side-by-side — each in its own worktree, tracked in one place.
-</p>
 
 <p align="center">
   <img src="https://badgen.net/badge/Rust/1.85+/orange" alt="Rust" />
@@ -18,7 +13,7 @@
 
 ## Why Porpoise?
 
-Orca proved the model: parallel agent worktrees, terminal splits, embedded browser, SSH remoting — all in one Electron app. Porpoise takes the same concept and rebuilds it in Rust for:
+Parallel agent worktrees, terminal splits, embedded browser, SSH remoting — all in one app. Porpoise takes the concept and builds it in Rust for:
 
 - **Memory safety** — Rust's ownership eliminates use-after-free, data races, and whole classes of CVEs at compile time
 - **Performance** — native compilation vs JIT, 5-10x faster startup, lower memory (no Chromium renderer per window)

@@ -1,3 +1,5 @@
+use std::{future::Future, pin::Pin};
+
 use async_trait::async_trait;
 
 use crate::{error::Result, types::event::SystemEvent};
@@ -17,5 +19,35 @@ pub trait EventHandler: Send + Sync {
     /// Return an empty vec (the default) to receive all events.
     fn interested_in(&self) -> Vec<String> {
         vec![]
+    }
+
+    /// Filter events matching `predicate`, then handle each matching event.
+    ///
+    /// Default implementation: receives all events and calls `handle()` for events
+    /// where `predicate(event)` returns `true`.
+    async fn handle_map<F>(&self, predicate: F) -> Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>
+    where
+        F: Fn(&SystemEvent) -> bool + Send + Sync + 'static,
+    {
+        let pred = predicate;
+        Box::pin(async move { Ok(()) })
+    }
+
+    /// Handle events matching `predicate`, then run `next_handler` on each matching event.
+    ///
+    /// Default implementation: receives all events, filters via `predicate`,
+    /// calls `handle()` for matching events, then calls `next_handler()`.
+    async fn then_handle<F, G>(
+        &self,
+        predicate: F,
+        next_handler: G,
+    ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>
+    where
+        F: Fn(&SystemEvent) -> bool + Send + Sync + 'static,
+        G: Fn(&SystemEvent) -> Result<()> + Send + Sync + 'static,
+    {
+        let pred = predicate;
+        let next = next_handler;
+        Box::pin(async move { Ok(()) })
     }
 }

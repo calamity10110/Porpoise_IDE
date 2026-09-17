@@ -62,9 +62,7 @@ pub async fn handle_get(
     })?;
     match devices.get(device_id) {
         Some(info) => Ok(serde_json::json!({ "device": info })),
-        None => Err(porpoise_core::error::PorpoiseError::NotFound(format!(
-            "device '{device_id}' not found"
-        ))),
+        None => Err(porpoise_core::error::PorpoiseError::invalid_id("device", device_id)),
     }
 }
 

@@ -23,6 +23,7 @@ type InnerTransport = NamedPipeTransport;
 
 pub struct RelayClient {
     socket_path: PathBuf,
+    auth_token: Option<String>,
     transport: Mutex<InnerTransport>,
     connection_state: watch::Sender<ConnectionState>,
 }
@@ -34,6 +35,7 @@ impl RelayClient {
         tx.send(ConnectionState::Connected).ok();
         Ok(Self {
             socket_path: path.to_path_buf(),
+            auth_token: None,
             transport: Mutex::new(transport),
             connection_state: tx,
         })
@@ -41,31 +43,45 @@ impl RelayClient {
 
     pub async fn connect_with_auth(path: &std::path::Path, token: &str) -> Result<Self> {
         let (tx, _) = watch::channel(ConnectionState::Disconnected);
-        let mut transport = Self::connect_with_retry(path, false).await?;
+        let transport = Self::connect_authenticated(path, token, false).await?;
         tx.send(ConnectionState::Connected).ok();
+        Ok(Self {
+            socket_path: path.to_path_buf(),
+            auth_token: Some(token.to_string()),
+            transport: Mutex::new(transport),
+            connection_state: tx,
+        })
+    }
 
-        // Read server's handshake first (server sends it on accept)
+    /// The server sends a Handshake on accept and validates the client's
+    /// token. Any reconnection MUST repeat the handshake exchange — a plain
+    /// reconnect reads the server's handshake frame as a call response and
+    /// fails with "unexpected response".
+    async fn connect_authenticated(path: &std::path::Path, token: &str, retry: bool) -> Result<InnerTransport> {
+        let mut transport = Self::connect_with_retry(path, retry).await?;
+
         let _frame = transport
             .receive()
             .await
             .map_err(|e| PorpoiseError::Ipc(format!("read handshake: {e}")))?;
 
-        // Respond with our handshake containing the auth token
         let auth_hs = WireMessage::Handshake(Handshake {
             version: crate::frame::PROTOCOL_VERSION,
             min_version: crate::frame::MIN_PROTOCOL_VERSION,
-            server_name: "porpoise-cli".into(),
+            server_name: "porpoise-client".into(),
             session_token: Some(token.to_string()),
             peer_pid: std::process::id(),
         });
         let payload = serde_json::to_vec(&auth_hs).map_err(|e| PorpoiseError::Ipc(format!("serialize auth: {e}")))?;
         transport.send(&Frame::new(FrameFlags::EVENT, payload)).await?;
+        Ok(transport)
+    }
 
-        Ok(Self {
-            socket_path: path.to_path_buf(),
-            transport: Mutex::new(transport),
-            connection_state: tx,
-        })
+    async fn reconnect(&self) -> Result<InnerTransport> {
+        match &self.auth_token {
+            Some(token) => Self::connect_authenticated(&self.socket_path, token, true).await,
+            None => Self::connect_with_retry(&self.socket_path, true).await,
+        }
     }
 
     pub fn subscribe_state(&self) -> watch::Receiver<ConnectionState> {
@@ -101,7 +117,7 @@ impl RelayClient {
             Ok(_) => {}
             Err(e) => {
                 tracing::warn!("send failed, reconnecting: {e}");
-                *guard = Self::connect_with_retry(&self.socket_path, true).await?;
+                *guard = self.reconnect().await?;
                 guard.send(&frame).await?;
             }
         }
@@ -110,7 +126,7 @@ impl RelayClient {
             Ok(f) => f,
             Err(e) => {
                 tracing::warn!("receive failed, reconnecting: {e}");
-                *guard = Self::connect_with_retry(&self.socket_path, true).await?;
+                *guard = self.reconnect().await?;
                 guard.send(&frame).await?;
                 guard.receive().await?
             }

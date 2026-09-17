@@ -1,0 +1,10 @@
+# Vendor and build artifacts - pollute graph with noise
+frontend/vendor/
+crates/porpoise-app/frontend/vendor/
+target/
+graphify-out/
+**/target/
+node_modules/
+# Large generated files
+*.min.js
+*.bundle.js

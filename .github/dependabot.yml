@@ -1,0 +1,52 @@
+version: 2
+updates:
+  # Rust dependencies (Cargo)
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "porpoise-ide/maintainers"
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps"
+    groups:
+      rust-minor:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"
+
+  # npm (frontend)
+  - package-ecosystem: "npm"
+    directory: "/crates/porpoise-app"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "deps-frontend"
+    groups:
+      frontend-minor:
+        update-types:
+          - "minor"
+          - "patch"

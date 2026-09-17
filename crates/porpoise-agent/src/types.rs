@@ -3,12 +3,13 @@ use std::path::PathBuf;
 use porpoise_core::types::id::AgentId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AgentKind {
     ClaudeCode,
     Codex,
     Gemini,
     OpenCode,
+    Aider,
     ZAI,
     OpenAI,
     Grok,
@@ -23,6 +24,7 @@ impl std::fmt::Display for AgentKind {
             AgentKind::Codex => write!(f, "codex"),
             AgentKind::Gemini => write!(f, "gemini"),
             AgentKind::OpenCode => write!(f, "opencode"),
+            AgentKind::Aider => write!(f, "aider"),
             AgentKind::ZAI => write!(f, "z"),
             AgentKind::OpenAI => write!(f, "openai"),
             AgentKind::Grok => write!(f, "grok"),

@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod config;
+pub mod hostkey;
 pub mod manager;
 pub mod reconnect;
 pub mod session;

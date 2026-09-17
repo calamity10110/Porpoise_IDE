@@ -18,6 +18,8 @@ members = [
     "crates/porpoise-automation",
     "crates/porpoise-credentials",
     "crates/porpoise-computer-use",
+    "crates/porpoise-opencode",
+    "crates/porpoise-design",
 ]
 
 [workspace.package]
@@ -38,7 +40,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tracing-appender = "0.2"
 config = "0.15"
-bitflags = "2"
 bincode = { version = "2", features = ["serde"] }
 clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
@@ -53,7 +54,6 @@ libc = "0.2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "http2"] }
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 wasmtime = "25"
-owo-colors = "4"
 async-trait = "0.1"
 tempfile = "3"
 mockall = "0.13"

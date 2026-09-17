@@ -1,0 +1,20 @@
+[package]
+name = "porpoise-opencode"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "OpenCode agent integration for Porpoise"
+
+[dependencies]
+porpoise-core = { path = "../porpoise-core" }
+porpoise-agent = { path = "../porpoise-agent" }
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util", "macros"] }

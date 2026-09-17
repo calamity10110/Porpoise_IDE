@@ -77,28 +77,85 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
 mod windows_pty {
     use std::{
         collections::HashMap,
-        sync::{LazyLock, Mutex},
+        io::{Read, Write},
+        sync::{Arc, LazyLock, Mutex},
     };
 
     use portable_pty::MasterPty;
 
-    static WINDOWS_PTYS: LazyLock<Mutex<HashMap<i32, Box<dyn MasterPty + Send>>>> =
-        LazyLock::new(|| Mutex::new(HashMap::new()));
+    // Each session's master/reader/writer live behind per-session mutexes,
+    // cloned out of the map as Arcs. The global map lock is held only for
+    // lookup — never across blocking I/O. Holding it during read() starved
+    // writes of the lock and keystrokes hung forever.
+    #[derive(Clone)]
+    struct PtyHandle {
+        master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
+        reader: Arc<Mutex<Box<dyn Read + Send>>>,
+        writer: Arc<Mutex<Box<dyn Write + Send>>>,
+    }
 
-    pub fn store_master(fd: i32, master: Box<dyn MasterPty + Send>) {
-        let _ = WINDOWS_PTYS.lock().map(|mut map| map.insert(fd, master));
+    static PTYS: LazyLock<Mutex<HashMap<i32, PtyHandle>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+    fn lookup(fd: i32) -> std::result::Result<PtyHandle, String> {
+        PTYS.lock()
+            .map_err(|e| format!("pty lock poisoned: {e}"))?
+            .get(&fd)
+            .cloned()
+            .ok_or_else(|| format!("master pty fd {fd} not found"))
+    }
+
+    pub fn store_master(fd: i32, master: Box<dyn MasterPty + Send>) -> std::result::Result<(), String> {
+        let reader = master.try_clone_reader().map_err(|e| format!("clone reader: {e}"))?;
+        // portable-pty's take_writer() is one-shot (Option::take): taken
+        // exactly once here and reused for the session lifetime.
+        let writer = master.take_writer().map_err(|e| format!("take writer: {e}"))?;
+        PTYS.lock()
+            .map_err(|e| format!("pty lock poisoned: {e}"))?
+            .insert(
+                fd,
+                PtyHandle {
+                    master: Arc::new(Mutex::new(master)),
+                    reader: Arc::new(Mutex::new(reader)),
+                    writer: Arc::new(Mutex::new(writer)),
+                },
+            );
+        Ok(())
     }
 
     pub fn remove_master(fd: i32) {
-        let _ = WINDOWS_PTYS.lock().map(|mut map| map.remove(&fd));
+        let _ = PTYS.lock().map(|mut m| {
+            m.remove(&fd);
+        });
     }
 
-    pub fn with_master<R>(fd: i32, f: impl FnOnce(&mut dyn MasterPty) -> R) -> std::result::Result<R, String> {
-        let mut map = WINDOWS_PTYS.lock().map_err(|e| format!("pty lock poisoned: {e}"))?;
-        let master = map
-            .get_mut(&fd)
-            .ok_or_else(|| format!("master pty fd {fd} not found"))?;
-        Ok(f(&mut **master))
+    pub fn read(fd: i32, buf: &mut [u8]) -> std::result::Result<usize, String> {
+        let handle = lookup(fd)?;
+        let mut reader = handle
+            .reader
+            .lock()
+            .map_err(|e| format!("reader lock poisoned: {e}"))?;
+        reader.read(buf).map_err(|e| format!("read: {e}"))
+    }
+
+    pub fn write_all(fd: i32, data: &[u8]) -> std::result::Result<(), String> {
+        let handle = lookup(fd)?;
+        let mut writer = handle
+            .writer
+            .lock()
+            .map_err(|e| format!("writer lock poisoned: {e}"))?;
+        writer.write_all(data).map_err(|e| format!("write: {e}"))
+    }
+
+    pub fn resize(fd: i32, rows: u16, cols: u16) -> std::result::Result<(), String> {
+        let handle = lookup(fd)?;
+        let master = handle
+            .master
+            .lock()
+            .map_err(|e| format!("master lock poisoned: {e}"))?;
+        use portable_pty::PtySize;
+        master
+            .resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+            .map_err(|e| format!("resize: {e}"))
     }
 }
 
@@ -130,7 +187,7 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
     let pid = child.process_id().unwrap_or(0);
     let fd = NEXT_FD.fetch_add(1, Ordering::Relaxed);
 
-    windows_pty::store_master(fd, pair.master);
+    windows_pty::store_master(fd, pair.master).map_err(PorpoiseError::PtyError)?;
 
     Ok(PtySession {
         id: TerminalId::new(),
@@ -148,38 +205,30 @@ async fn pty_read_impl(fd: i32, buf: &mut [u8]) -> Result<usize> {
         use std::os::unix::io::FromRawFd;
 
         use tokio::io::AsyncReadExt;
-        // dup() creates a copy of fd so the original stays valid
+        // SAFETY: dup() duplicates the file descriptor. `fd` is a valid PTY master
+        // fd stored in the session map. We check for errors (< 0) immediately.
         let dup_fd = unsafe { libc::dup(fd) };
         if dup_fd < 0 {
             return Err(PorpoiseError::PtyError("dup failed".into()));
         }
+        // SAFETY: from_raw_fd takes ownership of the fd. `dup_fd` was just created
+        // by dup() above and is guaranteed valid (>= 0). The File destructor will close it.
         let std_file = unsafe { std::fs::File::from_raw_fd(dup_fd) };
         let mut file = tokio::fs::File::from_std(std_file);
         file.read(buf).await.map_err(|e| PorpoiseError::PtyError(e.to_string()))
     }
     #[cfg(target_os = "windows")]
     {
-        use std::io::Read;
-        let count = tokio::task::spawn_blocking(move || -> std::result::Result<Vec<u8>, String> {
-            let reader_buf: Vec<u8> =
-                windows_pty::with_master(fd, |master| -> std::result::Result<Vec<u8>, String> {
-                    let mut reader = master
-                        .try_clone_reader()
-                        .map_err(|e| format!("try_clone_reader: {e}"))?;
-                    let mut read_buf = vec![0u8; 4096];
-                    let n = reader.read(&mut read_buf).map_err(|e| format!("read: {e}"))?;
-                    read_buf.truncate(n);
-                    Ok(read_buf)
-                })??;
-            Ok(reader_buf)
+        let n_buf = buf.len().min(4096);
+        let (n, data) = tokio::task::spawn_blocking(move || -> std::result::Result<(usize, Vec<u8>), String> {
+            let mut own = vec![0u8; n_buf];
+            let n = windows_pty::read(fd, &mut own)?;
+            Ok((n, own))
         })
         .await
         .map_err(|e| PorpoiseError::PtyError(format!("blocking read: {e}")))?
         .map_err(PorpoiseError::PtyError)?;
-        let n = count.len();
-        if n > 0 {
-            buf[..n].copy_from_slice(&count[..n]);
-        }
+        buf[..n].copy_from_slice(&data[..n]);
         Ok(n)
     }
 }
@@ -194,6 +243,8 @@ async fn pty_write_impl(fd: i32, data: &[u8]) -> Result<()> {
         if dup_fd < 0 {
             return Err(PorpoiseError::PtyError("dup failed".into()));
         }
+        // SAFETY: from_raw_fd takes ownership of the fd. `dup_fd` was just created
+        // by dup() above and is guaranteed valid (>= 0). The File destructor will close it.
         let std_file = unsafe { std::fs::File::from_raw_fd(dup_fd) };
         let mut file = tokio::fs::File::from_std(std_file);
         file.write_all(data)
@@ -202,18 +253,11 @@ async fn pty_write_impl(fd: i32, data: &[u8]) -> Result<()> {
     }
     #[cfg(target_os = "windows")]
     {
-        use std::io::Write;
         let data = data.to_vec();
-        tokio::task::spawn_blocking(move || -> std::result::Result<(), String> {
-            windows_pty::with_master(fd, |master| -> std::result::Result<(), String> {
-                let mut writer = master.take_writer().map_err(|e| format!("take_writer: {e}"))?;
-                writer.write_all(&data).map_err(|e| format!("write: {e}"))
-            })??;
-            Ok(())
-        })
-        .await
-        .map_err(|e| PorpoiseError::PtyError(format!("blocking: {e}")))?
-        .map_err(PorpoiseError::PtyError)?;
+        tokio::task::spawn_blocking(move || windows_pty::write_all(fd, &data))
+            .await
+            .map_err(|e| PorpoiseError::PtyError(format!("blocking: {e}")))?
+            .map_err(PorpoiseError::PtyError)?;
         Ok(())
     }
 }
@@ -227,6 +271,8 @@ fn pty_resize_impl(fd: i32, rows: u16, cols: u16) -> Result<()> {
             ws_xpixel: 0,
             ws_ypixel: 0,
         };
+        // SAFETY: ioctl with TIOCSWINSZ sets the terminal window size. `fd` is a
+        // valid PTY master fd. `ws` is a valid stack-allocated Winsize struct.
         let res = unsafe { libc::ioctl(fd, libc::TIOCSWINSZ, &ws) };
         if res != 0 {
             Err(PorpoiseError::PtyError("resize failed".into()))
@@ -236,17 +282,7 @@ fn pty_resize_impl(fd: i32, rows: u16, cols: u16) -> Result<()> {
     }
     #[cfg(target_os = "windows")]
     {
-        use portable_pty::PtySize;
-        windows_pty::with_master(fd, |master| {
-            let size = PtySize {
-                rows,
-                cols,
-                pixel_width: 0,
-                pixel_height: 0,
-            };
-            let _ = master.resize(size);
-        })
-        .map_err(PorpoiseError::PtyError)?;
+        windows_pty::resize(fd, rows, cols).map_err(PorpoiseError::PtyError)?;
         Ok(())
     }
 }
@@ -342,11 +378,21 @@ impl PtyManager {
             {
                 // Send SIGHUP to child process to terminate gracefully
                 if let Some(pid) = session.child_pid {
+                    // SAFETY: kill() sends SIGHUP to the child process to trigger
+                    // graceful shutdown. `pid` comes from session.child_pid which was
+                    // captured at spawn time. Signal delivery to a non-existent PID is
+                    // a harmless no-op (ESRCH).
                     unsafe { libc::kill(pid as i32, libc::SIGHUP) };
                     // Reap child to prevent zombie process
+                    // SAFETY: waitpid with WNOHANG reaps the child without blocking.
+                    // `pid` is the known child PID. null_mut() discards status info.
+                    // WNOHANG ensures we never block the async runtime.
                     unsafe { libc::waitpid(pid as i32, std::ptr::null_mut(), libc::WNOHANG) };
                 }
                 // Close the master file descriptor
+                // SAFETY: close() releases the PTY master file descriptor.
+                // `session.fd` was allocated by openpty and is being removed from
+                // the session map, so no other code will use it after this point.
                 unsafe { libc::close(session.fd) };
             }
         }

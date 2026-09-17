@@ -56,11 +56,25 @@ pub struct NamedPipeTransport {
     stream: NamedPipeStream,
 }
 
+/// Derive the canonical Windows pipe path from a socket-path-like value.
+/// Server (`NamedPipeListener::bind`) and client (`connect`) MUST agree on
+/// this transformation or clients get os error 2 (pipe not found).
+/// Sanitizes path separators/colons, which are unreliable in pipe names.
+fn pipe_name_for(path: &Path) -> String {
+    let raw = path.to_str().unwrap_or("porpoise");
+    let sanitized: String = raw
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+    format!(r"\\.\pipe\{sanitized}")
+}
+
 impl NamedPipeTransport {
     pub async fn connect(path: &Path) -> Result<Self> {
+        let pipe_path = pipe_name_for(path);
         let stream = ClientOptions::new()
-            .open(path)
-            .map_err(|e| PorpoiseError::Ipc(format!("pipe connect: {e}")))?;
+            .open(&pipe_path)
+            .map_err(|e| PorpoiseError::Ipc(format!("pipe connect ({pipe_path}): {e}")))?;
         Ok(Self {
             stream: NamedPipeStream::Client(stream),
         })
@@ -88,7 +102,7 @@ pub struct NamedPipeListener {
 impl NamedPipeListener {
     pub fn bind(name: &str) -> Self {
         Self {
-            path: format!(r"\\.\pipe\{name}"),
+            path: pipe_name_for(std::path::Path::new(name)),
         }
     }
 
@@ -99,8 +113,11 @@ impl NamedPipeListener {
     {
         let handler = Arc::new(handler);
         loop {
+            // ponytail: no `first_pipe_instance(true)` here — that flag is only
+            // valid for the very first instance; reusing it in the accept loop
+            // makes every subsequent create() fail with os error 5 (access
+            // denied), crashing the server after the first client disconnect.
             let server = ServerOptions::new()
-                .first_pipe_instance(true)
                 .create(&self.path)
                 .map_err(|e| PorpoiseError::Ipc(format!("pipe create: {e}")))?;
 

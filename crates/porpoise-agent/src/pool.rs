@@ -13,7 +13,6 @@ use crate::{
 };
 
 struct AgentEntry {
-    #[allow(dead_code)]
     agent: Box<dyn Agent>,
     handle: Option<Box<dyn AgentHandle>>,
     info: AgentInfo,
@@ -64,6 +63,7 @@ impl AgentPool {
             AgentKind::Codex => Box::new(GenericAgent::with_kind("codex", AgentKind::Codex)),
             AgentKind::Gemini => Box::new(GenericAgent::with_kind("gemini", AgentKind::Gemini)),
             AgentKind::OpenCode => Box::new(GenericAgent::with_kind("opencode", AgentKind::OpenCode)),
+            AgentKind::Aider => Box::new(GenericAgent::with_kind("aider", AgentKind::Aider)),
             AgentKind::ZAI => Box::new(GenericAgent::with_kind("z", AgentKind::ZAI)),
             AgentKind::OpenAI => Box::new(GenericAgent::with_kind("openai", AgentKind::OpenAI)),
             AgentKind::Grok => Box::new(GenericAgent::with_kind("grok", AgentKind::Grok)),
@@ -176,5 +176,144 @@ mod tests {
         let pool = AgentPool::with_idle_timeout(5, 1);
         let agents = pool.list().await;
         assert!(agents.is_empty());
+    }
+}
+
+// ── Test helpers: mock agent injection ──────────────────────────────
+#[cfg(feature = "test-helpers")]
+pub mod test_helpers {
+    use super::*;
+    use crate::types::AgentOutput;
+
+    /// A no-op agent for testing pool logic without spawning real processes.
+    pub struct MockAgent {
+        kind: AgentKind,
+    }
+
+    impl MockAgent {
+        pub fn new(kind: AgentKind) -> Self {
+            Self { kind }
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl Agent for MockAgent {
+        fn kind(&self) -> AgentKind {
+            self.kind.clone()
+        }
+        fn binary_name(&self) -> &str {
+            "mock"
+        }
+        async fn spawn(&self, _worktree: &Path) -> Result<Box<dyn AgentHandle>> {
+            Ok(Box::new(MockHandle))
+        }
+    }
+
+    /// A no-op handle that always reports as not running.
+    pub struct MockHandle;
+
+    #[async_trait::async_trait]
+    impl AgentHandle for MockHandle {
+        fn pid(&self) -> Option<u32> {
+            Some(0)
+        }
+        async fn read_output(&mut self) -> Result<Option<AgentOutput>> {
+            Ok(None)
+        }
+        async fn send_input(&mut self, _text: &str) -> Result<()> {
+            Ok(())
+        }
+        async fn interrupt(&mut self) -> Result<()> {
+            Ok(())
+        }
+        async fn shutdown(&mut self) -> Result<()> {
+            Ok(())
+        }
+        fn is_running(&self) -> bool {
+            false
+        }
+    }
+
+    impl AgentPool {
+        /// Inject a mock agent directly into the pool (bypasses real process spawn).
+        /// Respects max_size with LRU eviction, same as `spawn`.
+        /// Returns the assigned AgentId.
+        pub async fn inject_mock(&self, kind: AgentKind) -> AgentId {
+            // LRU eviction if pool is full (mirrors spawn logic)
+            let count = self.agents.read().await.len();
+            if count >= self.max_size {
+                let oldest_id = {
+                    let agents = self.agents.read().await;
+                    agents
+                        .iter()
+                        .min_by_key(|(_, e)| e.info.last_used_at.unwrap_or(0))
+                        .map(|(id, _)| *id)
+                };
+                if let Some(id) = oldest_id {
+                    self.shutdown(id).await.ok();
+                }
+            }
+
+            let id = AgentId::new();
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs() as i64;
+            let info = AgentInfo {
+                id,
+                kind,
+                pid: Some(0),
+                status: AgentStatus::Running,
+                worktree_path: None,
+                last_used_at: Some(now),
+            };
+            self.agents.write().await.insert(
+                id,
+                AgentEntry {
+                    agent: Box::new(MockAgent::new(info.kind.clone())),
+                    handle: Some(Box::new(MockHandle)),
+                    info,
+                },
+            );
+            id
+        }
+
+        /// Inject a mock agent with a specific last_used_at timestamp (for LRU testing).
+        /// Respects max_size with LRU eviction.
+        pub async fn inject_mock_at(&self, kind: AgentKind, last_used_at: i64) -> AgentId {
+            // LRU eviction if pool is full
+            let count = self.agents.read().await.len();
+            if count >= self.max_size {
+                let oldest_id = {
+                    let agents = self.agents.read().await;
+                    agents
+                        .iter()
+                        .min_by_key(|(_, e)| e.info.last_used_at.unwrap_or(0))
+                        .map(|(id, _)| *id)
+                };
+                if let Some(id) = oldest_id {
+                    self.shutdown(id).await.ok();
+                }
+            }
+
+            let id = AgentId::new();
+            let info = AgentInfo {
+                id,
+                kind,
+                pid: Some(0),
+                status: AgentStatus::Running,
+                worktree_path: None,
+                last_used_at: Some(last_used_at),
+            };
+            self.agents.write().await.insert(
+                id,
+                AgentEntry {
+                    agent: Box::new(MockAgent::new(info.kind.clone())),
+                    handle: Some(Box::new(MockHandle)),
+                    info,
+                },
+            );
+            id
+        }
     }
 }

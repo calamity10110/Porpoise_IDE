@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::error::Error;
 
 use thiserror::Error;
 
@@ -31,7 +32,7 @@ pub enum PorpoiseError {
     Runtime(String),
     #[error("process {pid} exited with code {code}")]
     ProcessExit { pid: u32, code: i32 },
-    #[error("PTY allocation failed: {0}")]
+    #[error("PTY error: {0}")]
     PtyError(String),
     #[error("resource limit exceeded: {0}")]
     ResourceLimit(String),
@@ -118,5 +119,15 @@ impl PorpoiseError {
             type_name,
             value: value.to_string(),
         }
+    }
+
+    /// Wrap a std error into `PorpoiseError::Internal`.
+    pub fn from_error<E: Error + Send + Sync + 'static>(err: E) -> Self {
+        Self::Internal(err.to_string())
+    }
+
+    /// Return the source error if wrapped, otherwise `None`.
+    pub fn source(&self) -> Option<&(dyn Error + Send + Sync)> {
+        None
     }
 }

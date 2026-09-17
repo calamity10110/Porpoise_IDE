@@ -18,6 +18,23 @@ use tokio::sync::broadcast;
 
 use crate::services::notifications::NotificationService;
 
+/// Truncate a notification body to at most 200 characters, appending "..."
+/// when truncation occurs. Character-aware (NOT byte-aware): iterating by char
+/// boundary avoids panicking when the cut point falls inside a multibyte UTF-8
+/// sequence (emoji / CJK / accented letters). The previous byte-slice
+/// `&trimmed[..200]` panicked with `byte index 200 is not a char boundary` in
+/// that case (P1-8). See regression `truncate_body_mid_multibyte_no_panic`.
+fn truncate_body(input: &str) -> String {
+    const MAX_LEN: usize = 200;
+    if input.chars().count() > MAX_LEN {
+        let mut s: String = input.chars().take(MAX_LEN).collect();
+        s.push_str("...");
+        s
+    } else {
+        input.to_string()
+    }
+}
+
 pub struct Daemon {
     pub state: AppState,
     pub db: DbPool,
@@ -42,7 +59,14 @@ impl Daemon {
 
         let notification_service = Arc::new(NotificationService::new(db.clone()));
 
-        let data_dir = config.core.data_dir.clone().unwrap_or_else(std::env::temp_dir);
+        let data_dir = match config.core.data_dir.clone() {
+            Some(dir) => dir,
+            // ponytail: fall back to the same default the CLI/relay clients use
+            // (AppConfig::default_data_dir) instead of env::temp_dir, which
+            // diverged from clients and broke IPC (os error 2). Upgrade path:
+            // shared const in porpoise-core if more callers appear.
+            None => AppConfig::default_data_dir()?,
+        };
         let socket_path = data_dir.join("porpoise.sock");
 
         let token_store = SessionTokenStore::create(&data_dir)?;
@@ -250,11 +274,7 @@ impl Daemon {
             if trimmed.is_empty() {
                 return;
             }
-            let body = if trimmed.len() > 200 {
-                format!("{}...", &trimmed[..200])
-            } else {
-                trimmed.to_string()
-            };
+            let body = truncate_body(trimmed);
             if let Err(e) = svc
                 .notify(
                     &format!("Terminal [{id}]"),
@@ -287,11 +307,7 @@ impl Daemon {
                 if trimmed.is_empty() {
                     return;
                 }
-                let body = if trimmed.len() > 200 {
-                    format!("{}...", &trimmed[..200])
-                } else {
-                    trimmed.to_string()
-                };
+                let body = truncate_body(trimmed);
                 if let Err(e) = svc
                     .notify(
                         &format!("Agent Output ({kind:?})"),
@@ -372,6 +388,9 @@ impl Daemon {
                     .ok()
                     .and_then(|s| s.trim().parse::<u32>().ok());
                 if let Some(old) = old_pid {
+                    // SAFETY: kill(pid, 0) checks whether a process exists without
+                    // sending any signal. `old` is parsed from the pidfile. This is the
+                    // POSIX-standard way to test process existence.
                     if unsafe { libc::kill(old as i32, 0) == 0 } {
                         return Err(PorpoiseError::Runtime(format!("daemon already running (PID {old})")));
                     }
@@ -387,5 +406,69 @@ impl Daemon {
         if let Some(ref path) = self.pidfile_path {
             std::fs::remove_file(path).ok();
         }
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::truncate_body;
+
+    /// P1-8 regression: byte 200 must land inside a 4-byte emoji so the OLD
+    /// `&s[..200]` byte-slice would panic. 199 ASCII bytes + a 4-byte emoji
+    /// (U+1F600) occupy bytes 199..203 -> byte 200 is mid-emoji. The trailing
+    /// text makes the body >200 chars so the truncation+ellipsis path is also
+    /// exercised. Must NOT panic and must keep whole characters.
+    #[test]
+    fn truncate_body_mid_multibyte_no_panic() {
+        let mut input = String::with_capacity(252);
+        input.push_str(&"a".repeat(199)); // bytes 0..199
+        input.push('\u{1F600}');         // 4-byte emoji, bytes 199..203
+        input.push_str(&"a".repeat(50));  // total 250 chars / 252 bytes
+        let body = truncate_body(&input); // OLD code panicked here
+        assert!(body.ends_with("..."));
+        let content = body.strip_suffix("...").unwrap();
+        assert_eq!(content.chars().count(), 200); // 199 'a' + emoji
+        // the 4-byte emoji survived whole (never byte-split):
+        assert_eq!(content.chars().last(), Some('\u{1F600}'));
+    }
+
+    /// Exactly 200 chars: no truncation, body equals input.
+    #[test]
+    fn truncate_body_at_limit_unchanged() {
+        let input = "a".repeat(200);
+        let body = truncate_body(&input);
+        assert_eq!(body, input);
+        assert!(!body.ends_with("..."));
+    }
+
+    /// 201 ASCII chars -> truncate content to 200 + "...".
+    #[test]
+    fn truncate_body_just_over_limit_ascii() {
+        let input = "a".repeat(201);
+        let body = truncate_body(&input);
+        assert!(body.ends_with("..."));
+        let content = body.strip_suffix("...").unwrap();
+        assert_eq!(content, "a".repeat(200));
+        assert_eq!(body.chars().count(), 203); // 200 content + ellipsis
+    }
+
+    /// Truncation across 3-byte CJK: byte 200 is mid-char (would panic
+    /// previously); char-aware keeps whole characters.
+    #[test]
+    fn truncate_body_cjk_multibyte_no_panic() {
+        let input = "中".repeat(201); // 201 chars / 603 bytes
+        let body = truncate_body(&input);
+        assert!(body.ends_with("..."));
+        let content = body.strip_suffix("...").unwrap();
+        assert_eq!(content, "中".repeat(200));
+    }
+
+    /// Short / empty input: passthrough.
+    #[test]
+    fn truncate_body_short_passthrough() {
+        assert_eq!(truncate_body("hello"), "hello");
+        assert_eq!(truncate_body(""), "");
     }
 }

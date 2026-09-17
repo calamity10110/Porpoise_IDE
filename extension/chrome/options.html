@@ -5,22 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Porpoise Bridge Settings</title>
   <style>
-    :root { --bg: #1a1b26; --surface: #24283b; --fg: #c0caf5; --fg-dim: #565f89; --accent: #7aa0f7; --radius: 6px; }
+    :root { --bg: #0a0a0f; --surface: #1a1a2e; --fg: #e0e0ff; --fg-dim: #6a6a8a; --accent: #00f0ff; --cyan: #00f0ff; --magenta: #ff00ff; --green: #39ff14; --red: #ff003c; --yellow: #fcee09; --border: #2a2a4a; --neon-glow: 0 0 5px #00f0ff, 0 0 10px #00f0ff, 0 0 20px rgba(0,240,255,0.3); }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--fg); max-width: 480px; margin: 24px auto; padding: 0 16px; }
-    h1 { font-size: 18px; margin-bottom: 20px; color: var(--accent); }
-    label { display: block; margin: 12px 0 4px; font-size: 12px; color: var(--fg-dim); }
-    input, textarea, select { width: 100%; padding: 8px 10px; background: var(--surface); border: 1px solid var(--fg-dim); border-radius: var(--radius); color: var(--fg); font-size: 13px; }
-    input:focus, textarea:focus { border-color: var(--accent); outline: none; }
-    textarea { font-family: 'SF Mono', 'Cascadia Code', monospace; min-height: 60px; }
+    body { font-family: 'Consolas', 'Fira Code', 'Courier New', monospace; background: var(--bg); color: var(--fg); max-width: 480px; margin: 24px auto; padding: 0 16px; position: relative; }
+    body::after { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent 2px, rgba(0,240,255,0.02) 2px, rgba(0,240,255,0.02) 4px); pointer-events: none; z-index: 9999; }
+    h1 { font-size: 16px; margin-bottom: 20px; color: var(--cyan); text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px rgba(0,240,255,0.5); border-bottom: 2px solid var(--cyan); padding-bottom: 10px; }
+    label { display: block; margin: 12px 0 4px; font-size: 11px; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; }
+    input, textarea, select { width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--fg); font-size: 13px; font-family: 'Consolas', monospace; transition: border-color .2s, box-shadow .2s; }
+    input:focus, textarea:focus { border-color: var(--cyan); outline: none; box-shadow: var(--neon-glow); }
+    textarea { font-family: 'Consolas', 'Fira Code', monospace; min-height: 60px; }
     .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
-    .checkbox-row input { width: auto; }
-    button { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-size: 14px; margin-top: 16px; }
-    button:hover { opacity: .85; }
-    .toast { display: none; padding: 8px; margin-top: 12px; border-radius: var(--radius); text-align: center; font-size: 12px; }
-    .toast.success { display: block; background: #27ae60; color: #fff; }
-    .toast.error { display: block; background: #c0392b; color: #fff; }
-    .hint { font-size: 11px; color: var(--fg-dim); margin-top: 2px; }
+    .checkbox-row input { width: auto; accent-color: var(--cyan); }
+    .checkbox-row label { margin: 0; color: var(--fg); }
+    button { width: 100%; padding: 10px; background: var(--cyan); color: #0a0a0f; border: 1px solid var(--cyan); font-weight: 700; cursor: pointer; font-size: 13px; font-family: 'Consolas', monospace; text-transform: uppercase; letter-spacing: 2px; margin-top: 16px; transition: all .2s; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px)); }
+    button:hover { box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,240,255,0.4); background: #33f3ff; }
+    .toast { display: none; padding: 8px; margin-top: 12px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid; }
+    .toast.success { display: block; background: rgba(57,255,20,0.1); color: var(--green); border-color: var(--green); text-shadow: 0 0 5px rgba(57,255,20,0.3); }
+    .toast.error { display: block; background: rgba(255,0,60,0.1); color: var(--red); border-color: var(--red); text-shadow: 0 0 5px rgba(255,0,60,0.3); }
+    .hint { font-size: 10px; color: var(--fg-dim); margin-top: 2px; font-family: monospace; }
+    .hint code { color: var(--yellow); background: rgba(252,238,9,0.1); padding: 1px 4px; }
   </style>
 </head>
 <body>

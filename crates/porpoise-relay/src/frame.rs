@@ -1,4 +1,3 @@
-use bitflags::bitflags;
 use porpoise_core::error::{PorpoiseError, Result};
 
 pub const PROTOCOL_MAGIC: [u8; 2] = [0x50, 0x50];
@@ -6,15 +5,66 @@ pub const PROTOCOL_VERSION: u8 = 0x01;
 pub const MIN_PROTOCOL_VERSION: u8 = 0x01;
 pub const HEADER_SIZE: usize = 8;
 
-bitflags! {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    pub struct FrameFlags: u8 {
-        const REQUEST   = 0b0000_0001;
-        const RESPONSE  = 0b0000_0010;
-        const EVENT     = 0b0000_0100;
-        const COMPRESSED = 0b0000_1000;
-        const ACK       = 0b0001_0000;
-        const STREAM    = 0b0010_0000;
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct FrameFlags(u8);
+
+impl FrameFlags {
+    pub const REQUEST: Self = Self(0b0000_0001);
+    pub const RESPONSE: Self = Self(0b0000_0010);
+    pub const EVENT: Self = Self(0b0000_0100);
+    pub const COMPRESSED: Self = Self(0b0000_1000);
+    pub const ACK: Self = Self(0b0001_0000);
+    pub const STREAM: Self = Self(0b0010_0000);
+
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
+
+    pub const fn from_bits(bits: u8) -> Option<Self> {
+        // Accept any combination of known bits; reject unknown bits
+        if bits & !0b0011_1111 == 0 {
+            Some(Self(bits))
+        } else {
+            None
+        }
+    }
+
+    pub const fn from_bits_truncate(bits: u8) -> Self {
+        Self(bits & 0b0011_1111)
+    }
+
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
+
+    pub const fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+}
+
+impl std::ops::BitOr for FrameFlags {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitAnd for FrameFlags {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl std::ops::BitOrAssign for FrameFlags {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl std::ops::BitAndAssign for FrameFlags {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0 &= rhs.0;
     }
 }
 

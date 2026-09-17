@@ -37,6 +37,11 @@ impl SshSession {
             reason: e.to_string(),
         })?;
 
+        // Verify the remote host key before authentication. Without this the
+        // connection trusts whatever key the peer presents during the handshake,
+        // allowing a man-in-the-middle to silently capture credentials (CVE-C1).
+        verify_host_key(&sess, host, crate::hostkey::HostKeyPolicy::TrustOnFirstUse)?;
+
         match auth {
             AuthMethod::Password(password) => {
                 sess.userauth_password(username, password.as_str())
@@ -173,4 +178,97 @@ impl SshSession {
                 })?;
         Ok((listener, port))
     }
+}
+
+
+/// Resolves the default OpenSSH `known_hosts` file (`~/.ssh/known_hosts`).
+///
+/// Returns `None` when no home directory can be determined, in which case the
+/// caller treats every host as unseen (first-use) under TOFU.
+fn default_known_hosts_path() -> Option<std::path::PathBuf> {
+    let home = std::env::var_os("HOME").or_else(|| {
+        if cfg!(windows) {
+            std::env::var_os("USERPROFILE")
+        } else {
+            None
+        }
+    })?;
+    Some(std::path::PathBuf::from(home).join(".ssh").join("known_hosts"))
+}
+
+/// Verifies the remote host key against the local `known_hosts` collection
+/// *before* any credentials are sent.
+///
+/// Without this check the client authenticates against whatever key the peer
+/// presented during the handshake, so a man-in-the-middle attacker positioned
+/// between us and the real server can silently capture the password/key
+/// (CVE-C1).
+///
+/// Decisions (fail-closed):
+/// - `Match`    -> proceed.
+/// - `NotFound` -> under [`TrustOnFirstUse`][crate::hostkey::HostKeyPolicy] the
+///   key is recorded to `known_hosts`, then the connection proceeds; under
+///   `Strict` the connection is refused.
+/// - `Mismatch` / `Failure` -> always refused; authentication never happens.
+fn verify_host_key(
+    sess: &ssh2::Session,
+    host: &str,
+    policy: crate::hostkey::HostKeyPolicy,
+) -> Result<()> {
+    let (key, key_type) = match sess.host_key() {
+        Some(v) => v,
+        None => {
+            return Err(PorpoiseError::SshConnect {
+                host: host.into(),
+                reason: "peer did not present a host key".into(),
+            });
+        }
+    };
+
+    let mut kh = sess
+        .known_hosts()
+        .map_err(|e| PorpoiseError::SshConnect {
+            host: host.into(),
+            reason: format!("known_hosts init: {e}"),
+        })?;
+
+    // Load any persisted known_hosts so a previously-seen host is recognized.
+    if let Some(path) = default_known_hosts_path()
+        && path.exists()
+    {
+        let _ = kh.read_file(&path, ssh2::KnownHostFileKind::OpenSSH);
+    }
+
+    let verdict = crate::hostkey::classify(kh.check(host, key));
+
+    if !crate::hostkey::policy_accepts(verdict, policy) {
+        return Err(PorpoiseError::SshConnect {
+            host: host.into(),
+            reason: match verdict {
+                Some(crate::hostkey::HostKeyVerdict::KeyMismatch) => {
+                    "host key mismatch (possible MITM); refusing to authenticate".into()
+                }
+                _ => "host key verification failed; refusing to authenticate".into(),
+            },
+        });
+    }
+
+    // Trust-on-first-use: persist the newly seen key so a *future* mismatch is
+    // detected instead of silently accepted.
+    if matches!(verdict, Some(crate::hostkey::HostKeyVerdict::UnknownHost)) {
+        let _ = kh.add(
+            host,
+            key,
+            "porpoise-ssh",
+            ssh2::KnownHostKeyFormat::from(key_type),
+        );
+        if let Some(path) = default_known_hosts_path() {
+            if let Some(parent) = path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = kh.write_file(&path, ssh2::KnownHostFileKind::OpenSSH);
+        }
+    }
+
+    Ok(())
 }

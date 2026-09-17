@@ -26,6 +26,9 @@ impl ResourceLimits {
                     rlim_cur: fds,
                     rlim_max: fds,
                 };
+                // SAFETY: setrlimit sets the file descriptor limit for this process.
+                // `rlim` is a valid stack-allocated rlimit struct with cur <= max.
+                // The kernel validates the values and returns an error code on failure.
                 let res = unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &rlim) };
                 if res != 0 {
                     return Err(PorpoiseError::Runtime(format!("failed to set RLIMIT_NOFILE to {fds}")));

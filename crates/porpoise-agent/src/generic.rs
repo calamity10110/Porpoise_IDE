@@ -110,6 +110,9 @@ impl AgentHandle for GenericHandle {
     async fn interrupt(&mut self) -> Result<()> {
         #[cfg(unix)]
         if let Some(pid) = self.pid {
+            // SAFETY: kill() sends SIGINT to the child process for interruption.
+            // `pid` comes from child.id() captured at spawn time. Sending a signal
+            // to a non-existent PID is a harmless no-op (ESRCH).
             unsafe {
                 libc::kill(pid as i32, libc::SIGINT);
             }

@@ -47,7 +47,13 @@ impl SessionTokenStore {
     }
 
     pub fn validate_handshake(&self, client_hs: &Handshake) -> bool {
-        client_hs.session_token.as_deref() == Some(self.token.as_str())
+        // Constant-time comparison (CVE-P1-3): a plain `==` short-circuits on
+        // the first differing byte, leaking token contents over a timing side
+        // channel. Compare every byte unconditionally so no such channel exists.
+        match client_hs.session_token.as_deref() {
+            Some(provided) => constant_time_eq(provided.as_bytes(), self.token.as_bytes()),
+            None => false,
+        }
     }
 }
 
@@ -84,4 +90,59 @@ fn restrict_token_acl_windows(path: &Path) -> std::io::Result<()> {
 #[allow(dead_code)]
 fn restrict_token_acl_windows(_path: &Path) -> std::io::Result<()> {
     Ok(())
+}
+
+
+/// Compares two byte slices in constant time.
+///
+/// Every byte is XOR-reduced into an accumulator before the final equality test,
+/// so the running time does not depend on *where* (or whether) the slices first
+/// differ. A length mismatch returns `false` immediately; for the fixed-length
+/// IPC token this is acceptable since token length is not secret.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn constant_time_eq_matches_and_mismatches() {
+        assert!(constant_time_eq(b"abc", b"abc"));
+        assert!(!constant_time_eq(b"abc", b"abd"));
+        assert!(!constant_time_eq(b"abc", b"ab"));
+        assert!(!constant_time_eq(b"abc", b"abcd"));
+        assert!(constant_time_eq(b"", b""));
+    }
+
+    #[test]
+    fn validate_handshake_accepts_only_exact_token() {
+        let store = SessionTokenStore {
+            token: "deadbeefcafebabe".to_string(),
+            token_path: std::path::PathBuf::from("/tmp/x"),
+        };
+        // helper closure building a Handshake by mutating only the token field
+        let make = |t: Option<String>| Handshake {
+            version: 1,
+            min_version: 1,
+            server_name: "test".to_string(),
+            session_token: t,
+            peer_pid: 0,
+        };
+        assert!(store.validate_handshake(&make(Some("deadbeefcafebabe".to_string()))));
+        assert!(!store.validate_handshake(&make(Some("deadbeefcafef00d".to_string()))));
+        assert!(!store.validate_handshake(&make(None)));
+        // a token that shares a long prefix must still be rejected
+        assert!(!store.validate_handshake(&make(Some("deadbeefcafebab0".to_string()))));
+        // silence unused-mut if the field is read-only in this context
+        let _ = &store;
+    }
 }

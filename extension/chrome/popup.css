@@ -1,24 +1,37 @@
-/* Porpoise Bridge Popup */
+/* Porpoise Bridge Popup — Cyberpunk 2077 Theme */
 :root {
-  --bg: #1a1b26;
-  --surface: #24283b;
-  --fg: #c0caf5;
-  --fg-dim: #565f89;
-  --accent: #7aa0f7;
-  --green: #2ecc71;
-  --red: #e74c3c;
-  --radius: 6px;
+  --bg: #0a0a0f;
+  --surface: #1a1a2e;
+  --fg: #e0e0ff;
+  --fg-dim: #6a6a8a;
+  --accent: #00f0ff;
+  --green: #39ff14;
+  --red: #ff003c;
+  --yellow: #fcee09;
+  --magenta: #ff00ff;
+  --border: #2a2a4a;
+  --radius: 2px;
+  --neon-glow: 0 0 5px #00f0ff, 0 0 10px #00f0ff, 0 0 20px rgba(0,240,255,0.3);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   width: 360px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
   background: var(--bg);
   color: var(--fg);
   font-size: 13px;
   padding: 12px;
+  position: relative;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 2px, rgba(0,240,255,0.02) 2px, rgba(0,240,255,0.02) 4px);
+  pointer-events: none;
+  z-index: 9999;
 }
 
 #status-bar {
@@ -27,8 +40,10 @@ body {
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface);
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
   margin-bottom: 12px;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 
 .dot {
@@ -38,14 +53,16 @@ body {
   flex-shrink: 0;
 }
 
-.dot.connected { background: var(--green); }
-.dot.disconnected { background: var(--red); }
-.dot.connecting { background: #f39c12; }
+.dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot.disconnected { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.dot.connecting { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1s infinite; }
 
-#status-text { flex: 1; }
-#status-detail { color: var(--fg-dim); font-size: 11px; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
-h3 { margin: 12px 0 8px; font-size: 13px; font-weight: 600; color: var(--accent); }
+#status-text { flex: 1; color: var(--fg); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; }
+#status-detail { color: var(--fg-dim); font-size: 10px; font-family: monospace; }
+
+h3 { margin: 12px 0 8px; font-size: 11px; font-weight: 600; color: var(--cyan); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 8px rgba(0,240,255,0.3); }
 
 .row { display: flex; gap: 8px; }
 .row input { flex: 1; }
@@ -58,57 +75,70 @@ input, textarea, select, button {
 input, textarea, select {
   width: 100%;
   padding: 7px 10px;
-  background: var(--surface);
-  border: 1px solid var(--fg-dim);
-  border-radius: var(--radius);
+  background: var(--bg);
+  border: 1px solid var(--border);
   color: var(--fg);
   outline: none;
   margin-bottom: 8px;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  transition: border-color .2s, box-shadow .2s;
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: var(--accent);
+  border-color: var(--cyan);
+  box-shadow: var(--neon-glow);
 }
 
-textarea { resize: vertical; min-height: 50px; font-family: 'SF Mono', 'Cascadia Code', monospace; }
+textarea { resize: vertical; min-height: 50px; font-family: 'Consolas', 'Fira Code', monospace; }
 
 button {
   width: 100%;
   padding: 8px 12px;
-  border: none;
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
   cursor: pointer;
   font-weight: 600;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   margin-bottom: 6px;
-  transition: opacity .15s;
+  transition: all .2s;
+  clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px));
 }
 
-button:hover { opacity: .85; }
-button.primary { background: var(--accent); color: #fff; }
-button.secondary { background: var(--surface); color: var(--fg); border: 1px solid var(--fg-dim); }
+button:hover { box-shadow: var(--neon-glow); }
+button.primary { background: var(--cyan); color: #0a0a0f; border-color: var(--cyan); text-shadow: 0 0 5px rgba(0,240,255,0.5); }
+button.primary:hover { background: #33f3ff; box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,240,255,0.4); }
+button.secondary { background: var(--surface); color: var(--fg); border-color: var(--border); }
+button.secondary:hover { border-color: var(--magenta); color: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
 
 .hidden { display: none !important; }
 
 .page-card {
   background: var(--surface);
   padding: 10px;
-  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
   margin-bottom: 12px;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
 
-.page-card .url { font-size: 10px; color: var(--fg-dim); word-break: break-all; margin-bottom: 2px; }
-.page-card .title { font-weight: 600; margin-bottom: 8px; }
+.page-card .url { font-size: 10px; color: var(--fg-dim); word-break: break-all; margin-bottom: 2px; font-family: monospace; }
+.page-card .title { font-weight: 600; margin-bottom: 8px; color: var(--cyan); text-shadow: 0 0 5px rgba(0,240,255,0.2); }
 
 #agent-section { margin-top: 4px; }
 #agent-section select { margin-bottom: 4px; }
 
 .recent-event {
   padding: 4px 6px;
-  border-left: 2px solid var(--accent);
+  border-left: 2px solid var(--magenta);
   margin: 4px 0;
   font-size: 11px;
   color: var(--fg-dim);
+  font-family: monospace;
 }
+.recent-event:hover { border-color: var(--cyan); color: var(--fg); }
 
 #recent-events { max-height: 120px; overflow-y: auto; }
 
@@ -116,14 +146,17 @@ button.secondary { background: var(--surface); color: var(--fg); border: 1px sol
   text-align: center;
   margin-top: 12px;
   padding-top: 8px;
-  border-top: 1px solid var(--surface);
-  font-size: 11px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .footer-links a {
   color: var(--fg-dim);
   text-decoration: none;
+  transition: color .2s, text-shadow .2s;
 }
 
-.footer-links a:hover { color: var(--accent); }
+.footer-links a:hover { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
 .sep { margin: 0 6px; color: var(--fg-dim); }
