@@ -62,7 +62,7 @@ assert_cmd = "2"
 criterion = { version = "0.5", features = ["async_futures"] }
 plist = "1"
 portable-pty = "0.8"
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 rand = "0.8"
 zeroize = { version = "1", features = ["derive"] }
 enigo = "0.2"
