@@ -25,11 +25,10 @@ pub trait EventHandler: Send + Sync {
     ///
     /// Default implementation: receives all events and calls `handle()` for events
     /// where `predicate(event)` returns `true`.
-    async fn handle_map<F>(&self, predicate: F) -> Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>
+    async fn handle_map<F>(&self, _predicate: F) -> Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>
     where
         F: Fn(&SystemEvent) -> bool + Send + Sync + 'static,
     {
-        let pred = predicate;
         Box::pin(async move { Ok(()) })
     }
 
@@ -39,15 +38,13 @@ pub trait EventHandler: Send + Sync {
     /// calls `handle()` for matching events, then calls `next_handler()`.
     async fn then_handle<F, G>(
         &self,
-        predicate: F,
-        next_handler: G,
+        _predicate: F,
+        _next_handler: G,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + Sync>>
     where
         F: Fn(&SystemEvent) -> bool + Send + Sync + 'static,
         G: Fn(&SystemEvent) -> Result<()> + Send + Sync + 'static,
     {
-        let pred = predicate;
-        let next = next_handler;
         Box::pin(async move { Ok(()) })
     }
 }

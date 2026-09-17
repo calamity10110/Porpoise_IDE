@@ -13,5 +13,5 @@ pub mod validation;
 pub mod workflow;
 
 pub use graph::{Edge, EdgeId, Node, NodeId, NodeKind, Position, WorkflowGraph};
-pub use validation::{validate_workflow, ValidationError, ValidationResult};
+pub use validation::{ValidationError, ValidationResult, validate_workflow};
 pub use workflow::{Workflow, WorkflowMeta};

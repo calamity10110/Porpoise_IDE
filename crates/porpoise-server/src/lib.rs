@@ -409,8 +409,6 @@ impl Daemon {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::truncate_body;
@@ -424,8 +422,8 @@ mod tests {
     fn truncate_body_mid_multibyte_no_panic() {
         let mut input = String::with_capacity(252);
         input.push_str(&"a".repeat(199)); // bytes 0..199
-        input.push('\u{1F600}');         // 4-byte emoji, bytes 199..203
-        input.push_str(&"a".repeat(50));  // total 250 chars / 252 bytes
+        input.push('\u{1F600}'); // 4-byte emoji, bytes 199..203
+        input.push_str(&"a".repeat(50)); // total 250 chars / 252 bytes
         let body = truncate_body(&input); // OLD code panicked here
         assert!(body.ends_with("..."));
         let content = body.strip_suffix("...").unwrap();

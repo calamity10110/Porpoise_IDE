@@ -4,9 +4,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 
-use super::traits::{
-    AdapterCapabilities, AgentAdapter, InputMode, OutputParser, ParsedEvent, RawOutput, ToolCall,
-};
+use super::traits::{AdapterCapabilities, AgentAdapter, InputMode, OutputParser, ParsedEvent, RawOutput, ToolCall};
 use crate::types::AgentKind;
 
 pub struct CodexAdapter;
@@ -80,12 +78,7 @@ impl AgentAdapter for CodexAdapter {
         }
     }
 
-    fn build_args(
-        &self,
-        worktree: &Path,
-        prompt: Option<&str>,
-        extra_args: &[String],
-    ) -> Vec<String> {
+    fn build_args(&self, worktree: &Path, prompt: Option<&str>, extra_args: &[String]) -> Vec<String> {
         let mut args = vec![];
         if let Some(p) = prompt {
             args.push(p.to_string());

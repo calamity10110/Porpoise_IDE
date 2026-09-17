@@ -4,8 +4,7 @@ use porpoise_core::{
     bus::EventBus,
     types::{
         event::{
-            AgentEvent, AgentStatusKind, NotificationSeverity, OutputKind, SystemEvent,
-            SystemEventKind, WorktreeEvent,
+            AgentEvent, AgentStatusKind, NotificationSeverity, OutputKind, SystemEvent, SystemEventKind, WorktreeEvent,
         },
         id::{AgentId, WorktreeId},
     },
@@ -75,10 +74,22 @@ fn test_bus_multiple_event_types() {
     }));
 
     // All 4 events should be received in order
-    assert!(matches!(rx.try_recv(), Ok(SystemEvent::System(SystemEventKind::Startup))));
-    assert!(matches!(rx.try_recv(), Ok(SystemEvent::Agent(AgentEvent::StatusChanged { .. }))));
-    assert!(matches!(rx.try_recv(), Ok(SystemEvent::Agent(AgentEvent::Output { .. }))));
-    assert!(matches!(rx.try_recv(), Ok(SystemEvent::System(SystemEventKind::Notification { .. }))));
+    assert!(matches!(
+        rx.try_recv(),
+        Ok(SystemEvent::System(SystemEventKind::Startup))
+    ));
+    assert!(matches!(
+        rx.try_recv(),
+        Ok(SystemEvent::Agent(AgentEvent::StatusChanged { .. }))
+    ));
+    assert!(matches!(
+        rx.try_recv(),
+        Ok(SystemEvent::Agent(AgentEvent::Output { .. }))
+    ));
+    assert!(matches!(
+        rx.try_recv(),
+        Ok(SystemEvent::System(SystemEventKind::Notification { .. }))
+    ));
     assert!(rx.try_recv().is_err()); // no more events
 }
 

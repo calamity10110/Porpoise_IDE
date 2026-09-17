@@ -568,7 +568,7 @@ pub fn register_all(
         }),
     );
 
-router.register(
+    router.register(
         "mobile/pairing_info",
         Arc::new(move |_, _| {
             let fp = tls_fingerprint.clone();
@@ -609,9 +609,7 @@ router.register(
                 Arc::new(move |req, _| {
                     let reg = reg.clone();
                     Box::pin(async move {
-                        let id = req.params.get("device_id")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("");
+                        let id = req.params.get("device_id").and_then(|v| v.as_str()).unwrap_or("");
                         esp32_service::handle_get(&reg, id).await
                     })
                 }),
@@ -642,13 +640,11 @@ router.register(
         );
         router.register(
             "esp32/board_templates",
-            Arc::new(|_, _| {
-                Box::pin(async move { esp32_service::handle_board_templates().await })
-            }),
+            Arc::new(|_, _| Box::pin(async move { esp32_service::handle_board_templates().await })),
         );
     }
 
-     // ── ESP32-S3 Device Management ──────────────────────────────────
+    // ── ESP32-S3 Device Management ──────────────────────────────────
     let esp_registry = esp32_service::new_registry();
 
     {
@@ -668,9 +664,7 @@ router.register(
             Arc::new(move |req, _| {
                 let reg = reg.clone();
                 Box::pin(async move {
-                    let id = req.params.get("device_id")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
+                    let id = req.params.get("device_id").and_then(|v| v.as_str()).unwrap_or("");
                     esp32_service::handle_get(&reg, id).await
                 })
             }),
@@ -701,8 +695,6 @@ router.register(
     );
     router.register(
         "esp32/board_templates",
-        Arc::new(|_, _| {
-            Box::pin(async move { esp32_service::handle_board_templates().await })
-        }),
+        Arc::new(|_, _| Box::pin(async move { esp32_service::handle_board_templates().await })),
     );
 }

@@ -137,11 +137,19 @@ fn parse_diff_header(line: &str) -> (Option<String>, Option<String>) {
     let parts: Vec<&str> = line.split_whitespace().collect();
     let old = parts.get(2).and_then(|p| {
         let s = p.trim();
-        if s.starts_with("a/") { Some(s[2..].to_string()) } else { Some(s.to_string()) }
+        if s.starts_with("a/") {
+            Some(s[2..].to_string())
+        } else {
+            Some(s.to_string())
+        }
     });
     let new = parts.get(3).and_then(|p| {
         let s = p.trim();
-        if s.starts_with("b/") { Some(s[2..].to_string()) } else { Some(s.to_string()) }
+        if s.starts_with("b/") {
+            Some(s[2..].to_string())
+        } else {
+            Some(s.to_string())
+        }
     });
     (old, new)
 }
@@ -172,8 +180,14 @@ fn parse_range(s: &str) -> Option<(u32, u32)> {
 }
 
 fn infer_status(patch: &FilePatch) -> FileStatus {
-    let has_adds = patch.hunks.iter().any(|h| h.lines.iter().any(|l| l.kind == LineKind::Add));
-    let has_dels = patch.hunks.iter().any(|h| h.lines.iter().any(|l| l.kind == LineKind::Delete));
+    let has_adds = patch
+        .hunks
+        .iter()
+        .any(|h| h.lines.iter().any(|l| l.kind == LineKind::Add));
+    let has_dels = patch
+        .hunks
+        .iter()
+        .any(|h| h.lines.iter().any(|l| l.kind == LineKind::Delete));
     let old_is_devnull = patch.old_path.as_deref() == Some("/dev/null");
 
     if old_is_devnull {

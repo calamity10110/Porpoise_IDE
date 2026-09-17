@@ -230,9 +230,7 @@ mod tests {
             graph.add_node(Node {
                 id: format!("n{i}"),
                 label: format!("Node {i}"),
-                kind: NodeKind::Command {
-                    command: "echo".into(),
-                },
+                kind: NodeKind::Command { command: "echo".into() },
                 position: Position { x: 0.0, y: 0.0 },
                 config: serde_json::Value::Null,
             });

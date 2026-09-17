@@ -1,10 +1,11 @@
+use std::sync::Arc;
+
 use porpoise_core::{
     bus::EventBus,
     types::event::{SystemEvent, TerminalEvent},
 };
 use porpoise_relay::RelayClient;
 use porpoise_runtime::PtyManager;
-use std::sync::Arc;
 use tauri::{
     Emitter, Manager,
     menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
@@ -26,8 +27,8 @@ pub fn run() {
             app.manage(tray);
 
             let rt = tokio::runtime::Runtime::new().expect("tokio runtime");
-            let data_dir = porpoise_core::config::AppConfig::default_data_dir()
-                .unwrap_or_else(|_| std::env::temp_dir());
+            let data_dir =
+                porpoise_core::config::AppConfig::default_data_dir().unwrap_or_else(|_| std::env::temp_dir());
             let socket_path = data_dir.join("porpoise.sock");
             let token_path = data_dir.join("ipc-token");
 
@@ -88,8 +89,7 @@ fn spawn_terminal_forwarder(app_handle: tauri::AppHandle, event_bus: EventBus) {
         // PTY chunks can split multi-byte UTF-8 sequences mid-boundary;
         // per-chunk from_utf8_lossy would corrupt them into U+FFFD. Each
         // terminal keeps its own incomplete tail until more bytes arrive.
-        let mut accumulators: std::collections::HashMap<String, Vec<u8>> =
-            std::collections::HashMap::new();
+        let mut accumulators: std::collections::HashMap<String, Vec<u8>> = std::collections::HashMap::new();
         let mut total_bytes: u64 = 0;
         let mut total_events: u64 = 0;
         loop {
@@ -98,7 +98,10 @@ fn spawn_terminal_forwarder(app_handle: tauri::AppHandle, event_bus: EventBus) {
                     total_bytes += data.len() as u64;
                     total_events += 1;
                     if total_events % 500 == 0 {
-                        commands::log_event("data_flow:terminal", &format!("{} events, {} bytes", total_events, total_bytes));
+                        commands::log_event(
+                            "data_flow:terminal",
+                            &format!("{} events, {} bytes", total_events, total_bytes),
+                        );
                     }
                     let key = id.to_string();
                     let buf = accumulators.entry(key.clone()).or_default();
@@ -217,7 +220,11 @@ fn spawn_daemon() {
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         .unwrap_or_else(|| std::path::PathBuf::from("."));
-    let daemon_name = if cfg!(windows) { "porpoise-server.exe" } else { "porpoise-server" };
+    let daemon_name = if cfg!(windows) {
+        "porpoise-server.exe"
+    } else {
+        "porpoise-server"
+    };
     let daemon = exe_dir.join(daemon_name);
     if daemon.exists() {
         match std::process::Command::new(&daemon)

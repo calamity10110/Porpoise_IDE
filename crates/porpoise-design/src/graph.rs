@@ -19,10 +19,7 @@ pub struct Position {
 #[serde(tag = "type")]
 pub enum NodeKind {
     /// An AI agent node (Claude, Codex, etc.)
-    Agent {
-        agent_kind: String,
-        prompt: Option<String>,
-    },
+    Agent { agent_kind: String, prompt: Option<String> },
     /// A shell command node.
     Command { command: String },
     /// A conditional branch node.
@@ -144,7 +141,11 @@ impl WorkflowGraph {
         }
 
         if sorted.len() == self.nodes.len() {
-            Ok(sorted.iter().map(|s| self.nodes.iter().find(|n| n.id == *s).unwrap()).map(|n| &n.id).collect())
+            Ok(sorted
+                .iter()
+                .map(|s| self.nodes.iter().find(|n| n.id == *s).unwrap())
+                .map(|n| &n.id)
+                .collect())
         } else {
             Err("Cycle detected in workflow graph".to_string())
         }

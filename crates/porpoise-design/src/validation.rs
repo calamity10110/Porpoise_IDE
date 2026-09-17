@@ -24,7 +24,11 @@ pub fn validate_workflow(graph: &WorkflowGraph) -> ValidationResult {
     let mut warnings = Vec::new();
 
     // Must have at least one Start node
-    let start_count = graph.nodes.iter().filter(|n| matches!(n.kind, crate::graph::NodeKind::Start)).count();
+    let start_count = graph
+        .nodes
+        .iter()
+        .filter(|n| matches!(n.kind, crate::graph::NodeKind::Start))
+        .count();
     if start_count == 0 {
         errors.push(ValidationError {
             code: "NO_START".into(),
@@ -40,7 +44,11 @@ pub fn validate_workflow(graph: &WorkflowGraph) -> ValidationResult {
     }
 
     // Must have at least one End node
-    let end_count = graph.nodes.iter().filter(|n| matches!(n.kind, crate::graph::NodeKind::End)).count();
+    let end_count = graph
+        .nodes
+        .iter()
+        .filter(|n| matches!(n.kind, crate::graph::NodeKind::End))
+        .count();
     if end_count == 0 {
         errors.push(ValidationError {
             code: "NO_END".into(),
@@ -54,7 +62,10 @@ pub fn validate_workflow(graph: &WorkflowGraph) -> ValidationResult {
         let has_incoming = graph.edges.iter().any(|e| e.target == node.id);
         let has_outgoing = graph.edges.iter().any(|e| e.source == node.id);
 
-        if !has_incoming && !has_outgoing && !matches!(node.kind, crate::graph::NodeKind::Start | crate::graph::NodeKind::End) {
+        if !has_incoming
+            && !has_outgoing
+            && !matches!(node.kind, crate::graph::NodeKind::Start | crate::graph::NodeKind::End)
+        {
             warnings.push(ValidationError {
                 code: "ORPHAN_NODE".into(),
                 message: format!("Node '{}' has no connections", node.label),

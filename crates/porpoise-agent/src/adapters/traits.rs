@@ -1,8 +1,7 @@
 //! Core adapter traits that extend the base Agent interface with
 //! agent-specific protocol knowledge.
 
-use std::collections::HashMap;
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use async_trait::async_trait;
 use porpoise_core::error::Result;
@@ -158,12 +157,7 @@ pub trait AgentAdapter: Send + Sync {
     ///
     /// `worktree` is the working directory. `prompt` is the initial prompt
     /// to send. `extra_args` are user-supplied overrides.
-    fn build_args(
-        &self,
-        worktree: &Path,
-        prompt: Option<&str>,
-        extra_args: &[String],
-    ) -> Vec<String>;
+    fn build_args(&self, worktree: &Path, prompt: Option<&str>, extra_args: &[String]) -> Vec<String>;
 
     /// Build environment variables needed for this agent.
     /// Returns (key, value) pairs to add to the process environment.

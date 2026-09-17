@@ -47,7 +47,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                 child: DropdownButtonFormField<String>(
-                  value: _selectedTerminalId,
+                  initialValue: _selectedTerminalId,
                   decoration: const InputDecoration(
                     labelText: 'Select Terminal',
                     border: OutlineInputBorder(),
@@ -140,6 +140,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
           SnackBar(content: Text('Send failed: $e')),
         );
       }
+      return <String, dynamic>{};
     });
 
     _inputController.clear();

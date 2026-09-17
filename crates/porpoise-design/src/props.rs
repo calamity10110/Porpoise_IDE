@@ -53,12 +53,7 @@ pub fn props_for_kind(kind: &NodeKind) -> Vec<PropDef> {
                 key: "agent_kind".into(),
                 label: "Agent".into(),
                 prop_type: PropType::Select {
-                    options: vec![
-                        "claude".into(),
-                        "codex".into(),
-                        "aider".into(),
-                        "opencode".into(),
-                    ],
+                    options: vec!["claude".into(), "codex".into(), "aider".into(), "opencode".into()],
                 },
                 default: serde_json::json!("claude"),
                 required: true,
@@ -185,12 +180,7 @@ mod tests {
 
     #[test]
     fn validate_missing_required() {
-        let node = make_node(
-            NodeKind::Command {
-                command: String::new(),
-            },
-            serde_json::json!({}),
-        );
+        let node = make_node(NodeKind::Command { command: String::new() }, serde_json::json!({}));
         let errors = validate_node_props(&node);
         assert!(errors.iter().any(|e| e.contains("Command")));
     }

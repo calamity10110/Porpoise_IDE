@@ -2,10 +2,10 @@
 
 use std::collections::HashMap;
 
+use super::{
+    aider::AiderAdapter, claude::ClaudeAdapter, codex::CodexAdapter, opencode::OpenCodeAdapter, traits::AgentAdapter,
+};
 use crate::types::AgentKind;
-
-use super::traits::AgentAdapter;
-use super::{aider::AiderAdapter, claude::ClaudeAdapter, codex::CodexAdapter, opencode::OpenCodeAdapter};
 
 /// Registry of all known agent adapters.
 pub struct AdapterRegistry {

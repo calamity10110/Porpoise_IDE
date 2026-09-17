@@ -8,8 +8,7 @@ pub mod worktree;
 
 pub use engine::GitEngine;
 pub use remote::{
-    BranchProtection, CommitStatus, GitHubProvider, PrReview, RemoteProvider, ReviewState,
-    StatusEntry, StatusState,
+    BranchProtection, CommitStatus, GitHubProvider, PrReview, RemoteProvider, ReviewState, StatusEntry, StatusState,
 };
 pub use ssh::{SshCredentials, clone_ssh, fetch_ssh, push_ssh};
 pub use types::*;

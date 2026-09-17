@@ -5,6 +5,8 @@
 pub mod bus;
 /// Configuration types — `AppConfig` and per-domain sub-configs.
 pub mod config;
+/// Diff annotation — unified diff parsing with agent attribution.
+pub mod diff;
 /// Error types — `PorpoiseError` enum with typed variants across all domains.
 pub mod error;
 /// Platform detection — compile-time OS/arch constants.
@@ -17,8 +19,6 @@ pub mod state;
 pub mod traits;
 /// Domain types — ID newtypes, event enums, capability model.
 pub mod types;
-/// Diff annotation — unified diff parsing with agent attribution.
-pub mod diff;
 /// Application version tracking — parsed from `CARGO_PKG_VERSION`.
 pub mod version;
 

@@ -173,9 +173,7 @@ pub fn builtin_components() -> Vec<ComponentDef> {
             agent_kind: "claude".into(),
             prompt: None,
         }),
-        ComponentDef::for_kind(&NodeKind::Command {
-            command: String::new(),
-        }),
+        ComponentDef::for_kind(&NodeKind::Command { command: String::new() }),
         ComponentDef::for_kind(&NodeKind::Condition {
             expression: String::new(),
         }),

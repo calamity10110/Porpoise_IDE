@@ -180,7 +180,6 @@ impl SshSession {
     }
 }
 
-
 /// Resolves the default OpenSSH `known_hosts` file (`~/.ssh/known_hosts`).
 ///
 /// Returns `None` when no home directory can be determined, in which case the
@@ -210,11 +209,7 @@ fn default_known_hosts_path() -> Option<std::path::PathBuf> {
 ///   key is recorded to `known_hosts`, then the connection proceeds; under
 ///   `Strict` the connection is refused.
 /// - `Mismatch` / `Failure` -> always refused; authentication never happens.
-fn verify_host_key(
-    sess: &ssh2::Session,
-    host: &str,
-    policy: crate::hostkey::HostKeyPolicy,
-) -> Result<()> {
+fn verify_host_key(sess: &ssh2::Session, host: &str, policy: crate::hostkey::HostKeyPolicy) -> Result<()> {
     let (key, key_type) = match sess.host_key() {
         Some(v) => v,
         None => {
@@ -225,12 +220,10 @@ fn verify_host_key(
         }
     };
 
-    let mut kh = sess
-        .known_hosts()
-        .map_err(|e| PorpoiseError::SshConnect {
-            host: host.into(),
-            reason: format!("known_hosts init: {e}"),
-        })?;
+    let mut kh = sess.known_hosts().map_err(|e| PorpoiseError::SshConnect {
+        host: host.into(),
+        reason: format!("known_hosts init: {e}"),
+    })?;
 
     // Load any persisted known_hosts so a previously-seen host is recognized.
     if let Some(path) = default_known_hosts_path()
@@ -256,12 +249,7 @@ fn verify_host_key(
     // Trust-on-first-use: persist the newly seen key so a *future* mismatch is
     // detected instead of silently accepted.
     if matches!(verdict, Some(crate::hostkey::HostKeyVerdict::UnknownHost)) {
-        let _ = kh.add(
-            host,
-            key,
-            "porpoise-ssh",
-            ssh2::KnownHostKeyFormat::from(key_type),
-        );
+        let _ = kh.add(host, key, "porpoise-ssh", ssh2::KnownHostKeyFormat::from(key_type));
         if let Some(path) = default_known_hosts_path() {
             if let Some(parent) = path.parent() {
                 let _ = std::fs::create_dir_all(parent);

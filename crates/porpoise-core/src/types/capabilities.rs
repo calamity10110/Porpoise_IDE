@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
@@ -80,12 +79,7 @@ impl Capabilities {
                 .filter(|p| other.process.contains(*p))
                 .cloned()
                 .collect(),
-            ssh: self
-                .ssh
-                .iter()
-                .filter(|p| other.ssh.contains(*p))
-                .cloned()
-                .collect(),
+            ssh: self.ssh.iter().filter(|p| other.ssh.contains(*p)).cloned().collect(),
         }
     }
 
@@ -126,12 +120,7 @@ impl Capabilities {
                 .filter(|p| !other.process.contains(*p))
                 .cloned()
                 .collect(),
-            ssh: self
-                .ssh
-                .iter()
-                .filter(|p| !other.ssh.contains(*p))
-                .cloned()
-                .collect(),
+            ssh: self.ssh.iter().filter(|p| !other.ssh.contains(*p)).cloned().collect(),
         }
     }
 
@@ -146,13 +135,10 @@ impl Capabilities {
     /// ```
     pub fn matches(&self, other: &Capabilities) -> bool {
         self.fs_read.iter().all(|p| other.fs_read.contains(p))
-            && self
-                .fs_write
-                .iter()
-                .all(|p| other.fs_write.contains(p))
-                && self.network.iter().all(|p| other.network.contains(p))
-                && self.process.iter().all(|p| other.process.contains(p))
-                && self.ssh.iter().all(|p| other.ssh.contains(p))
+            && self.fs_write.iter().all(|p| other.fs_write.contains(p))
+            && self.network.iter().all(|p| other.network.contains(p))
+            && self.process.iter().all(|p| other.process.contains(p))
+            && self.ssh.iter().all(|p| other.ssh.contains(p))
     }
 
     /// Creates a capabilities set that allows reading from the given path.
@@ -244,10 +230,7 @@ impl Capabilities {
             fs_write: vec![],
             network: vec![],
             process: vec![],
-            ssh: hosts
-                .into_iter()
-                .map(|host| HostPattern { host, port: None })
-                .collect(),
+            ssh: hosts.into_iter().map(|host| HostPattern { host, port: None }).collect(),
         }
     }
 }
@@ -312,9 +295,7 @@ impl CapabilityScope {
     /// ```
     pub fn matches_path(&self, path: &Path) -> bool {
         match self {
-            CapabilityScope::Filesystem { paths, write: _ } => {
-                paths.iter().any(|p| path.as_os_str() == p.as_os_str())
-            }
+            CapabilityScope::Filesystem { paths, write: _ } => paths.iter().any(|p| path.as_os_str() == p.as_os_str()),
             CapabilityScope::Network { urls: _ } => false,
             CapabilityScope::Process { allow: _ } => false,
             CapabilityScope::Ssh { hosts: _ } => false,

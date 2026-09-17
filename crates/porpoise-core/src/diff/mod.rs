@@ -7,6 +7,6 @@ pub mod annotator;
 pub mod parser;
 pub mod types;
 
-pub use annotator::{annotate, summarize, DiffSummary};
+pub use annotator::{DiffSummary, annotate, summarize};
 pub use parser::parse_unified_diff;
 pub use types::*;

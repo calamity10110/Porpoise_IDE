@@ -66,18 +66,9 @@ mod tests {
 
     #[test]
     fn classify_maps_all_ssh2_results() {
-        assert_eq!(
-            classify(ssh2::CheckResult::Match),
-            Some(HostKeyVerdict::Verified)
-        );
-        assert_eq!(
-            classify(ssh2::CheckResult::Mismatch),
-            Some(HostKeyVerdict::KeyMismatch)
-        );
-        assert_eq!(
-            classify(ssh2::CheckResult::NotFound),
-            Some(HostKeyVerdict::UnknownHost)
-        );
+        assert_eq!(classify(ssh2::CheckResult::Match), Some(HostKeyVerdict::Verified));
+        assert_eq!(classify(ssh2::CheckResult::Mismatch), Some(HostKeyVerdict::KeyMismatch));
+        assert_eq!(classify(ssh2::CheckResult::NotFound), Some(HostKeyVerdict::UnknownHost));
         assert_eq!(classify(ssh2::CheckResult::Failure), None);
     }
 
@@ -113,10 +104,7 @@ mod tests {
             Some(HostKeyVerdict::Verified),
             HostKeyPolicy::TrustOnFirstUse
         ));
-        assert!(policy_accepts(
-            Some(HostKeyVerdict::Verified),
-            HostKeyPolicy::Strict
-        ));
+        assert!(policy_accepts(Some(HostKeyVerdict::Verified), HostKeyPolicy::Strict));
     }
 
     #[test]

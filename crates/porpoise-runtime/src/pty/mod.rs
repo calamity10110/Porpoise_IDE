@@ -109,16 +109,14 @@ mod windows_pty {
         // portable-pty's take_writer() is one-shot (Option::take): taken
         // exactly once here and reused for the session lifetime.
         let writer = master.take_writer().map_err(|e| format!("take writer: {e}"))?;
-        PTYS.lock()
-            .map_err(|e| format!("pty lock poisoned: {e}"))?
-            .insert(
-                fd,
-                PtyHandle {
-                    master: Arc::new(Mutex::new(master)),
-                    reader: Arc::new(Mutex::new(reader)),
-                    writer: Arc::new(Mutex::new(writer)),
-                },
-            );
+        PTYS.lock().map_err(|e| format!("pty lock poisoned: {e}"))?.insert(
+            fd,
+            PtyHandle {
+                master: Arc::new(Mutex::new(master)),
+                reader: Arc::new(Mutex::new(reader)),
+                writer: Arc::new(Mutex::new(writer)),
+            },
+        );
         Ok(())
     }
 
@@ -130,31 +128,27 @@ mod windows_pty {
 
     pub fn read(fd: i32, buf: &mut [u8]) -> std::result::Result<usize, String> {
         let handle = lookup(fd)?;
-        let mut reader = handle
-            .reader
-            .lock()
-            .map_err(|e| format!("reader lock poisoned: {e}"))?;
+        let mut reader = handle.reader.lock().map_err(|e| format!("reader lock poisoned: {e}"))?;
         reader.read(buf).map_err(|e| format!("read: {e}"))
     }
 
     pub fn write_all(fd: i32, data: &[u8]) -> std::result::Result<(), String> {
         let handle = lookup(fd)?;
-        let mut writer = handle
-            .writer
-            .lock()
-            .map_err(|e| format!("writer lock poisoned: {e}"))?;
+        let mut writer = handle.writer.lock().map_err(|e| format!("writer lock poisoned: {e}"))?;
         writer.write_all(data).map_err(|e| format!("write: {e}"))
     }
 
     pub fn resize(fd: i32, rows: u16, cols: u16) -> std::result::Result<(), String> {
         let handle = lookup(fd)?;
-        let master = handle
-            .master
-            .lock()
-            .map_err(|e| format!("master lock poisoned: {e}"))?;
+        let master = handle.master.lock().map_err(|e| format!("master lock poisoned: {e}"))?;
         use portable_pty::PtySize;
         master
-            .resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+            .resize(PtySize {
+                rows,
+                cols,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
             .map_err(|e| format!("resize: {e}"))
     }
 }

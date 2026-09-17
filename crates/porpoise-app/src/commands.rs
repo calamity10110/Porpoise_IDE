@@ -1,8 +1,9 @@
+use std::{path::PathBuf, sync::Arc};
+
 use porpoise_core::types::id::TerminalId;
 use porpoise_relay::RelayClient;
 use porpoise_runtime::PtyManager;
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, sync::Arc};
 use tauri::State;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,16 +63,11 @@ impl Default for Settings {
 }
 
 pub fn default_shell() -> &'static str {
-    if cfg!(windows) {
-        "powershell"
-    } else {
-        "bash"
-    }
+    if cfg!(windows) { "powershell" } else { "bash" }
 }
 
 fn settings_path() -> PathBuf {
-    let data_dir = porpoise_core::config::AppConfig::default_data_dir()
-        .unwrap_or_else(|_| std::env::temp_dir());
+    let data_dir = porpoise_core::config::AppConfig::default_data_dir().unwrap_or_else(|_| std::env::temp_dir());
     data_dir.join("settings.json")
 }
 
@@ -195,14 +191,13 @@ pub async fn terminal_new(
         Err(e) => {
             let fallback = default_shell();
             tracing::warn!("spawn '{shell}' failed ({e}); falling back to '{fallback}'");
-            pty.alloc(rows, cols, fallback).await.map_err(|e2| format!("spawn '{shell}': {e}; fallback '{fallback}': {e2}"))?
+            pty.alloc(rows, cols, fallback)
+                .await
+                .map_err(|e2| format!("spawn '{shell}': {e}; fallback '{fallback}': {e2}"))?
         }
     };
     let id_str = id.to_string();
-    active
-        .lock()
-        .map_err(|e| e.to_string())?
-        .push(id_str.clone());
+    active.lock().map_err(|e| e.to_string())?.push(id_str.clone());
     Ok(id_str)
 }
 
@@ -213,12 +208,7 @@ pub async fn terminal_input(id: String, data: String, pty: State<'_, Arc<PtyMana
 }
 
 #[tauri::command]
-pub async fn terminal_resize(
-    id: String,
-    rows: u16,
-    cols: u16,
-    pty: State<'_, Arc<PtyManager>>,
-) -> Result<(), String> {
+pub async fn terminal_resize(id: String, rows: u16, cols: u16, pty: State<'_, Arc<PtyManager>>) -> Result<(), String> {
     let tid: TerminalId = id.parse().map_err(|_| "invalid terminal id".to_string())?;
     pty.resize(tid, rows, cols).await.map_err(|e| e.to_string())
 }
@@ -254,7 +244,10 @@ pub async fn agent_run(
             .unwrap_or_else(|_| ".".into())
     });
     relay
-        .call("agent_run", serde_json::json!({"kind": kind, "worktree": worktree, "prompt": prompt.unwrap_or_default()}))
+        .call(
+            "agent_run",
+            serde_json::json!({"kind": kind, "worktree": worktree, "prompt": prompt.unwrap_or_default()}),
+        )
         .await
         .map_err(|e| e.to_string())
 }
@@ -271,8 +264,7 @@ pub async fn agent_stop(id: String, relay: State<'_, RelayClient>) -> Result<(),
 // ── Telemetry (local JSONL, user-reviewable) ─────────────────────
 
 fn telemetry_path() -> PathBuf {
-    let data_dir = porpoise_core::config::AppConfig::default_data_dir()
-        .unwrap_or_else(|_| std::env::temp_dir());
+    let data_dir = porpoise_core::config::AppConfig::default_data_dir().unwrap_or_else(|_| std::env::temp_dir());
     data_dir.join("telemetry.log")
 }
 
@@ -286,7 +278,11 @@ pub fn log_event(kind: &str, detail: &str) {
     });
     // serialize appends: concurrent writers interleave and corrupt JSONL lines
     if let Ok(_guard) = TELEMETRY_LOCK.lock() {
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(telemetry_path()) {
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(telemetry_path())
+        {
             use std::io::Write;
             let _ = writeln!(f, "{event}");
         }
@@ -321,7 +317,11 @@ pub async fn get_telemetry(limit: Option<usize>) -> Result<serde_json::Value, St
 
     let errors: Vec<&serde_json::Value> = recent
         .iter()
-        .filter(|e| e.get("detail").and_then(|d| d.as_str()).map_or(false, |d| d.starts_with("err")))
+        .filter(|e| {
+            e.get("detail")
+                .and_then(|d| d.as_str())
+                .map_or(false, |d| d.starts_with("err"))
+        })
         .collect();
 
     Ok(serde_json::json!({

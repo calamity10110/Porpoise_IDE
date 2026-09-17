@@ -92,7 +92,6 @@ fn restrict_token_acl_windows(_path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-
 /// Compares two byte slices in constant time.
 ///
 /// Every byte is XOR-reduced into an accumulator before the final equality test,

@@ -3,8 +3,7 @@
 //! Uses mock agent injection to test pool logic (LRU, capacity, touch, shutdown)
 //! without requiring real agent binaries.
 
-use porpoise_agent::pool::AgentPool;
-use porpoise_agent::types::AgentKind;
+use porpoise_agent::{pool::AgentPool, types::AgentKind};
 
 #[tokio::test]
 async fn test_pool_create_and_list() {

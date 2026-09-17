@@ -5,7 +5,6 @@ import 'screens/agents_screen.dart';
 import 'screens/worktrees_screen.dart';
 import 'screens/terminal_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/pair_screen.dart';
 import 'models/worktree.dart';
 import 'models/agent.dart';
 import 'models/terminal.dart';

@@ -8,8 +8,10 @@
 
 use std::fmt::Write;
 
-use crate::graph::{NodeKind, WorkflowGraph};
-use crate::workflow::Workflow;
+use crate::{
+    graph::{NodeKind, WorkflowGraph},
+    workflow::Workflow,
+};
 
 /// Export errors.
 #[derive(Debug, thiserror::Error)]
@@ -51,10 +53,7 @@ pub fn to_dot(graph: &WorkflowGraph) -> Result<String, ExportError> {
 
     writeln!(out)?;
     for edge in &graph.edges {
-        let label = edge
-            .label
-            .as_deref()
-            .unwrap_or("");
+        let label = edge.label.as_deref().unwrap_or("");
         if label.is_empty() {
             writeln!(out, "  \"{}\" -> \"{}\";", edge.source, edge.target)?;
         } else {
@@ -105,12 +104,14 @@ pub fn to_svg(graph: &WorkflowGraph) -> Result<String, ExportError> {
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{:.0}\" height=\"{:.0}\" viewBox=\"0 0 {:.0} {:.0}\">",
         max_x, max_y, max_x, max_y
     )?;
-    writeln!(out, "  <style>text {{ font-family: Helvetica, sans-serif; font-size: 13px; }}</style>")?;
+    writeln!(
+        out,
+        "  <style>text {{ font-family: Helvetica, sans-serif; font-size: 13px; }}</style>"
+    )?;
 
     // Edges
     for edge in &graph.edges {
-        if let (Some(src), Some(tgt)) = (graph.get_node(&edge.source), graph.get_node(&edge.target))
-        {
+        if let (Some(src), Some(tgt)) = (graph.get_node(&edge.source), graph.get_node(&edge.target)) {
             let x1 = src.position.x + node_w;
             let y1 = src.position.y + node_h / 2.0;
             let x2 = tgt.position.x;
@@ -162,8 +163,10 @@ fn xml_escape(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::{Edge, Node, NodeKind, Position, WorkflowGraph};
-    use crate::workflow::Workflow;
+    use crate::{
+        graph::{Edge, Node, NodeKind, Position, WorkflowGraph},
+        workflow::Workflow,
+    };
 
     fn sample_graph() -> WorkflowGraph {
         let mut g = WorkflowGraph::new();

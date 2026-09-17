@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
 
 use thiserror::Error;
 

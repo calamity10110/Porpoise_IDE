@@ -7,10 +7,13 @@
 //! - Push OTA firmware updates
 //! - Manage board configurations
 
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
+
 use porpoise_core::error::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 
 /// Connected device registry (shared state).
 pub type DeviceRegistry = Arc<RwLock<HashMap<String, DeviceInfo>>>;
@@ -45,21 +48,18 @@ pub fn new_registry() -> DeviceRegistry {
 
 /// List all connected devices.
 pub async fn handle_list(registry: &DeviceRegistry) -> Result<serde_json::Value> {
-    let devices = registry.read().map_err(|e| {
-        porpoise_core::error::PorpoiseError::Internal(format!("registry lock: {e}"))
-    })?;
+    let devices = registry
+        .read()
+        .map_err(|e| porpoise_core::error::PorpoiseError::Internal(format!("registry lock: {e}")))?;
     let list: Vec<&DeviceInfo> = devices.values().collect();
     Ok(serde_json::json!({ "devices": list }))
 }
 
 /// Get details for a specific device.
-pub async fn handle_get(
-    registry: &DeviceRegistry,
-    device_id: &str,
-) -> Result<serde_json::Value> {
-    let devices = registry.read().map_err(|e| {
-        porpoise_core::error::PorpoiseError::Internal(format!("registry lock: {e}"))
-    })?;
+pub async fn handle_get(registry: &DeviceRegistry, device_id: &str) -> Result<serde_json::Value> {
+    let devices = registry
+        .read()
+        .map_err(|e| porpoise_core::error::PorpoiseError::Internal(format!("registry lock: {e}")))?;
     match devices.get(device_id) {
         Some(info) => Ok(serde_json::json!({ "device": info })),
         None => Err(porpoise_core::error::PorpoiseError::invalid_id("device", device_id)),
@@ -87,11 +87,7 @@ pub async fn handle_command(
 }
 
 /// Push OTA firmware to a device.
-pub async fn handle_ota_push(
-    device_id: &str,
-    firmware_url: &str,
-    checksum: &str,
-) -> Result<serde_json::Value> {
+pub async fn handle_ota_push(device_id: &str, firmware_url: &str, checksum: &str) -> Result<serde_json::Value> {
     Ok(serde_json::json!({
         "status": "ota_started",
         "device_id": device_id,

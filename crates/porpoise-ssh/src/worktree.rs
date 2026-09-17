@@ -71,10 +71,7 @@ impl SshWorktreeManager {
         validate_remote_path(repo_path)?;
         let output = self
             .session
-            .exec(&format!(
-                "git -C {} worktree list --porcelain",
-                shell_quote(repo_path)
-            ))
+            .exec(&format!("git -C {} worktree list --porcelain", shell_quote(repo_path)))
             .await?;
 
         Ok(output
@@ -104,7 +101,6 @@ impl SshWorktreeManager {
     }
 }
 
-
 /// Validates a remote path / git ref before it is embedded in a shell command.
 ///
 /// Rejects empty strings and embedded NUL or control characters that cannot be
@@ -113,9 +109,7 @@ impl SshWorktreeManager {
 /// metacharacters it is single-quoted before reaching the remote shell.
 fn validate_remote_path(path: &str) -> Result<()> {
     if path.is_empty() {
-        return Err(PorpoiseError::Validation(
-            "remote path must not be empty".to_string(),
-        ));
+        return Err(PorpoiseError::Validation("remote path must not be empty".to_string()));
     }
     if path.bytes().any(|b| b == 0 || b.is_ascii_control()) {
         return Err(PorpoiseError::Validation(format!(
@@ -175,7 +169,10 @@ mod tests {
             // and we must recover the input exactly -> it is one literal word.
             let inner = &q[1..q.len() - 1];
             let reconstructed: String = inner.replace("'\\''", "'");
-            assert_eq!(reconstructed, evil, "round-trip broken (word not literal): {evil} -> {q}");
+            assert_eq!(
+                reconstructed, evil,
+                "round-trip broken (word not literal): {evil} -> {q}"
+            );
             if evil.contains('\'') {
                 assert!(q.contains("'\\''"), "embedded quote not escaped: {evil} -> {q}");
             }
