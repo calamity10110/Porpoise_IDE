@@ -65,7 +65,7 @@ portable-pty = "0.8"
 aes-gcm = "0.10"
 rand = "0.8"
 zeroize = { version = "1", features = ["derive"] }
-enigo = "0.2"
+enigo = "0.6"
 blake3 = "1"
 tokio-rustls = { version = "0.26", features = ["ring"] }
 rustls-pemfile = "2"
