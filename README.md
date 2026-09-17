@@ -44,7 +44,7 @@ Ghostty-class terminals with native PTY rendering, infinite splits, and scrollba
 <tr>
 <td width="50%" valign="middle">
 
-### Orca CLI Compatible
+### CLI Compatible
 
 Script every workflow with `porpoise worktree create`, `porpoise terminal send`, `porpoise snapshot` — drop-in CLI for existing Orca workflows.
 
@@ -428,5 +428,3 @@ cargo fmt
 MIT License — see [LICENSE](./LICENSE).
 
 ---
-
-*Porpoise is a Rust-native port of [Orca](https://github.com/stablyai/orca) by stablyai. The Orca project is MIT-licensed. Porpoise inherits the same MIT license and architectural concepts while being a ground-up Rust implementation.*
