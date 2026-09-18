@@ -13,6 +13,7 @@ use crate::{
 };
 
 struct AgentEntry {
+    #[allow(dead_code)]
     agent: Box<dyn Agent>,
     handle: Option<Box<dyn AgentHandle>>,
     info: AgentInfo,

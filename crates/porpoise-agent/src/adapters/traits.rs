@@ -4,10 +4,9 @@
 use std::{collections::HashMap, path::Path};
 
 use async_trait::async_trait;
-use porpoise_core::error::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{AgentKind, AgentOutput};
+use crate::types::AgentKind;
 
 // ---------------------------------------------------------------------------
 // AdapterCapabilities – what a given agent backend can do

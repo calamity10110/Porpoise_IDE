@@ -4,9 +4,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 
-use super::traits::{
-    AdapterCapabilities, AgentAdapter, DiffPatch, InputMode, OutputParser, ParsedEvent, RawOutput, ToolCall,
-};
+use super::traits::{AdapterCapabilities, AgentAdapter, InputMode, OutputParser, ParsedEvent, RawOutput, ToolCall};
 use crate::types::AgentKind;
 
 pub struct ClaudeAdapter;
