@@ -41,9 +41,9 @@ pub fn parse_unified_diff(raw: &str) -> AnnotatedDiff {
         }
         if line.starts_with("+++ ") {
             if let Some(ref mut patch) = current_patch {
-                patch.new_path = line[4..].trim().to_string();
-                if patch.new_path.starts_with("b/") {
-                    patch.new_path = patch.new_path[2..].to_string();
+                patch.new_path = line.strip_prefix("+++ ").unwrap_or(&line[4..]).trim().to_string();
+                if let Some(stripped) = patch.new_path.strip_prefix("b/") {
+                    patch.new_path = stripped.to_string();
                 }
             }
             continue;
@@ -137,16 +137,16 @@ fn parse_diff_header(line: &str) -> (Option<String>, Option<String>) {
     let parts: Vec<&str> = line.split_whitespace().collect();
     let old = parts.get(2).and_then(|p| {
         let s = p.trim();
-        if s.starts_with("a/") {
-            Some(s[2..].to_string())
+        if let Some(stripped) = s.strip_prefix("a/") {
+            Some(stripped.to_string())
         } else {
             Some(s.to_string())
         }
     });
     let new = parts.get(3).and_then(|p| {
         let s = p.trim();
-        if s.starts_with("b/") {
-            Some(s[2..].to_string())
+        if let Some(stripped) = s.strip_prefix("b/") {
+            Some(stripped.to_string())
         } else {
             Some(s.to_string())
         }

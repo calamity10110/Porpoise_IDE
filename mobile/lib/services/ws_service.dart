@@ -16,6 +16,7 @@ class WsService {
   StreamSubscription<dynamic>? _subscription;
   String? _serverUrl;
   String? _authToken;
+  // ignore: unused_field
   String? _caFingerprint;
 
   /// Pending RPC calls keyed by request ID.

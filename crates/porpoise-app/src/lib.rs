@@ -163,7 +163,7 @@ fn spawn_system_telemetry(event_bus: EventBus) {
                 }
                 ev = rx.recv() => {
                     match ev {
-                        Ok(e) => {
+                        Ok(_e) => {
                             event_count += 1;
                             if event_count % 1000 == 0 {
                                 commands::log_event("system:usage", &format!("1000 events reached total={}", event_count));
