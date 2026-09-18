@@ -39,9 +39,9 @@ pub fn parse_unified_diff(raw: &str) -> AnnotatedDiff {
         if line.starts_with("--- ") {
             continue;
         }
-        if line.starts_with("+++ ") {
+        if let Some(stripped) = line.strip_prefix("+++ ") {
             if let Some(ref mut patch) = current_patch {
-                patch.new_path = line.strip_prefix("+++ ").unwrap_or(&line[4..]).trim().to_string();
+                patch.new_path = stripped.trim().to_string();
                 if let Some(stripped) = patch.new_path.strip_prefix("b/") {
                     patch.new_path = stripped.to_string();
                 }
@@ -72,42 +72,42 @@ pub fn parse_unified_diff(raw: &str) -> AnnotatedDiff {
         }
 
         // Diff lines
-        if let Some(ref mut hunk) = current_hunk {
-            if let Some(first) = line.chars().next() {
-                match first {
-                    '+' => {
-                        hunk.lines.push(DiffLine {
-                            kind: LineKind::Add,
-                            content: line[1..].to_string(),
-                            old_line_no: None,
-                            new_line_no: Some(new_line),
-                            annotation: None,
-                        });
-                        new_line += 1;
-                    }
-                    '-' => {
-                        hunk.lines.push(DiffLine {
-                            kind: LineKind::Delete,
-                            content: line[1..].to_string(),
-                            old_line_no: Some(old_line),
-                            new_line_no: None,
-                            annotation: None,
-                        });
-                        old_line += 1;
-                    }
-                    ' ' => {
-                        hunk.lines.push(DiffLine {
-                            kind: LineKind::Context,
-                            content: line[1..].to_string(),
-                            old_line_no: Some(old_line),
-                            new_line_no: Some(new_line),
-                            annotation: None,
-                        });
-                        old_line += 1;
-                        new_line += 1;
-                    }
-                    _ => {}
+        if let Some(ref mut hunk) = current_hunk
+            && let Some(first) = line.chars().next()
+        {
+            match first {
+                '+' => {
+                    hunk.lines.push(DiffLine {
+                        kind: LineKind::Add,
+                        content: line[1..].to_string(),
+                        old_line_no: None,
+                        new_line_no: Some(new_line),
+                        annotation: None,
+                    });
+                    new_line += 1;
                 }
+                '-' => {
+                    hunk.lines.push(DiffLine {
+                        kind: LineKind::Delete,
+                        content: line[1..].to_string(),
+                        old_line_no: Some(old_line),
+                        new_line_no: None,
+                        annotation: None,
+                    });
+                    old_line += 1;
+                }
+                ' ' => {
+                    hunk.lines.push(DiffLine {
+                        kind: LineKind::Context,
+                        content: line[1..].to_string(),
+                        old_line_no: Some(old_line),
+                        new_line_no: Some(new_line),
+                        annotation: None,
+                    });
+                    old_line += 1;
+                    new_line += 1;
+                }
+                _ => {}
             }
         }
     }
@@ -135,20 +135,20 @@ fn patch_hunk_close(_hunk: &mut Hunk) {
 
 fn parse_diff_header(line: &str) -> (Option<String>, Option<String>) {
     let parts: Vec<&str> = line.split_whitespace().collect();
-    let old = parts.get(2).and_then(|p| {
+    let old = parts.get(2).map(|p| {
         let s = p.trim();
         if let Some(stripped) = s.strip_prefix("a/") {
-            Some(stripped.to_string())
+            stripped.to_string()
         } else {
-            Some(s.to_string())
+            s.to_string()
         }
     });
-    let new = parts.get(3).and_then(|p| {
+    let new = parts.get(3).map(|p| {
         let s = p.trim();
         if let Some(stripped) = s.strip_prefix("b/") {
-            Some(stripped.to_string())
+            stripped.to_string()
         } else {
-            Some(s.to_string())
+            s.to_string()
         }
     });
     (old, new)
