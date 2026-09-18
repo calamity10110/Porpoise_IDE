@@ -47,7 +47,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                 child: DropdownButtonFormField<String>(
-                  initialValue: _selectedTerminalId,
+                  value: _selectedTerminalId,
                   decoration: const InputDecoration(
                     labelText: 'Select Terminal',
                     border: OutlineInputBorder(),

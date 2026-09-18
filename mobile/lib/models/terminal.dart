@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Terminal {
   final String id;
   final String sessionId;

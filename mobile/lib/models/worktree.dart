@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Worktree {
   final String name;
   final String path;

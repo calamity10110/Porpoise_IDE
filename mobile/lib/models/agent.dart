@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Agent {
   final String id;
   final String kind;
