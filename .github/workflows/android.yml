@@ -23,7 +23,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          java-version: "21"
+          java-version: "17"
           distribution: "temurin"
 
       - name: Create Android platform scaffold
