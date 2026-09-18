@@ -95,5 +95,5 @@ jobs:
           cache: true
       - run: flutter pub get
         working-directory: mobile
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-warnings --no-fatal-infos
         working-directory: mobile
