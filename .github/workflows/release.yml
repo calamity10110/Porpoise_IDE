@@ -73,21 +73,21 @@ jobs:
           Write-Host "Update manifest written to $manifestPath"
 
       - name: Upload MSI installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: porpoise-windows-msi
           path: crates/porpoise-app/target/release/bundle/msi/*.msi
           if-no-files-found: warn
 
       - name: Upload NSIS installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: porpoise-windows-nsis
           path: crates/porpoise-app/target/release/bundle/nsis/*.exe
           if-no-files-found: warn
 
       - name: Upload updater artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: porpoise-windows-updater
           path: |
@@ -125,7 +125,7 @@ jobs:
           cargo build --release -p porpoise-cli
 
       - name: Upload CLI binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: porpoise-cli-${{ matrix.suffix }}
           path: target/release/porpoise-cli*
