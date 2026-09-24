@@ -22,6 +22,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo check --workspace
 
@@ -30,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace
 
@@ -67,6 +72,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
       - uses: dtolnay/rust-toolchain@1.85.0
       - run: cargo check --workspace
 
@@ -75,6 +82,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-llvm-cov
       - run: cargo llvm-cov --workspace --lcov --output-path lcov.info
