@@ -14,19 +14,19 @@ impl Platform {
     pub const fn current() -> Self {
         #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
         {
-            return Self::LinuxX64;
+            Self::LinuxX64
         }
         #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
         {
-            return Self::LinuxArm64;
+            Self::LinuxArm64
         }
         #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
         {
-            return Self::MacOSX64;
+            Self::MacOSX64
         }
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         {
-            return Self::MacOSArm64;
+            Self::MacOSArm64
         }
         #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
         {
