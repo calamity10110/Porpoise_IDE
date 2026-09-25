@@ -4,6 +4,41 @@ use porpoise_core::{
 };
 use wasmtime::{Engine, Linker, Module, Store};
 
+/// Maximum linear memory a plugin may allocate (128 MiB).
+pub const MAX_WASM_MEMORY_BYTES: usize = 128 * 1024 * 1024;
+
+/// Per-instance host state enforcing resource limits.
+///
+/// Wasmtime 49 removed `Config::static_memory_maximum_size`; the supported
+/// mechanism is a [`wasmtime::ResourceLimiter`] attached to the store.
+#[derive(Default)]
+pub struct HostState {
+    memory_allocated: usize,
+}
+
+impl wasmtime::ResourceLimiter for HostState {
+    fn memory_growing(&mut self, current: usize, desired: usize, _maximum: Option<usize>) -> wasmtime::Result<bool> {
+        let next = desired.saturating_sub(current);
+        if self.memory_allocated.saturating_add(next) > MAX_WASM_MEMORY_BYTES {
+            return Ok(false);
+        }
+        self.memory_allocated += next;
+        Ok(true)
+    }
+
+    fn table_growing(&mut self, _current: usize, desired: usize, _maximum: Option<usize>) -> wasmtime::Result<bool> {
+        Ok(desired <= MAX_TABLE_ENTRIES)
+    }
+}
+
+const MAX_TABLE_ENTRIES: usize = 100_000;
+
+fn capped_store(engine: &Engine) -> Store<HostState> {
+    let mut store = Store::new(engine, HostState::default());
+    store.limiter(|state| state);
+    store
+}
+
 /// Validate WASM module imports against allowed capabilities.
 ///
 /// Currently denies ALL imports (secure by omission).
@@ -23,7 +58,7 @@ pub fn validate_imports(module: &Module) -> Result<()> {
 ///
 /// Currently returns an empty linker (no host functions).
 /// In future, host functions will be added based on `Capabilities` fields.
-pub fn build_capability_linker(engine: &Engine, _capabilities: &Capabilities) -> Linker<()> {
+pub fn build_capability_linker(engine: &Engine, _capabilities: &Capabilities) -> Linker<HostState> {
     Linker::new(engine)
 }
 
@@ -39,10 +74,8 @@ pub struct SandboxedRuntime {
 
 impl SandboxedRuntime {
     pub fn new() -> Result<Self> {
-        // Create engine with fuel metering for CPU limits
         let mut config = wasmtime::Config::default();
         config.consume_fuel(true);
-        config.static_memory_maximum_size(128 * 1024 * 1024);
         config.max_wasm_stack(1024 * 1024);
         let engine = Engine::new(&config).map_err(|e| PorpoiseError::Wasm(format!("engine: {e}")))?;
         Ok(Self { engine })
@@ -61,7 +94,7 @@ impl SandboxedRuntime {
         // Validate imports before instantiation (fail fast)
         validate_imports(&module)?;
 
-        let mut store = Store::new(&self.engine, ());
+        let mut store = capped_store(&self.engine);
         store
             .set_fuel(fuel)
             .map_err(|e| PorpoiseError::Wasm(format!("fuel: {e}")))?;
@@ -87,7 +120,7 @@ impl SandboxedRuntime {
 /// Calls to exported functions that require unpermitted capabilities are
 /// rejected at runtime with a `PluginCapabilityDenied` error.
 pub struct SandboxedInstance {
-    store: Store<()>,
+    store: Store<HostState>,
     instance: wasmtime::Instance,
     capabilities: Capabilities,
     #[allow(dead_code)]

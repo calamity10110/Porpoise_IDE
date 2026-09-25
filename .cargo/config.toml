@@ -9,10 +9,6 @@ linker = "aarch64-linux-gnu-gcc"
 # Raspberry Pi 2/3/Zero 2 W (32-bit)
 linker = "arm-linux-gnueabihf-gcc"
 
-[target.aarch64-apple-darwin]
-# Apple Silicon (macOS native)
-linker = "aarch64-apple-darwin-ld"
-
 [profile.release]
 # Optimized for size on ARM targets
 opt-level = "s"   # Optimize for binary size
