@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v5
       - name: Install system dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev
       - name: Install system dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: rustup target add aarch64-apple-darwin || true
