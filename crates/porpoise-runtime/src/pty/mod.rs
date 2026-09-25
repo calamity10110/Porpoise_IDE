@@ -38,7 +38,8 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
         ws_xpixel: 0,
         ws_ypixel: 0,
     };
-    let (ptym, ptys) = pty::openpty(&winsize, None).map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
+    let (ptym, ptys) =
+        pty::openpty(&winsize, None).map_err(|e: std::io::Error| PorpoiseError::PtyError(e.to_string()))?;
 
     let master_fd = ptym.as_raw_fd();
     let slave_fd = ptys.as_raw_fd();
@@ -49,7 +50,7 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
             Ok(PtySession {
                 id: TerminalId::new(),
                 fd: master_fd,
-                child_pid: child.as_raw(),
+                child_pid: child.as_raw() as u32,
                 rows,
                 cols,
                 generation_id: None,
@@ -66,7 +67,8 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
             if slave_fd > 2 {
                 unistd::close(slave_fd).ok();
             }
-            unistd::execvp(shell, &[shell]).ok();
+            let c_shell = std::ffi::CString::new(shell).unwrap();
+            unistd::execvp(&c_shell, &[&c_shell]).ok();
             std::process::exit(1);
         }
         Err(e) => Err(PorpoiseError::PtyError(e.to_string())),

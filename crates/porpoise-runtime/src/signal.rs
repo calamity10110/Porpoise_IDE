@@ -2,7 +2,11 @@ use std::{sync::Arc, time::Duration};
 
 use crate::process::ProcessManager;
 
-pub async fn setup_signal_handlers(_process_manager: Arc<ProcessManager>) {
+pub async fn setup_signal_handlers(process_manager: Arc<ProcessManager>) {
+    #[cfg(not(unix))]
+    {
+        let _ = &process_manager;
+    }
     #[cfg(unix)]
     {
         use tokio::signal::unix::{SignalKind, signal};
