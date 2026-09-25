@@ -27,7 +27,7 @@ impl Capabilities {
     /// ```rust
     /// use porpoise_core::types::Capabilities;
     /// let a = Capabilities::all_read("/tmp".into());
-    /// let b = Capabilities::all_write("/tmp".into());
+    /// let b = Capabilities::all_read_write("/tmp".into());
     /// let u = a.union(&b);
     /// assert!(u.fs_read.contains(&"/tmp".into()));
     /// assert!(u.fs_write.contains(&"/tmp".into()));
@@ -92,7 +92,7 @@ impl Capabilities {
     /// let b = Capabilities::all_read("/tmp".into());
     /// let diff = a.difference(&b);
     /// assert!(diff.fs_write.contains(&"/tmp".into()));
-    /// assert!(!diff.fs_read.contains(&"/tmp".into())); // may or may not, depends on impl
+    /// assert!(!diff.fs_read.contains(&"/tmp".into()));
     /// ```
     pub fn difference(&self, other: &Capabilities) -> Capabilities {
         Capabilities {
@@ -134,11 +134,11 @@ impl Capabilities {
     /// assert!(a.matches(&b));
     /// ```
     pub fn matches(&self, other: &Capabilities) -> bool {
-        self.fs_read.iter().all(|p| other.fs_read.contains(p))
-            && self.fs_write.iter().all(|p| other.fs_write.contains(p))
-            && self.network.iter().all(|p| other.network.contains(p))
-            && self.process.iter().all(|p| other.process.contains(p))
-            && self.ssh.iter().all(|p| other.ssh.contains(p))
+        other.fs_read.iter().all(|p| self.fs_read.contains(p))
+            && other.fs_write.iter().all(|p| self.fs_write.contains(p))
+            && other.network.iter().all(|p| self.network.contains(p))
+            && other.process.iter().all(|p| self.process.contains(p))
+            && other.ssh.iter().all(|p| self.ssh.contains(p))
     }
 
     /// Creates a capabilities set that allows reading from the given path.
@@ -200,7 +200,7 @@ impl Capabilities {
     /// ```rust
     /// use porpoise_core::types::Capabilities;
     /// let caps = Capabilities::all_process(vec!["my-app".into()]);
-    /// assert!(caps.process.contains(&"my-app".into()));
+    /// assert!(caps.process.iter().any(|p| p.binary == "my-app"));
     /// ```
     pub fn all_process(patterns: Vec<String>) -> Capabilities {
         Capabilities {
@@ -308,8 +308,9 @@ impl CapabilityScope {
     ///
     /// ```rust
     /// use porpoise_core::types::CapabilityScope;
-    /// let scope = CapabilityScope::Network { urls: vec!["http://localhost:3000].into() };
-    /// assert!(scope.matches_url("http://localhost:3000/"));
+    /// let scope = CapabilityScope::Network { urls: vec!["http://localhost:3000".to_string()] };
+    /// assert!(scope.matches_url("http://localhost:3000"));
+    /// assert!(!scope.matches_url("http://example.com"));
     /// ```
     pub fn matches_url(&self, url: &str) -> bool {
         match self {

@@ -28,6 +28,19 @@ pub struct RichNotification {
     pub link: Option<String>,
 }
 
+/// Arguments for [`NotificationService::notify_rich`].
+#[derive(Debug, Clone)]
+pub struct RichNotify<'a> {
+    pub title: &'a str,
+    pub body: &'a str,
+    pub severity: NotificationSeverity,
+    pub source: &'a str,
+    pub actions: Vec<NotificationAction>,
+    pub group_key: Option<String>,
+    pub link: Option<String>,
+    pub webhook_url: Option<&'a str>,
+}
+
 /// Delivery channel for notifications.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum NotificationChannel {
@@ -370,24 +383,23 @@ impl NotificationService {
     }
 
     /// Send a rich notification with actions, grouping, and optional webhook delivery.
-    pub async fn notify_rich(
-        &self,
-        title: &str,
-        body: &str,
-        severity: NotificationSeverity,
-        source: &str,
-        actions: Vec<NotificationAction>,
-        group_key: Option<String>,
-        link: Option<String>,
-        webhook_url: Option<&str>,
-    ) -> Result<RichNotification> {
+    pub async fn notify_rich(&self, opts: RichNotify<'_>) -> Result<RichNotification> {
+        let RichNotify {
+            title,
+            body,
+            severity,
+            source,
+            actions,
+            group_key,
+            link,
+            webhook_url,
+        } = opts;
         let record = self.notify(title, body, severity.clone(), source).await?;
 
-        // Deliver to webhook if configured
-        if let Some(url) = webhook_url {
-            if let Err(e) = self.deliver_webhook(url, &record).await {
-                tracing::warn!(url, error=%e, "webhook delivery failed");
-            }
+        if let Some(url) = webhook_url
+            && let Err(e) = self.deliver_webhook(url, &record).await
+        {
+            tracing::warn!(url, error=%e, "webhook delivery failed");
         }
 
         let rich = RichNotification {
@@ -398,7 +410,6 @@ impl NotificationService {
             link,
         };
 
-        // Broadcast rich version to SSE
         let _ = self.event_tx.send(rich.clone());
         Ok(rich)
     }

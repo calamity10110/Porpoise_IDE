@@ -15,6 +15,12 @@ impl OpenCodeAdapter {
     }
 }
 
+impl Default for OpenCodeAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct OpenCodeOutputParser;
 
 impl OutputParser for OpenCodeOutputParser {
@@ -28,18 +34,18 @@ impl OutputParser for OpenCodeOutputParser {
             return vec![];
         }
         // OpenCode may output JSON tool calls
-        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
-            if let Some(action) = val.get("action").and_then(|a| a.as_str()) {
-                let args: std::collections::HashMap<String, serde_json::Value> = val
-                    .get("params")
-                    .and_then(|p| serde_json::from_value(p.clone()).ok())
-                    .unwrap_or_default();
-                return vec![ParsedEvent::ToolCall(ToolCall {
-                    tool_name: action.to_string(),
-                    arguments: args,
-                    call_id: val.get("id").and_then(|i| i.as_str()).map(String::from),
-                })];
-            }
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed)
+            && let Some(action) = val.get("action").and_then(|a| a.as_str())
+        {
+            let args: std::collections::HashMap<String, serde_json::Value> = val
+                .get("params")
+                .and_then(|p| serde_json::from_value(p.clone()).ok())
+                .unwrap_or_default();
+            return vec![ParsedEvent::ToolCall(ToolCall {
+                tool_name: action.to_string(),
+                arguments: args,
+                call_id: val.get("id").and_then(|i| i.as_str()).map(String::from),
+            })];
         }
         vec![ParsedEvent::Text(text.clone())]
     }

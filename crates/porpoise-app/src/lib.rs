@@ -97,7 +97,7 @@ fn spawn_terminal_forwarder(app_handle: tauri::AppHandle, event_bus: EventBus) {
                 Ok(SystemEvent::Terminal(TerminalEvent::Output { id, data, .. })) => {
                     total_bytes += data.len() as u64;
                     total_events += 1;
-                    if total_events % 500 == 0 {
+                    if total_events.is_multiple_of(500) {
                         commands::log_event(
                             "data_flow:terminal",
                             &format!("{} events, {} bytes", total_events, total_bytes),
@@ -165,7 +165,7 @@ fn spawn_system_telemetry(event_bus: EventBus) {
                     match ev {
                         Ok(_e) => {
                             event_count += 1;
-                            if event_count % 1000 == 0 {
+                            if event_count.is_multiple_of(1000) {
                                 commands::log_event("system:usage", &format!("1000 events reached total={}", event_count));
                             }
                         }

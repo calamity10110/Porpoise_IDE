@@ -89,6 +89,7 @@ pub trait RemoteProvider: Send + Sync {
 
     // --- Commit Status ---
     async fn get_combined_status(&self, owner: &str, repo: &str, sha: &str) -> Result<CommitStatus>;
+    #[allow(clippy::too_many_arguments)]
     async fn create_status(
         &self,
         owner: &str,

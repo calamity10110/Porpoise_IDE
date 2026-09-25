@@ -15,6 +15,12 @@ impl CodexAdapter {
     }
 }
 
+impl Default for CodexAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct CodexOutputParser;
 
 impl OutputParser for CodexOutputParser {
@@ -28,23 +34,23 @@ impl OutputParser for CodexOutputParser {
             return vec![];
         }
         // Codex outputs JSON for tool calls
-        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
-            if let Some(call) = val.get("function_call") {
-                let name = call
-                    .get("name")
-                    .and_then(|n| n.as_str())
-                    .unwrap_or("unknown")
-                    .to_string();
-                let args: std::collections::HashMap<String, serde_json::Value> = call
-                    .get("arguments")
-                    .and_then(|a| serde_json::from_value(a.clone()).ok())
-                    .unwrap_or_default();
-                return vec![ParsedEvent::ToolCall(ToolCall {
-                    tool_name: name,
-                    arguments: args,
-                    call_id: val.get("id").and_then(|i| i.as_str()).map(String::from),
-                })];
-            }
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed)
+            && let Some(call) = val.get("function_call")
+        {
+            let name = call
+                .get("name")
+                .and_then(|n| n.as_str())
+                .unwrap_or("unknown")
+                .to_string();
+            let args: std::collections::HashMap<String, serde_json::Value> = call
+                .get("arguments")
+                .and_then(|a| serde_json::from_value(a.clone()).ok())
+                .unwrap_or_default();
+            return vec![ParsedEvent::ToolCall(ToolCall {
+                tool_name: name,
+                arguments: args,
+                call_id: val.get("id").and_then(|i| i.as_str()).map(String::from),
+            })];
         }
         vec![ParsedEvent::Text(text.clone())]
     }

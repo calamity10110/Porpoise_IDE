@@ -15,6 +15,12 @@ impl AiderAdapter {
     }
 }
 
+impl Default for AiderAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct AiderOutputParser;
 
 impl OutputParser for AiderOutputParser {

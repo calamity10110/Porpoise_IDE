@@ -161,8 +161,13 @@ impl SessionStore {
     }
 
     pub fn create_session(&self, kind: &AgentKind, worktree: &std::path::Path, prompt: &str) -> Result<SessionRecord> {
-        let now = Utc::now().timestamp_millis().to_string();
-        let session_id = format!("sess_{}", chrono::Utc::now().timestamp_millis());
+        static SESSION_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let now_millis = Utc::now().timestamp_millis();
+        // millisecond timestamps collide on coarse-granularity clocks (e.g. Windows ~15.6ms);
+        // a collision makes INSERT OR REPLACE silently drop the earlier session
+        let seq = SESSION_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let now = now_millis.to_string();
+        let session_id = format!("sess_{now_millis}_{seq}");
 
         let record = SessionRecord {
             session_id: session_id.clone(),

@@ -4399,6 +4399,7 @@ name = "porpoise-opencode"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "libc",
  "porpoise-agent",
  "porpoise-core",
  "serde",

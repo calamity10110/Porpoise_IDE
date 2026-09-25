@@ -15,6 +15,12 @@ impl ClaudeAdapter {
     }
 }
 
+impl Default for ClaudeAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct ClaudeOutputParser;
 
 impl OutputParser for ClaudeOutputParser {
@@ -30,18 +36,18 @@ impl OutputParser for ClaudeOutputParser {
             return vec![];
         }
         // Claude Code outputs JSON lines for tool calls
-        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed) {
-            if let Some(tool) = val.get("tool").and_then(|t| t.as_str()) {
-                return vec![ParsedEvent::ToolCall(ToolCall {
-                    tool_name: tool.to_string(),
-                    arguments: val
-                        .get("arguments")
-                        .cloned()
-                        .and_then(|a| serde_json::from_value(a).ok())
-                        .unwrap_or_default(),
-                    call_id: val.get("id").and_then(|i| i.as_str()).map(String::from),
-                })];
-            }
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(trimmed)
+            && let Some(tool) = val.get("tool").and_then(|t| t.as_str())
+        {
+            return vec![ParsedEvent::ToolCall(ToolCall {
+                tool_name: tool.to_string(),
+                arguments: val
+                    .get("arguments")
+                    .cloned()
+                    .and_then(|a| serde_json::from_value(a).ok())
+                    .unwrap_or_default(),
+                call_id: val.get("id").and_then(|i| i.as_str()).map(String::from),
+            })];
         }
         // Thinking markers
         if trimmed.starts_with("<thinking>") || trimmed.starts_with("[thinking]") {

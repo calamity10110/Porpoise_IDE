@@ -277,15 +277,14 @@ pub fn log_event(kind: &str, detail: &str) {
         "detail": detail,
     });
     // serialize appends: concurrent writers interleave and corrupt JSONL lines
-    if let Ok(_guard) = TELEMETRY_LOCK.lock() {
-        if let Ok(mut f) = std::fs::OpenOptions::new()
+    if let Ok(_guard) = TELEMETRY_LOCK.lock()
+        && let Ok(mut f) = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(telemetry_path())
-        {
-            use std::io::Write;
-            let _ = writeln!(f, "{event}");
-        }
+    {
+        use std::io::Write;
+        let _ = writeln!(f, "{event}");
     }
 }
 
@@ -320,7 +319,7 @@ pub async fn get_telemetry(limit: Option<usize>) -> Result<serde_json::Value, St
         .filter(|e| {
             e.get("detail")
                 .and_then(|d| d.as_str())
-                .map_or(false, |d| d.starts_with("err"))
+                .is_some_and(|d| d.starts_with("err"))
         })
         .collect();
 
