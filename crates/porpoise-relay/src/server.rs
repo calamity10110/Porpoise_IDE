@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use porpoise_core::error::Result;
+use porpoise_core::error::{PorpoiseError, Result};
 #[cfg(unix)]
 use tokio::net::UnixListener;
 #[cfg(unix)]
@@ -100,7 +100,6 @@ impl RelayServer {
 
 #[cfg(unix)]
 async fn handle_unix(mut stream: UnixStream, router: Arc<Router>, session_token: String) {
-    use porpoise_core::error::PorpoiseError;
     let handshake = WireMessage::Handshake(Handshake::new());
     if let Ok(payload) = serde_json::to_vec(&handshake) {
         let _ = write_frame_unix(&mut stream, &Frame::new(FrameFlags::EVENT, payload)).await;
@@ -147,7 +146,6 @@ async fn handle_unix(mut stream: UnixStream, router: Arc<Router>, session_token:
 
 #[cfg(unix)]
 async fn read_frame_unix(stream: &mut UnixStream) -> Result<Frame> {
-    use porpoise_core::error::PorpoiseError;
     use tokio::io::AsyncReadExt;
 
     use crate::frame::HEADER_SIZE;
@@ -175,7 +173,6 @@ async fn read_frame_unix(stream: &mut UnixStream) -> Result<Frame> {
 
 #[cfg(unix)]
 async fn write_frame_unix(stream: &mut UnixStream, frame: &Frame) -> Result<()> {
-    use porpoise_core::error::PorpoiseError;
     use tokio::io::AsyncWriteExt;
     stream
         .write_all(&frame.encode()?)
