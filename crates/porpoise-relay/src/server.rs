@@ -1,6 +1,8 @@
 use std::{path::PathBuf, sync::Arc};
 
-use porpoise_core::error::{PorpoiseError, Result};
+#[cfg(unix)]
+use porpoise_core::error::PorpoiseError;
+use porpoise_core::error::Result;
 #[cfg(unix)]
 use tokio::net::UnixListener;
 #[cfg(unix)]
@@ -41,7 +43,7 @@ impl RelayServer {
         Ok(Self {
             listener,
             router,
-            _socket_path: path.clone(),
+            _socket_path: path.to_path_buf(),
             session_token,
         })
     }
