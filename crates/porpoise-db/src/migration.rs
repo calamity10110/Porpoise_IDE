@@ -117,15 +117,15 @@ mod tests {
 
     use super::*;
 
-    fn create_pool() -> DbPool {
+    fn create_pool() -> (DbPool, TempDir) {
         let dir = TempDir::new().unwrap();
         let db_path = dir.path().join("test.db");
-        DbPool::open(&db_path).unwrap()
+        (DbPool::open(&db_path).unwrap(), dir)
     }
 
     #[test]
     fn test_migration_v2_creates_tables() {
-        let pool = create_pool();
+        let (pool, _dir) = create_pool();
         run_migrations(&pool).unwrap();
 
         let conn = pool.get().unwrap();
@@ -154,14 +154,14 @@ mod tests {
 
     #[test]
     fn test_migration_v2_idempotent() {
-        let pool = create_pool();
+        let (pool, _dir) = create_pool();
         run_migrations(&pool).unwrap();
         run_migrations(&pool).unwrap();
     }
 
     #[test]
     fn test_generation_id_column_added() {
-        let pool = create_pool();
+        let (pool, _dir) = create_pool();
         run_migrations(&pool).unwrap();
 
         let conn = pool.get().unwrap();

@@ -44,4 +44,29 @@ unknown-git = "deny"
 [advisories]
 version = 2
 yanked = "warn"
-ignore = []
+ignore = [
+    # bincode 1.x is unmaintained; used by porpoise-relay IPC framing.
+    # TODO: migrate to postcard or bincode 2.x, then drop this ignore.
+    "RUSTSEC-2025-0141",
+    # unmaintained transitives pinned by tauri/tauri plugins; no patched versions exist
+    "RUSTSEC-2024-0370", # proc-macro-error
+    "RUSTSEC-2024-0384", # instant (via notify v7, no safe upgrade)
+    "RUSTSEC-2025-0134", # rustls-pemfile
+    "RUSTSEC-2017-0008", # serial
+    "RUSTSEC-2025-0081", # unic-char-property
+    "RUSTSEC-2025-0075", # unic-char-range
+    "RUSTSEC-2025-0080", # unic-common
+    "RUSTSEC-2025-0100", # unic-ucd-ident
+    "RUSTSEC-2025-0098", # unic-ucd-version
+    # quick-xml DoS on malicious input — only consumes tauri/plist assets, not
+    # attacker-controlled; fixes require breaking 0.40 upgrade
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+    # rustls 0.23 / webpki 0.102 fixes land in breaking 0.24 / 0.103;
+    # tracked for the TLS stack upgrade
+    "RUSTSEC-2026-0285",
+    "RUSTSEC-2026-0049",
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0104",
+]

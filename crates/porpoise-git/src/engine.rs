@@ -47,7 +47,7 @@ impl GitEngine {
 
         let mut changes = Vec::new();
         for entry in statuses.iter() {
-            let path = entry.path().map_or_else(|| Path::new(""), Path::new);
+            let path = entry.path().map_or_else(|_| Path::new(""), Path::new);
             let git_status = entry.status();
 
             let status = if git_status.is_index_new() || git_status.is_wt_new() {

@@ -16,7 +16,7 @@ impl WorktreeManager {
         let branch = repo
             .head()
             .ok()
-            .and_then(|h| h.shorthand().map(String::from))
+            .and_then(|h| h.shorthand().ok().map(String::from))
             .unwrap_or_else(|| "unknown".to_string());
         Ok(WorktreeInfo {
             name: name.to_string(),
@@ -32,9 +32,9 @@ impl WorktreeManager {
             .worktrees()
             .map_err(|e| PorpoiseError::Git(format!("list worktrees: {e}")))?;
         let mut result = Vec::new();
-        for name in names.iter().flatten() {
+        for name in names.iter().flatten().flatten() {
             if let Ok(worktree) = repo.find_worktree(name) {
-                let branch = worktree.name().unwrap_or("unknown").to_string();
+                let branch = worktree.name().ok().flatten().unwrap_or("unknown").to_string();
                 let path = worktree.path().to_path_buf();
                 result.push(WorktreeInfo {
                     name: name.to_string(),
@@ -65,7 +65,7 @@ impl WorktreeManager {
         let names = repo
             .worktrees()
             .map_err(|e| PorpoiseError::Git(format!("list worktrees: {e}")))?;
-        for name in names.iter().flatten() {
+        for name in names.iter().flatten().flatten() {
             if let Ok(worktree) = repo.find_worktree(name) {
                 let _opts = git2::WorktreeAddOptions::new();
                 if !worktree.path().exists() {
@@ -83,7 +83,7 @@ impl WorktreeManager {
         let names = repo
             .worktrees()
             .map_err(|e| PorpoiseError::Git(format!("list worktrees: {e}")))?;
-        for name in names.iter().flatten() {
+        for name in names.iter().flatten().flatten() {
             if let Ok(worktree) = repo.find_worktree(name) {
                 let mut opts = git2::WorktreePruneOptions::new();
                 opts.valid(true);
