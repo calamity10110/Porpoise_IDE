@@ -38,8 +38,9 @@ fn alloc_pty_impl(rows: u16, cols: u16, shell: &str) -> Result<PtySession> {
         ws_xpixel: 0,
         ws_ypixel: 0,
     };
-    let (ptym, ptys) =
-        pty::openpty(&winsize, None).map_err(|e: std::io::Error| PorpoiseError::PtyError(e.to_string()))?;
+    let result = pty::openpty(&winsize, None).map_err(|e| PorpoiseError::PtyError(e.to_string()))?;
+    let ptym = result.master;
+    let ptys = result.slave;
 
     let master_fd = ptym.as_raw_fd();
     let slave_fd = ptys.as_raw_fd();
@@ -373,7 +374,8 @@ impl PtyManager {
             #[cfg(not(target_os = "windows"))]
             {
                 // Send SIGHUP to child process to terminate gracefully
-                if let Some(pid) = session.child_pid {
+                if session.child_pid != 0 {
+                    let pid = session.child_pid;
                     // SAFETY: kill() sends SIGHUP to the child process to trigger
                     // graceful shutdown. `pid` comes from session.child_pid which was
                     // captured at spawn time. Signal delivery to a non-existent PID is
