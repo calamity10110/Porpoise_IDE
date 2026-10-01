@@ -107,6 +107,16 @@ pub enum PorpoiseError {
     // Internal
     #[error("internal error: {0}")]
     Internal(String),
+    /// Internal error that preserves the original error as its source chain.
+    ///
+    /// Created by [`PorpoiseError::from_error`]; the boxed error is reachable
+    /// through the standard `std::error::Error::source()` method.
+    #[error("internal error: {message}")]
+    InternalWithSource {
+        message: String,
+        #[source]
+        source: Box<dyn Error + Send + Sync>,
+    },
     #[error("not yet implemented: {0}")]
     Unimplemented(&'static str),
 }
@@ -120,13 +130,25 @@ impl PorpoiseError {
         }
     }
 
-    /// Wrap a std error into `PorpoiseError::Internal`.
+    /// Wrap a std error into `PorpoiseError`, preserving it as the source.
+    ///
+    /// The original error remains reachable via `std::error::Error::source()`,
+    /// so `eyre`/`anyhow`-style chain inspection and downcasting keep working:
+    ///
+    /// ```rust
+    /// use std::error::Error;
+    /// use porpoise_core::error::PorpoiseError;
+    ///
+    /// let io = std::io::Error::new(std::io::ErrorKind::NotFound, "missing");
+    /// let wrapped = PorpoiseError::from_error(io);
+    /// let source = wrapped.source().expect("source preserved");
+    /// let io_ref = source.downcast_ref::<std::io::Error>().unwrap();
+    /// assert_eq!(io_ref.kind(), std::io::ErrorKind::NotFound);
+    /// ```
     pub fn from_error<E: Error + Send + Sync + 'static>(err: E) -> Self {
-        Self::Internal(err.to_string())
-    }
-
-    /// Return the source error if wrapped, otherwise `None`.
-    pub fn source(&self) -> Option<&(dyn Error + Send + Sync)> {
-        None
+        Self::InternalWithSource {
+            message: err.to_string(),
+            source: Box::new(err),
+        }
     }
 }

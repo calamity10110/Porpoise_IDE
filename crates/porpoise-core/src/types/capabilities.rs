@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +20,36 @@ pub struct Capabilities {
     pub ssh: Vec<HostPattern>,
 }
 
+fn merged<T: Clone + PartialEq>(a: &[T], b: &[T]) -> Vec<T> {
+    let mut out = a.to_vec();
+    for item in b {
+        if !out.contains(item) {
+            out.push(item.clone());
+        }
+    }
+    out
+}
+
+/// Lexically normalizes a path, resolving `.` and `..` components without
+/// touching the filesystem. Leading `..` beyond the root is clamped, so a
+/// path like `/tmp/../etc` normalizes to `/etc` and can never match a
+/// grant at `/tmp`. Symbolic links are NOT resolved — callers enforcing
+/// capabilities on untrusted paths must canonicalize with
+/// [`std::fs::canonicalize`] before matching.
+fn normalize_lexical(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for comp in path.components() {
+        match comp {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
 impl Capabilities {
     /// Returns the union of this capabilities set and another.
     ///
@@ -34,11 +64,11 @@ impl Capabilities {
     /// ```
     pub fn union(&self, other: &Capabilities) -> Capabilities {
         Capabilities {
-            fs_read: self.fs_read.iter().chain(&other.fs_read).cloned().collect(),
-            fs_write: self.fs_write.iter().chain(&other.fs_write).cloned().collect(),
-            network: self.network.iter().chain(&other.network).cloned().collect(),
-            process: self.process.iter().chain(&other.process).cloned().collect(),
-            ssh: self.ssh.iter().chain(&other.ssh).cloned().collect(),
+            fs_read: merged(&self.fs_read, &other.fs_read),
+            fs_write: merged(&self.fs_write, &other.fs_write),
+            network: merged(&self.network, &other.network),
+            process: merged(&self.process, &other.process),
+            ssh: merged(&self.ssh, &other.ssh),
         }
     }
 
@@ -235,6 +265,44 @@ impl Capabilities {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn union_deduplicates_entries() {
+        let a = Capabilities::all_read("/tmp".into());
+        let b = Capabilities::all_read_write("/tmp".into());
+        let u = a.union(&b);
+        assert_eq!(u.fs_read.len(), 1);
+        assert_eq!(u.fs_write.len(), 1);
+    }
+
+    #[test]
+    fn matches_path_rejects_traversal() {
+        let scope = CapabilityScope::Filesystem {
+            paths: vec!["/tmp".into()],
+            write: false,
+        };
+        assert!(scope.matches_path(std::path::Path::new("/tmp")));
+        assert!(scope.matches_path(std::path::Path::new("/tmp/./x/..")));
+        assert!(!scope.matches_path(std::path::Path::new("/tmp/../etc")));
+        assert!(!scope.matches_path(std::path::Path::new("/etc")));
+    }
+
+    #[test]
+    fn normalize_lexical_clamps_runaway_parent_dirs() {
+        assert_eq!(
+            normalize_lexical(std::path::Path::new("/tmp/../../etc")),
+            std::path::PathBuf::from("/etc")
+        );
+        assert_eq!(
+            normalize_lexical(std::path::Path::new("a/./b/../c")),
+            std::path::PathBuf::from("a/c")
+        );
+    }
+}
+
 /// A URL pattern for capability matching (scheme + host + optional port/path).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UrlPattern {
@@ -286,16 +354,23 @@ pub enum CapabilityScope {
 impl CapabilityScope {
     /// Returns `true` if this scope matches the given filesystem path.
     ///
+    /// Both the granted paths and the queried path are lexically normalized
+    /// before comparison, so traversal sequences like `/tmp/../etc` cannot
+    /// satisfy a grant at `/tmp`.
     /// ```rust
     /// use porpoise_core::types::CapabilityScope;
     /// use std::path::Path;
     /// let scope = CapabilityScope::Filesystem { paths: vec!["/tmp".into()], write: false };
-    /// let path = Path::new("/tmp");
-    /// assert!(scope.matches_path(path));
+    /// assert!(scope.matches_path(Path::new("/tmp")));
+    /// assert!(scope.matches_path(Path::new("/tmp/./x/..")));
+    /// assert!(!scope.matches_path(Path::new("/tmp/../etc")));
     /// ```
     pub fn matches_path(&self, path: &Path) -> bool {
         match self {
-            CapabilityScope::Filesystem { paths, write: _ } => paths.iter().any(|p| path.as_os_str() == p.as_os_str()),
+            CapabilityScope::Filesystem { paths, write: _ } => {
+                let normalized = normalize_lexical(path);
+                paths.iter().any(|p| normalized == normalize_lexical(p))
+            }
             CapabilityScope::Network { urls: _ } => false,
             CapabilityScope::Process { allow: _ } => false,
             CapabilityScope::Ssh { hosts: _ } => false,
