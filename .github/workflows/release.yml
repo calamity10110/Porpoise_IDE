@@ -55,7 +55,7 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           STAGE="porpoise-${TAG}-${{ matrix.target }}"
           mkdir -p "${STAGE}"
-          cp target/${{ matrix.target }}/release/porpoise-cli "${STAGE}/"
+          cp target/${{ matrix.target }}/release/porpoise "${STAGE}/"
           cp target/${{ matrix.target }}/release/porpoise-server "${STAGE}/"
           cp target/${{ matrix.target }}/release/porpoise-app "${STAGE}/"
           tar -czf "porpoise-${TAG}-${{ matrix.target }}.tar.gz" "${STAGE}"
@@ -67,7 +67,7 @@ jobs:
           $tag = $env:GITHUB_REF_NAME
           $stage = "porpoise-$tag-${{ matrix.target }}"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/porpoise-cli.exe" $stage
+          Copy-Item "target/${{ matrix.target }}/release/porpoise.exe" $stage
           Copy-Item "target/${{ matrix.target }}/release/porpoise-server.exe" $stage
           Copy-Item "target/${{ matrix.target }}/release/porpoise-app.exe" $stage
           Compress-Archive -Path $stage -DestinationPath "porpoise-$tag-${{ matrix.target }}.zip"

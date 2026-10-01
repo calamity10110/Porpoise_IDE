@@ -8,7 +8,7 @@ description = "SSH connections, sessions, and port forwarding"
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
 tokio.workspace = true
-ssh2 = "0.9"
+ssh2 = { version = "0.9", features = ["vendored-openssl"] }
 zeroize.workspace = true
 
 [dev-dependencies]
