@@ -8,7 +8,12 @@ description = "SSH connections, sessions, and port forwarding"
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
 tokio.workspace = true
-ssh2 = { version = "0.9", features = ["vendored-openssl"] }
+ssh2 = "0.9"
 zeroize.workspace = true
+
+# Cross-compiling (e.g. x86_64-apple-darwin) has no system OpenSSL; Windows
+# uses WinCNG and must never see openssl-sys
+[target.'cfg(unix)'.dependencies]
+ssh2 = { version = "0.9", features = ["vendored-openssl"] }
 
 [dev-dependencies]
