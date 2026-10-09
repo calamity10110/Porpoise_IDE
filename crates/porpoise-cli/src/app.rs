@@ -43,10 +43,23 @@ pub enum Commands {
     Skill(SkillArgs),
     /// Mobile companion pairing
     Mobile(MobileArgs),
+    /// Launch the daemon and/or desktop app, health-check, print pairing QR
+    Launch(LaunchArgs),
     /// Show system status
     Status,
     /// Show version
     Version,
+}
+
+#[derive(Args)]
+pub struct LaunchArgs {
+    /// Launch only the desktop app (daemon must already be running)
+    #[arg(long)]
+    pub app: bool,
+
+    /// Launch only the daemon (no desktop app)
+    #[arg(long)]
+    pub server: bool,
 }
 
 #[derive(Args)]
