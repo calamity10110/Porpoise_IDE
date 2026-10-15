@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "repowise": {
+      "type": "local",
+      "command": [
+        "repowise",
+        "mcp",
+        "C:/Users/vuanh/Downloads/porpoises/Porpoise_ide",
+        "--transport",
+        "stdio"
+      ],
+      "enabled": true
+    }
+  }
+}

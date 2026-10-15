@@ -70,10 +70,13 @@ pub async fn handle(args: LaunchArgs, format: &OutputFormat) -> Result<String> {
     } else {
         format!("\nScan to connect the mobile companion:\n\n{}", render_qr(&qr_payload)?)
     };
+    let pairing_note = if port.is_empty() {
+        String::new()
+    } else {
+        format!("\n{qr_payload}\nManual pairing: host {host}, port {port}, token {token}")
+    };
     Ok(match format {
-        OutputFormat::Plain => {
-            format!("Porpoise is up.{qr_art}\n{qr_payload}\nManual pairing: host {host}, port {port}, token {token}")
-        }
+        OutputFormat::Plain => format!("Porpoise is up.{qr_art}{pairing_note}"),
         _ => {
             let mut summary = serde_json::json!({
                 "daemon": "running",
@@ -233,6 +236,8 @@ fn spawn_detached(name: &str, log_output: bool) -> Result<()> {
                 .try_clone()
                 .map_err(|e| PorpoiseError::Internal(format!("log clone: {e}")))?;
             cmd.stdout(Stdio::from(cloned)).stderr(Stdio::from(log));
+        } else {
+            cmd.stdout(Stdio::null()).stderr(Stdio::null());
         }
     } else {
         cmd.stdout(Stdio::null()).stderr(Stdio::null());
@@ -246,6 +251,7 @@ fn spawn_detached(name: &str, log_output: bool) -> Result<()> {
     }
     #[cfg(unix)]
     {
+        use std::os::unix::process::CommandExt;
         cmd.process_group(0);
     }
     cmd.spawn()

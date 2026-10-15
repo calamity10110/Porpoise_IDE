@@ -69,3 +69,7 @@ extension/chrome/.DS_Store
 
 # === Temp ===
 temp/
+
+# === Repowise (keep only shared config tracked) ===
+.repowise/*
+!.repowise/config.yaml
