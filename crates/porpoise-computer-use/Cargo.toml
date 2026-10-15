@@ -7,7 +7,7 @@ description = "Desktop GUI automation — mouse, keyboard, screen for enterprise
 
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
-enigo = "0.2"
+enigo = "0.6"
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
