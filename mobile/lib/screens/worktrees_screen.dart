@@ -85,7 +85,7 @@ class WorktreesScreen extends StatelessWidget {
                           setDialogState(() => creating = true);
                           try {
                             final ws = context.read<WsService>();
-                            await ws.call('worktree/create', {
+                            await ws.call('worktree_create', {
                               'name': nameController.text,
                               'branch': branchController.text,
                             });

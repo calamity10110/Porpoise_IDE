@@ -127,7 +127,8 @@ impl Daemon {
             && let Ok(port) = port_str.parse::<u16>()
         {
             let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
-            let mut ws_server = WsRelayServer::new(addr, router.clone())
+            let mut ws_server = WsRelayServer::bind(addr, router.clone())
+                .await?
                 .with_auth(self.session_token.clone())
                 .with_event_bus(self.state.event_bus().clone());
 
