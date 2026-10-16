@@ -260,12 +260,6 @@ class _QrScanScreenState extends State<_QrScanScreen> {
   }
 
   @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Scan Pairing QR')),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io' show HttpClient, X509Certificate;
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -105,7 +106,8 @@ class WsService {
     client.badCertificateCallback = (X509Certificate cert, String host, int port) {
       final pinned = _caFingerprint;
       if (pinned == null || pinned.isEmpty) return true; // TOFU: no fingerprint pinned yet.
-      return _sha256Hex(cert.sha256) == _normalizeFingerprint(pinned);
+      final digest = sha256.convert(utf8.encode(cert.pem));
+      return _sha256Hex(digest.bytes) == _normalizeFingerprint(pinned);
     };
     return client;
   }
