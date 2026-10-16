@@ -1,7 +1,9 @@
 ﻿import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show HttpClient, X509Certificate;
 import 'dart:math';
 
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// WebSocket service for communicating with the Porpoise daemon.
@@ -74,7 +76,9 @@ class WsService {
     if (_intentionalDisconnect) return;
 
     final uri = Uri.parse('$_serverUrl');
-    _channel = WebSocketChannel.connect(uri);
+    // The desktop daemon serves a self-signed certificate (rcgen). Accept it
+    // trust-on-first-use, or when it matches the pinned fingerprint.
+    _channel = IOWebSocketChannel.connect(uri, customClient: _httpClient());
     await _channel!.ready;
 
     _isConnected = true;
@@ -95,6 +99,23 @@ class WsService {
       }));
     }
   }
+
+  HttpClient _httpClient() {
+    final client = HttpClient();
+    client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+      final pinned = _caFingerprint;
+      if (pinned == null || pinned.isEmpty) return true; // TOFU: no fingerprint pinned yet.
+      return _sha256Hex(cert.sha256) == _normalizeFingerprint(pinned);
+    };
+    return client;
+  }
+
+  static String _normalizeFingerprint(String fingerprint) =>
+      fingerprint.toLowerCase().replaceAll(RegExp('[^0-9a-f]'), '');
+
+  static String _sha256Hex(List<int> bytes) => bytes
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join();
 
   /// Cleanly disconnect and stop all reconnection attempts.
   void disconnect() {
@@ -171,6 +192,16 @@ class WsService {
     try {
       final msg = jsonDecode(data as String) as Map<String, dynamic>;
       final id = msg['id'] as String?;
+
+      if (msg['error'] == 'auth_required') {
+        // The desktop rejected our token; stop retrying with bad credentials.
+        _intentionalDisconnect = true;
+        for (final entry in _pending.entries) {
+          entry.value.completeError(Exception('Pairing rejected: token was not accepted'));
+        }
+        _pending.clear();
+        return;
+      }
 
       if (id != null && _pending.containsKey(id)) {
         // This is the response to a pending request.

@@ -131,9 +131,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
     if (text.isEmpty || _selectedTerminalId == null) return;
 
     final ws = context.read<WsService>();
-    ws.call('terminal/send', {
-      'terminal_id': _selectedTerminalId,
-      'text': text,
+    ws.call('terminal_send', {
+      'id': _selectedTerminalId,
+      'data': text,
     }).catchError((e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

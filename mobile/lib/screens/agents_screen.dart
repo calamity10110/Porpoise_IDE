@@ -153,7 +153,7 @@ class AgentsScreen extends StatelessWidget {
                           setDialogState(() => spawning = true);
                           try {
                             final ws = context.read<WsService>();
-                            await ws.call('agent/spawn', {
+                            await ws.call('agent_run', {
                               'kind': kindController.text,
                               'worktree': worktreeController.text,
                               'prompt': promptController.text,
