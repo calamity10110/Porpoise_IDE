@@ -8,6 +8,7 @@ use crate::{error::Result, types::event::SystemEvent};
 /// state updates, or forwarding to WebSocket clients. The `interested_in()`
 /// method can filter events to reduce unnecessary wake-ups.
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait EventHandler: Send + Sync {
     /// Handle a single system event. Return `Ok(())` on success.
     async fn handle(&self, event: &SystemEvent) -> Result<()>;

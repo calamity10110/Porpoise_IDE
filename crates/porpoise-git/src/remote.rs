@@ -61,6 +61,7 @@ pub struct BranchProtection {
 }
 
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait RemoteProvider: Send + Sync {
     async fn list_prs(&self, owner: &str, repo: &str) -> Result<Vec<PullRequest>>;
     async fn get_pr(&self, owner: &str, repo: &str, number: u64) -> Result<PullRequest>;

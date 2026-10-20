@@ -9,6 +9,7 @@ use crate::error::Result;
 /// controls serialization for the response. Commands receive a reference to
 /// `AppState` for access to shared state and the event bus.
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait Command: Send + Sync {
     /// The serializable output type produced by this command.
     type Output: Serialize;

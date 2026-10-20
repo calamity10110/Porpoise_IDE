@@ -139,6 +139,7 @@ pub trait OutputParser: Send + Sync {
 /// - Capability advertisement
 /// - Environment setup
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait AgentAdapter: Send + Sync {
     /// The agent kind this adapter handles.
     fn kind(&self) -> AgentKind;

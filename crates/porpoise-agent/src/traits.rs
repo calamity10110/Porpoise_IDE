@@ -6,6 +6,7 @@ use porpoise_core::error::Result;
 use crate::types::{AgentKind, AgentOutput};
 
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait Agent: Send + Sync {
     fn kind(&self) -> AgentKind;
     fn binary_name(&self) -> &str;
@@ -13,6 +14,7 @@ pub trait Agent: Send + Sync {
 }
 
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait AgentHandle: Send + Sync {
     fn pid(&self) -> Option<u32>;
     async fn read_output(&mut self) -> Result<Option<AgentOutput>>;

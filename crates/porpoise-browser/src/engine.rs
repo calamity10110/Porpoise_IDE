@@ -7,6 +7,7 @@ use tokio::sync::RwLock;
 use crate::navigation::{NavigationResult, NavigationStatus};
 
 #[async_trait]
+#[allow(clippy::double_must_use)] // async_trait generates a bare #[must_use] on the boxed future
 pub trait BrowserEngine: Send + Sync {
     async fn navigate(&self, url: &str) -> Result<NavigationResult>;
     async fn snapshot(&self) -> Result<Vec<u8>>;
