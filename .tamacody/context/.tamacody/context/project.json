@@ -1,0 +1,21 @@
+{
+  "project_id": "tamacody",
+  "name": "TamaCody Studio",
+  "tech_stack": {
+    "language": "Rust",
+    "framework": null,
+    "build_tool": "Cargo",
+    "package_manager": "Cargo",
+    "version": null
+  },
+  "conventions": {
+    "naming_convention": "snake_case",
+    "indentation": "4_spaces",
+    "max_line_length": 100,
+    "import_style": "grouped"
+  },
+  "file_patterns": [],
+  "known_issues": [],
+  "created_at": "2026-10-15T18:16:24.421529200+00:00",
+  "updated_at": "2026-10-15T18:16:24.421529200+00:00"
+}

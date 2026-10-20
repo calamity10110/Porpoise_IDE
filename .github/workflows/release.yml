@@ -109,6 +109,12 @@ jobs:
           <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>|' \
               android/app/src/main/AndroidManifest.xml || true
           fi
+          # Camera permission for the pairing QR scanner
+          if [ -f android/app/src/main/AndroidManifest.xml ] && ! grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml; then
+            sed -i 's|<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>|<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\
+          <uses-permission android:name="android.permission.CAMERA"/>|' \
+              android/app/src/main/AndroidManifest.xml || true
+          fi
           if [ -f android/app/build.gradle.kts ]; then
             sed -i 's|minSdkVersion [0-9]*|minSdkVersion 21|' android/app/build.gradle.kts || true
           elif [ -f android/app/build.gradle ]; then
