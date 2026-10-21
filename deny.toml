@@ -69,12 +69,10 @@ ignore = [
     "RUSTSEC-2026-0098",
     "RUSTSEC-2026-0099",
     "RUSTSEC-2026-0104",
-    # rustls 0.22 has no patched release (fix is >= 0.23.46); the 0.22 copy
-    # arrives via octocrab 0.40 -> hyper-rustls 0.26 in porpoise-git. The
-    # 0.23 copy is already on 0.23.46. TODO: bump octocrab to a
-    # rustls-0.23-based release, then drop these ignores.
-    "RUSTSEC-2026-0346", # rustls 0.22 Debug impls expose session secrets
-    "RUSTSEC-2026-0349", # rustls 0.22 ServerHello downgrade
+    # unsafe-libyaml unmaintained; transitive via deprecated serde_yaml in
+    # porpoise-automation/porpoise-terminal. TODO: migrate workflows/terminal
+    # config parsing to a maintained YAML crate, then drop this ignore.
+    "RUSTSEC-2024-0449",
     # zip extraction flaws; fix requires zip >= 9, but tauri-plugin-updater
     # (latest compatible 2.12.0) still pins zip 4.x. The updater only
     # extracts signature-verified bundles from the project release server.
@@ -82,10 +80,6 @@ ignore = [
     "RUSTSEC-2026-0367", # zip SUID/SGID preservation on extract
     "RUSTSEC-2026-0368", # zip symlink escape on extract
     "RUSTSEC-2026-0369", # zip permissions applied through symlinks
-    # unsafe-libyaml unmaintained; transitive via deprecated serde_yaml in
-    # porpoise-automation/porpoise-terminal. TODO: migrate workflows/terminal
-    # config parsing to a maintained YAML crate, then drop this ignore.
-    "RUSTSEC-2024-0449",
     # zvariant / zbus_names / zvariant_derive unmaintained — merged into zbus
     # starting with zbus 6.0.0; Cargo.lock pins zbus 5.16. TODO: migrate to
     # zbus 6, then drop these ignores.
