@@ -314,7 +314,8 @@ impl PtyManager {
 
     /// Spawns a background tokio task that reads PTY output and publishes
     /// `TerminalEvent::Output` on the EventBus. The loop exits when the
-    /// PTY session is closed (removed from sessions map).
+    /// PTY session is closed (removed from sessions map) or the child
+    /// process terminates (read returns EOF/EIO on the master).
     pub fn spawn_read_loop(&self, id: TerminalId) {
         let sessions = self.sessions.clone();
         let event_bus = self.event_bus.clone();
@@ -325,75 +326,101 @@ impl PtyManager {
                     let guard = sessions.read().await;
                     guard.get(&id).map(|s| s.fd)
                 };
-                let n = match fd {
-                    Some(fd) => pty_read_impl(fd, &mut buf).await.ok().unwrap_or(0),
+                let fd = match fd {
+                    Some(fd) => fd,
                     None => break,
                 };
-                if n > 0 {
-                    let data = buf[..n].to_vec();
-                    let timestamp = chrono::Utc::now().timestamp();
-                    event_bus.publish(porpoise_core::types::event::SystemEvent::Terminal(
-                        porpoise_core::types::event::TerminalEvent::Output { id, data, timestamp },
-                    ));
-                } else {
-                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-                }
+                // A PTY master read returning 0 or an error (EIO once the
+                // child side closes) means EOF — the child is gone. Reap the
+                // session instead of busy-polling at 10ms forever.
+                let n = match pty_read_impl(fd, &mut buf).await {
+                    Ok(n) if n > 0 => n,
+                    _ => {
+                        if let Some(session) = sessions.write().await.remove(&id) {
+                            reap_session(&session);
+                        }
+                        break;
+                    }
+                };
+                let data = buf[..n].to_vec();
+                let timestamp = chrono::Utc::now().timestamp();
+                event_bus.publish(porpoise_core::types::event::SystemEvent::Terminal(
+                    porpoise_core::types::event::TerminalEvent::Output { id, data, timestamp },
+                ));
             }
         });
     }
 
     pub async fn read(&self, id: TerminalId, buf: &mut [u8]) -> Result<usize> {
-        let sessions = self.sessions.read().await;
-        let session = sessions
-            .get(&id)
-            .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
-        pty_read_impl(session.fd, buf).await
+        // Snapshot the fd before awaiting: holding the read guard across the
+        // PTY read would let a parked read block `close()`'s write lock.
+        let fd = {
+            let sessions = self.sessions.read().await;
+            sessions
+                .get(&id)
+                .map(|s| s.fd)
+                .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?
+        };
+        pty_read_impl(fd, buf).await
     }
 
     pub async fn write(&self, id: TerminalId, data: &[u8]) -> Result<()> {
-        let sessions = self.sessions.read().await;
-        let session = sessions
-            .get(&id)
-            .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
-        pty_write_impl(session.fd, data).await
+        let fd = {
+            let sessions = self.sessions.read().await;
+            sessions
+                .get(&id)
+                .map(|s| s.fd)
+                .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?
+        };
+        pty_write_impl(fd, data).await
     }
 
     pub async fn resize(&self, id: TerminalId, rows: u16, cols: u16) -> Result<()> {
-        let sessions = self.sessions.read().await;
-        let session = sessions
-            .get(&id)
-            .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?;
-        pty_resize_impl(session.fd, rows, cols)
+        let fd = {
+            let sessions = self.sessions.read().await;
+            sessions
+                .get(&id)
+                .map(|s| s.fd)
+                .ok_or_else(|| PorpoiseError::Terminal("session not found".into()))?
+        };
+        pty_resize_impl(fd, rows, cols)
     }
 
     pub async fn close(&self, id: TerminalId) -> Result<()> {
         if let Some(session) = self.sessions.write().await.remove(&id) {
-            #[cfg(target_os = "windows")]
-            windows_pty::remove_master(session.fd);
-
-            #[cfg(not(target_os = "windows"))]
-            {
-                // Send SIGHUP to child process to terminate gracefully
-                if session.child_pid != 0 {
-                    let pid = session.child_pid;
-                    // SAFETY: kill() sends SIGHUP to the child process to trigger
-                    // graceful shutdown. `pid` comes from session.child_pid which was
-                    // captured at spawn time. Signal delivery to a non-existent PID is
-                    // a harmless no-op (ESRCH).
-                    unsafe { libc::kill(pid as i32, libc::SIGHUP) };
-                    // Reap child to prevent zombie process
-                    // SAFETY: waitpid with WNOHANG reaps the child without blocking.
-                    // `pid` is the known child PID. null_mut() discards status info.
-                    // WNOHANG ensures we never block the async runtime.
-                    unsafe { libc::waitpid(pid as i32, std::ptr::null_mut(), libc::WNOHANG) };
-                }
-                // Close the master file descriptor
-                // SAFETY: close() releases the PTY master file descriptor.
-                // `session.fd` was allocated by openpty and is being removed from
-                // the session map, so no other code will use it after this point.
-                unsafe { libc::close(session.fd) };
-            }
+            reap_session(&session);
         }
         Ok(())
+    }
+}
+
+/// Tear down a finished PTY session: stop the child, reap it, and release the
+/// master descriptor. Shared by explicit `close()` and the read loop's EOF
+/// path so a self-exited shell cleans up identically.
+fn reap_session(session: &PtySession) {
+    #[cfg(target_os = "windows")]
+    windows_pty::remove_master(session.fd);
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        // Send SIGHUP to child process to terminate gracefully
+        if session.child_pid != 0 {
+            let pid = session.child_pid;
+            // SAFETY: kill() sends SIGHUP to the child process to trigger
+            // graceful shutdown. `pid` comes from session.child_pid which was
+            // captured at spawn time. Signal delivery to a non-existent PID is
+            // a harmless no-op (ESRCH).
+            unsafe { libc::kill(pid as i32, libc::SIGHUP) };
+            // Reap child to prevent zombie process
+            // SAFETY: waitpid with WNOHANG reaps the child without blocking.
+            // `pid` is the known child PID. null_mut() discards status info.
+            // WNOHANG ensures we never block the async runtime.
+            unsafe { libc::waitpid(pid as i32, std::ptr::null_mut(), libc::WNOHANG) };
+        }
+        // Close the master file descriptor
+        // SAFETY: close() releases the PTY master file descriptor.
+        // `session.fd` was allocated by openpty and is being removed from
+        // the session map, so no other code will use it after this point.
+        unsafe { libc::close(session.fd) };
     }
 }
