@@ -168,12 +168,17 @@ impl Daemon {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
             loop {
                 interval.tick().await;
-                if let Ok(conn) = db_for_prune.get() {
-                    let _ = conn.execute(
-                        "DELETE FROM notifications WHERE id IN (SELECT id FROM notifications ORDER BY created_at ASC LIMIT MAX(0, (SELECT COUNT(*) - 500 FROM notifications)))",
-                        [],
-                    );
-                }
+                // SQLite is blocking — keep the delete off the async workers.
+                let db = db_for_prune.clone();
+                let _ = tokio::task::spawn_blocking(move || {
+                    if let Ok(conn) = db.get() {
+                        let _ = conn.execute(
+                            "DELETE FROM notifications WHERE id IN (SELECT id FROM notifications ORDER BY created_at ASC LIMIT MAX(0, (SELECT COUNT(*) - 500 FROM notifications)))",
+                            [],
+                        );
+                    }
+                })
+                .await;
             }
         });
 

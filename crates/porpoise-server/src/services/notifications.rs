@@ -116,12 +116,37 @@ impl NotificationService {
         severity: NotificationSeverity,
         source: &str,
     ) -> Result<NotificationRecord> {
+        let record = self.persist(title, body, &severity, source).await?;
+
+        // Broadcast to SSE subscribers (ignore if no receivers)
+        let rich = RichNotification {
+            record: record.clone(),
+            actions: vec![],
+            group_key: None,
+            icon: None,
+            link: None,
+        };
+        let _ = self.event_tx.send(rich);
+
+        Ok(record)
+    }
+
+    /// Store a notification and fire the preference-gated side effects
+    /// (desktop toast / sound). Does not broadcast — callers broadcast the
+    /// variant (plain or rich) they built, exactly once.
+    async fn persist(
+        &self,
+        title: &str,
+        body: &str,
+        severity: &NotificationSeverity,
+        source: &str,
+    ) -> Result<NotificationRecord> {
         let now = Utc::now();
         let record = NotificationRecord {
             id: format!("notif_{}_{}", now.timestamp_millis(), uuid::Uuid::now_v7().simple()),
             title: title.to_string(),
             body: body.to_string(),
-            severity: serde_json::to_string(&severity)
+            severity: serde_json::to_string(severity)
                 .unwrap_or_default()
                 .trim_matches('"')
                 .to_string(),
@@ -137,18 +162,8 @@ impl NotificationService {
             self.show_desktop_notification(&record);
         }
         if prefs.sound && self.should_notify(severity.clone(), &prefs) {
-            self.play_notification_sound(&severity);
+            self.play_notification_sound(severity);
         }
-
-        // Broadcast to SSE subscribers (ignore if no receivers)
-        let rich = RichNotification {
-            record: record.clone(),
-            actions: vec![],
-            group_key: None,
-            icon: None,
-            link: None,
-        };
-        let _ = self.event_tx.send(rich);
 
         Ok(record)
     }
@@ -394,7 +409,7 @@ impl NotificationService {
             link,
             webhook_url,
         } = opts;
-        let record = self.notify(title, body, severity.clone(), source).await?;
+        let record = self.persist(title, body, &severity, source).await?;
 
         if let Some(url) = webhook_url
             && let Err(e) = self.deliver_webhook(url, &record).await
