@@ -11,9 +11,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
-  # TODO: ubuntu-latest migrated to Ubuntu 26 on 2026-10-19 and the GTK/WebKit
-  # apt package set (libgdk-pixbuf2.0-dev et al.) no longer resolves there.
-  # Pinned to 24.04 until the dependency list is validated for 26.
+  # Linux deps use the dashed gdk-pixbuf name (libgdk-pixbuf-2.0-dev): it
+  # resolves on both Ubuntu 24.04 and 26.04. The undashed transitional name
+  # (libgdk-pixbuf2.0-dev) was dropped in 26.04. webkit2gtk-4.1 still ships
+  # on 26.04, so the Tauri 2.x stack builds unmodified.
 
 jobs:
   check:
@@ -21,13 +22,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - name: Install system dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-24.04'
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf-2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
       - name: Install system dependencies (macOS)
         if: matrix.os == 'macos-latest'
         run: rustup target add aarch64-apple-darwin || true
@@ -36,21 +37,21 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf-2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --workspace
 
   clippy:
     name: Clippy
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf-2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -58,7 +59,7 @@ jobs:
 
   fmt:
     name: Format
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -68,28 +69,28 @@ jobs:
 
   deny:
     name: Deny (licenses + advisories)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: EmbarkStudios/cargo-deny-action@v2
 
   msrv:
     name: MSRV Check
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf-2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo check --workspace
 
   coverage:
     name: Coverage
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libgtk-3-dev libgdk-pixbuf-2.0-dev libcairo2-dev libpango1.0-dev libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-llvm-cov
       - run: cargo llvm-cov --workspace --lcov --output-path lcov.info
@@ -102,7 +103,7 @@ jobs:
 
   flutter-analyze:
     name: Flutter Analyze
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
