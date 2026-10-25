@@ -73,3 +73,10 @@ temp/
 # === Repowise (keep only shared config tracked) ===
 .repowise/*
 !.repowise/config.yaml
+
+# === Daemon / tool runtime state (never track) ===
+telemetry.jsonl
+fleet.json
+freeze_probe.txt
+.tamacody/
+hive.db
