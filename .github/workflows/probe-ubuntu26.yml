@@ -6,27 +6,25 @@ on:
 
 jobs:
   probe:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
     steps:
-      - run: cat /etc/os-release
+      - run: grep VERSION_ID /etc/os-release
       - run: sudo apt-get update
       - name: Probe package availability
         run: |
           for p in \
-            libglib2.0-dev libgtk-3-dev libgtk-4-dev \
-            libgdk-pixbuf2.0-dev libgdk-pixbuf-3.0-dev \
-            libcairo2-dev libpango1.0-dev libatk1.0-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev libjavascriptcoregtk-6.0-dev \
-            libwebkit2gtk-4.1-dev libwebkit2gtk-6.0-dev \
-            libxdo-dev; do
+            libgdk-pixbuf2.0-dev libgdk-pixbuf-2.0-dev \
+            libglib2.0-dev libgtk-3-dev libcairo2-dev libpango1.0-dev \
+            libatk1.0-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev \
+            libwebkit2gtk-4.1-dev libxdo-dev; do
             cand=$(apt-cache policy "$p" 2>/dev/null | sed -n 's/  Candidate: //p')
             echo "$p => ${cand:-NONE}"
           done
-      - name: Search related names
-        run: |
-          apt-cache search webkit2gtk | head -10
-          echo ---
-          apt-cache search javascriptcoregtk | head -10
-          echo ---
-          apt-cache search gdk-pixbuf | head -10
+      - name: Trial install the dashed-name set
+        run: sudo apt-get install -y --no-install-recommends \
+          libglib2.0-dev libgtk-3-dev libgdk-pixbuf-2.0-dev libcairo2-dev \
+          libpango1.0-dev libatk1.0-dev libsoup-3.0-dev \
+          libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev libxdo-dev
