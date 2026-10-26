@@ -15,7 +15,7 @@ rand.workspace = true
 zeroize.workspace = true
 sha2 = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }
-hmac = "0.12"
+hmac = "0.13"
 fs2 = "0.4"
 
 [dev-dependencies]
