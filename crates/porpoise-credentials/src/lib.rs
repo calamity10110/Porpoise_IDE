@@ -107,6 +107,49 @@ impl CredentialStore {
         Ok(id)
     }
 
+    /// Store or update by name: any existing entries with this name are
+    /// replaced, so re-running `set` never leaves stale duplicates behind.
+    pub fn set(&mut self, name: &str, cred_type: &str, value: &str) -> Result<String> {
+        let mut vault = self.load_vault()?;
+        vault.entries.retain(|e| e.name != name);
+
+        let nonce_bytes = self.generate_nonce();
+        let nonce = Nonce::from_slice(&nonce_bytes);
+        let cipher =
+            Aes256Gcm::new_from_slice(&self.key).map_err(|e| PorpoiseError::Internal(format!("cipher init: {e}")))?;
+
+        let encrypted = cipher
+            .encrypt(nonce, value.as_bytes())
+            .map_err(|e| PorpoiseError::Internal(format!("encrypt: {e}")))?;
+
+        let id = format!("cred_{}_{name}", chrono::Utc::now().timestamp_millis());
+        let now = chrono::Utc::now().to_rfc3339();
+
+        vault.entries.push(CredentialEntry {
+            id: id.clone(),
+            name: name.to_string(),
+            credential_type: cred_type.to_string(),
+            encrypted_value: encrypted,
+            nonce: nonce_bytes.to_vec(),
+            created_at: now.clone(),
+            updated_at: now,
+        });
+
+        self.save_vault(&vault)?;
+        Ok(id)
+    }
+
+    /// Delete by name (all entries with that name). Returns `true` if any
+    /// entry was removed.
+    pub fn delete_by_name(&mut self, name: &str) -> Result<bool> {
+        let mut vault = self.load_vault()?;
+        let before = vault.entries.len();
+        vault.entries.retain(|e| e.name != name);
+        let removed = before != vault.entries.len();
+        self.save_vault(&vault)?;
+        Ok(removed)
+    }
+
     pub fn get(&self, id: &str) -> Result<String> {
         let vault = self.load_vault()?;
         let entry = vault
@@ -252,6 +295,33 @@ mod tests {
         assert_eq!(store.list().unwrap().len(), 1);
         store.delete(&id).unwrap();
         assert_eq!(store.list().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn set_upserts_by_name() {
+        let dir = TempDir::new().unwrap();
+        let mut store = CredentialStore::new(dir.path(), b"test-key").unwrap();
+
+        store.set("github", "api_key", "v1").unwrap();
+        store.set("github", "api_key", "v2").unwrap();
+        assert_eq!(store.list().unwrap().len(), 1, "no stale duplicates");
+        assert_eq!(store.get_by_name("github").unwrap(), "v2");
+
+        assert!(store.delete_by_name("github").unwrap());
+        assert!(!store.delete_by_name("github").unwrap());
+        assert!(store.get_by_name("github").is_err());
+    }
+
+    #[test]
+    fn wrong_master_key_fails_decryption_cleanly() {
+        let dir = TempDir::new().unwrap();
+        let mut store = CredentialStore::new(dir.path(), b"correct-key").unwrap();
+        store.set("secret", "api_key", "value").unwrap();
+        drop(store);
+
+        let reopened = CredentialStore::new(dir.path(), b"wrong-key").unwrap();
+        let err = reopened.get_by_name("secret").unwrap_err();
+        assert!(format!("{err:#}").to_lowercase().contains("decrypt"));
     }
 
     #[test]

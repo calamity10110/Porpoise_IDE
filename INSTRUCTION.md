@@ -13,6 +13,22 @@ Porpoise is a Rust-native AI Orchestration IDE (port of Orca) with three compone
 
 ---
 
+## Credential Vault
+
+Credentials are stored in an encrypted local vault (AES-256-GCM, PBKDF2-SHA256
+600k iterations, per-vault salt, file-locked). Works offline — no daemon needed.
+
+```bash
+export PORPOISE_MASTER_KEY=<your secret>   # required; no default is ever used
+porpoise credential set github-token --value ghp_xxx    # or omit --value to read stdin
+porpoise credential get github-token
+porpoise credential list      # names + types, never secrets
+porpoise credential delete github-token
+```
+
+Vault location: `<data dir>/credentials.json` (`PORPOISE_DATA_DIR` overrides the
+data dir). Losing the master key means the secrets cannot be decrypted.
+
 ## 1. Installation
 
 ### Prerequisites

@@ -41,6 +41,8 @@ pub enum Commands {
     Config(ConfigArgs),
     /// Skills/plugins
     Skill(SkillArgs),
+    /// Store and retrieve credentials (encrypted local vault)
+    Credential(CredentialArgs),
     /// Mobile companion pairing
     Mobile(MobileArgs),
     /// Launch the daemon and/or desktop app, health-check, print pairing QR
@@ -60,6 +62,33 @@ pub struct LaunchArgs {
     /// Launch only the daemon (no desktop app)
     #[arg(long)]
     pub server: bool,
+}
+
+#[derive(Args)]
+pub struct CredentialArgs {
+    #[command(subcommand)]
+    pub action: CredentialAction,
+}
+
+#[derive(Subcommand)]
+pub enum CredentialAction {
+    /// Store or update a credential (encrypted local vault)
+    Set {
+        /// Name to store under (e.g. github-token)
+        name: String,
+        /// Credential type label
+        #[arg(long, default_value = "api_key")]
+        credential_type: String,
+        /// Secret value; omitted = read one line from stdin
+        #[arg(long)]
+        value: Option<String>,
+    },
+    /// Print a stored credential's secret
+    Get { name: String },
+    /// List stored credential names and types (never secrets)
+    List,
+    /// Delete a stored credential
+    Delete { name: String },
 }
 
 #[derive(Args)]
