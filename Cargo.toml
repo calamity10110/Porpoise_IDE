@@ -75,7 +75,7 @@ enigo = "0.2"
 blake3 = "1"
 tokio-rustls = { version = "0.26", features = ["ring"] }
 rustls-pemfile = "2"
-rcgen = "0.13"
+rcgen = "0.14"
 sha2 = "0.10"
 
 [profile.release]
