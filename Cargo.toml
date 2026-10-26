@@ -76,7 +76,7 @@ blake3 = "1"
 tokio-rustls = { version = "0.26", features = ["ring"] }
 rustls-pemfile = "2"
 rcgen = "0.13"
-sha2 = "0.10"
+sha2 = "0.11"
 
 [profile.release]
 opt-level = 3
