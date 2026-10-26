@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use chrono::{DateTime, Utc};
 use porpoise_agent::AgentPool;
@@ -697,4 +697,128 @@ pub fn register_all(
         "esp32/board_templates",
         Arc::new(|_, _| Box::pin(async move { esp32_service::handle_board_templates().await })),
     );
+
+    // ── Sandbox lifecycle (SANDBOX_SPEC.md v1: MicroVmBackend) ─────────
+    // Handlers resolve the sandboxes root from the app config data dir;
+    // start fails honestly listing missing prerequisites (KVM, QEMU,
+    // base image, kernel) instead of pretending to boot.
+    {
+        let st = state.clone();
+        router.register(
+            "sandbox_provision",
+            Arc::new(move |req, _| {
+                let id = req.params.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let workspace = req.params.get("workspace").and_then(|v| v.as_str()).map(PathBuf::from);
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    super::sandbox::MicroVmManager::with_data_dir(&data_dir)
+                        .provision(&id, workspace.as_deref())
+                        .map(|c| serde_json::json!({"id": id, "state": c.state, "cpus": c.cpus, "memory_mb": c.memory_mb}))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_start",
+            Arc::new(move |req, _| {
+                let id = req.params.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    super::sandbox::MicroVmManager::with_data_dir(&data_dir)
+                        .start(&id)
+                        .map(|pid| serde_json::json!({"id": id, "pid": pid, "state": "running"}))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_stop",
+            Arc::new(move |req, _| {
+                let id = req.params.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    let killed = super::sandbox::MicroVmManager::with_data_dir(&data_dir).stop(&id)?;
+                    Ok(serde_json::json!({"id": id, "killed": killed, "state": "stopped"}))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_clean",
+            Arc::new(move |req, _| {
+                let id = req.params.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    super::sandbox::MicroVmManager::with_data_dir(&data_dir).clean(&id)?;
+                    Ok(serde_json::json!({"id": id, "state": "stopped", "cleaned": true}))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_delete",
+            Arc::new(move |req, _| {
+                let id = req.params.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    super::sandbox::MicroVmManager::with_data_dir(&data_dir).delete(&id)?;
+                    Ok(serde_json::json!({"id": id, "deleted": true}))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_status",
+            Arc::new(move |req, _| {
+                let id = req.params.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    super::sandbox::MicroVmManager::with_data_dir(&data_dir)
+                        .status(&id)
+                        .map(|v| serde_json::to_value(v).unwrap_or(serde_json::Value::Null))
+                        .ok_or_else(|| porpoise_core::error::PorpoiseError::Config(format!("sandbox '{id}' not found")))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_list",
+            Arc::new(move |_, _| {
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    let items = super::sandbox::MicroVmManager::with_data_dir(&data_dir).list()?;
+                    Ok(serde_json::json!({ "sandboxes": items }))
+                })
+            }),
+        );
+        let st = state.clone();
+        router.register(
+            "sandbox_detect",
+            Arc::new(move |_, _| {
+                let st = st.clone();
+                Box::pin(async move {
+                    let data_dir = sandbox_data_dir(&st).await?;
+                    let backends = super::sandbox::detect_backends(&data_dir);
+                    Ok(serde_json::json!({ "backends": backends }))
+                })
+            }),
+        );
+    }
+}
+
+/// Resolve the sandboxes root from the app config (PORPOISE config
+/// `core.data_dir` or the platform default), mirroring `Daemon::new`.
+async fn sandbox_data_dir(state: &porpoise_core::state::AppState) -> porpoise_core::error::Result<std::path::PathBuf> {
+    let config = state.config().await;
+    match config.core.data_dir.clone() {
+        Some(dir) => Ok(dir),
+        None => porpoise_core::config::AppConfig::default_data_dir(),
+    }
 }

@@ -5,6 +5,7 @@ pub mod esp32_service;
 pub mod git;
 pub mod health;
 pub mod notifications;
+pub mod sandbox;
 pub mod skills_service;
 pub mod ssh_service;
 pub mod terminal;
