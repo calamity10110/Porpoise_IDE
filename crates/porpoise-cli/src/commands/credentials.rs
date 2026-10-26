@@ -14,10 +14,10 @@ use porpoise_credentials::CredentialStore;
 use crate::{app::CredentialAction, output::OutputFormat};
 
 fn data_dir() -> Result<std::path::PathBuf> {
-    if let Ok(dir) = std::env::var("PORPOISE_DATA_DIR") {
-        if !dir.trim().is_empty() {
-            return Ok(std::path::PathBuf::from(dir));
-        }
+    if let Ok(dir) = std::env::var("PORPOISE_DATA_DIR")
+        && !dir.trim().is_empty()
+    {
+        return Ok(std::path::PathBuf::from(dir));
     }
     porpoise_core::config::AppConfig::default_data_dir()
 }
