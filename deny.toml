@@ -52,6 +52,17 @@ ignore = [
     "RUSTSEC-2024-0370", # proc-macro-error
     "RUSTSEC-2024-0384", # instant (via notify v7, no safe upgrade)
     "RUSTSEC-2025-0134", # rustls-pemfile
+    # zstd streaming-decompression advisories via wasmtime-internal-cache,
+    # which pins zstd 0.13 (< 0.14.3). zstd-sys was already upgraded to
+    # 2.1.2 (clears RUSTSEC-2026-0410). The remaining three need zstd 0.14,
+    # blocked on an upstream wasmtime release that bumps its requirement.
+    # TODO: drop these ignores when wasmtime moves to zstd >= 0.14.3.
+    # Exposure note: these affect streaming decompression of crafted
+    # frames; the only zstd consumer here is the wasm module cache, not
+    # general untrusted input.
+    "RUSTSEC-2026-0391", # zstd: abandoned-stream data leak on reused context
+    "RUSTSEC-2026-0398", # zstd: legacy-frame streaming decompression reads uninit memory
+    "RUSTSEC-2026-0403", # zstd-safe: Seekable::decompress writes past end
     "RUSTSEC-2017-0008", # serial
     # unsafe-libyaml unmaintained; transitive via deprecated serde_yaml in
     # porpoise-automation/porpoise-terminal. TODO: migrate workflows/terminal
