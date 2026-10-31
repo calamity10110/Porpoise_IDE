@@ -80,3 +80,6 @@ fleet.json
 freeze_probe.txt
 .tamacody/
 hive.db
+
+# Tauri codegen output (regenerated at build time)
+crates/porpoise-app/gen/
