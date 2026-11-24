@@ -196,6 +196,33 @@ pub enum AgentAction {
         #[arg(long)]
         lines: Option<u32>,
     },
+    /// Start an agent run that streams AG-UI 1.0 protocol events.
+    AguiRun {
+        kind: String,
+        #[arg(long)]
+        worktree: String,
+        #[arg(long)]
+        prompt: String,
+        /// Continue an existing conversation thread instead of starting a new one.
+        #[arg(long)]
+        thread: Option<String>,
+    },
+    /// Print a run's AG-UI events as SSE frames.
+    AguiEvents {
+        #[arg(long)]
+        run_id: String,
+        /// Poll events appended after this offset.
+        #[arg(long, default_value_t = 0)]
+        after: usize,
+        /// Keep polling and printing until the run reaches its terminal event.
+        #[arg(long)]
+        follow: bool,
+    },
+    /// Interrupt a live AG-UI run (it ends with the cancelled outcome).
+    AguiStop {
+        #[arg(long)]
+        run_id: String,
+    },
 }
 
 #[derive(Args)]

@@ -96,6 +96,15 @@ pub enum AgentEvent {
         id: AgentId,
         exit_code: i32,
     },
+    /// A batch of AG-UI 1.0 protocol events produced by an agent run.
+    /// Consumers (GUI, mobile companion, WebSocket relay) render these
+    /// with any AG-UI client; the batch is ordered and the run's terminal
+    /// event (`RUN_FINISHED` / `RUN_ERROR`) arrives as the last batch.
+    AgUi {
+        id: AgentId,
+        run_id: String,
+        events: Vec<serde_json::Value>,
+    },
     HookFired {
         id: AgentId,
         hook_type: String,

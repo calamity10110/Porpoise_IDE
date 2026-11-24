@@ -109,11 +109,13 @@ impl Daemon {
         let mut pty = PtyManager::new(self.state.event_bus().clone());
         pty.set_generation_id(Some(self.generation_id.clone()));
         let pty_manager = Arc::new(pty);
+        let agui_runs = services::agui::AgUiRunRegistry::new();
         services::register_all(
             &mut router,
             self.start_time,
             pty_manager,
             self.agent_pool.clone(),
+            agui_runs,
             self.state.clone(),
             self.session_token.clone(),
             self.tls_assets.as_ref().map(|a| a.fingerprint_sha256.clone()),

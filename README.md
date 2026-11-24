@@ -212,6 +212,11 @@ porpoise browser snapshot
 # Mobile companion pairing (requires running daemon with PORPOISE_WS_PORT)
 porpoise mobile qr
 
+# Agent runs as AG-UI 1.0 event streams (see docs/AG_UI.md)
+porpoise agent agui-run opencode --worktree . --prompt "fix the tests"
+porpoise agent agui-events --run-id <run_id> --follow   # SSE frames until done
+porpoise agent agui-stop --run-id <run_id>              # cancel with outcome
+
 # Output as JSON
 porpoise worktree list --json
 porpoise status --json
@@ -397,6 +402,7 @@ porpoise/
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Self-host vs Cloud deployment, Docker, operations |
 | [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md) | Implementation guide |
 | [docs/SDK.md](./docs/SDK.md) | Plugin SDK documentation |
+| [docs/AG_UI.md](./docs/AG_UI.md) | AG-UI 1.0 — agent runs as portable protocol event streams |
 | [docs/INSTALL_WINDOWS.md](./docs/INSTALL_WINDOWS.md) | Windows installer guide |
 | [docs/INSTALL_ANDROID.md](./docs/INSTALL_ANDROID.md) | Android APK install guide |
 | [docs/crates/CORE_TYPES.md](./docs/crates/CORE_TYPES.md) | Core type definitions |

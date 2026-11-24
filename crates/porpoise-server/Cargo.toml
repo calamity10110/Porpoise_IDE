@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 porpoise-core = { path = "../porpoise-core" }
+porpoise-agui = { path = "../porpoise-agui" }
 porpoise-db = { path = "../porpoise-db" }
 porpoise-relay = { path = "../porpoise-relay" }
 porpoise-runtime = { path = "../porpoise-runtime" }
@@ -37,4 +38,5 @@ esp32 = []
 
 [dev-dependencies]
 porpoise-agent = { path = "../porpoise-agent", features = ["test-helpers"] }
+async-trait.workspace = true
 tempfile.workspace = true

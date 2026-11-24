@@ -7,10 +7,29 @@ use porpoise_core::{
 use tokio::sync::RwLock;
 
 use crate::{
+    adapters::AdapterRegistry,
     generic::GenericAgent,
     traits::{Agent, AgentHandle},
     types::{AgentInfo, AgentKind, AgentStatus},
 };
+
+/// The binary a given agent kind runs. Adapter kinds must agree with
+/// their adapter's `binary_name`.
+fn binary_for_kind(kind: &AgentKind) -> String {
+    match kind {
+        AgentKind::ClaudeCode => "claude",
+        AgentKind::Codex => "codex",
+        AgentKind::Gemini => "gemini",
+        AgentKind::OpenCode => "opencode",
+        AgentKind::Aider => "aider",
+        AgentKind::ZAI => "z",
+        AgentKind::OpenAI => "openai",
+        AgentKind::Grok => "grok",
+        AgentKind::OpenRouter => "openrouter",
+        AgentKind::Custom(name) => name.as_str(),
+    }
+    .to_string()
+}
 
 struct AgentEntry {
     #[allow(dead_code)]
@@ -39,6 +58,30 @@ impl AgentPool {
     }
 
     pub async fn spawn(&self, kind: AgentKind, worktree: &Path) -> Result<AgentId> {
+        self.spawn_inner(kind, worktree, Vec::new(), None).await
+    }
+
+    /// Spawn `kind` in `worktree` and deliver `prompt` to the agent.
+    ///
+    /// When an adapter knows the binary (claude, codex, aider, opencode)
+    /// the prompt travels in the CLI arguments that adapter builds;
+    /// otherwise it is written to the agent's stdin as a fallback.
+    pub async fn spawn_with_prompt(&self, kind: AgentKind, worktree: &Path, prompt: Option<&str>) -> Result<AgentId> {
+        let registry = AdapterRegistry::with_defaults();
+        let (args, stdin_prompt) = match registry.get(&kind) {
+            Some(adapter) => (adapter.build_args(worktree, prompt, &[]), None),
+            None => (Vec::new(), prompt),
+        };
+        self.spawn_inner(kind, worktree, args, stdin_prompt).await
+    }
+
+    async fn spawn_inner(
+        &self,
+        kind: AgentKind,
+        worktree: &Path,
+        args: Vec<String>,
+        stdin_prompt: Option<&str>,
+    ) -> Result<AgentId> {
         // Try LRU eviction if pool is full
         let count = self.agents.read().await.len();
         if count >= self.max_size {
@@ -59,19 +102,22 @@ impl AgentPool {
                 )));
             }
         }
-        let agent: Box<dyn Agent> = match &kind {
-            AgentKind::ClaudeCode => Box::new(GenericAgent::with_kind("claude", AgentKind::ClaudeCode)),
-            AgentKind::Codex => Box::new(GenericAgent::with_kind("codex", AgentKind::Codex)),
-            AgentKind::Gemini => Box::new(GenericAgent::with_kind("gemini", AgentKind::Gemini)),
-            AgentKind::OpenCode => Box::new(GenericAgent::with_kind("opencode", AgentKind::OpenCode)),
-            AgentKind::Aider => Box::new(GenericAgent::with_kind("aider", AgentKind::Aider)),
-            AgentKind::ZAI => Box::new(GenericAgent::with_kind("z", AgentKind::ZAI)),
-            AgentKind::OpenAI => Box::new(GenericAgent::with_kind("openai", AgentKind::OpenAI)),
-            AgentKind::Grok => Box::new(GenericAgent::with_kind("grok", AgentKind::Grok)),
-            AgentKind::OpenRouter => Box::new(GenericAgent::with_kind("openrouter", AgentKind::OpenRouter)),
-            AgentKind::Custom(name) => Box::new(GenericAgent::new(name)),
-        };
-        let handle = agent.spawn(worktree).await?;
+        let binary = binary_for_kind(&kind);
+        let agent: Box<dyn Agent> = Box::new(GenericAgent::with_kind(&binary, kind.clone()).with_args(args));
+        let mut handle = agent.spawn(worktree).await?;
+        if let Some(prompt) = stdin_prompt
+            && !prompt.is_empty()
+        {
+            // Line-oriented agents (cmd, sh, REPLs) wait for a newline
+            // before acting on what they read from stdin.
+            let mut line = prompt.to_string();
+            if !line.ends_with('\n') {
+                line.push('\n');
+            }
+            if let Err(e) = handle.send_input(&line).await {
+                tracing::warn!(agent_kind = %kind, "prompt could not be written to stdin: {e}");
+            }
+        }
         let pid = handle.pid();
         let id = AgentId::new();
         let now = std::time::SystemTime::now()
@@ -99,6 +145,28 @@ impl AgentPool {
 
     pub async fn list(&self) -> Vec<AgentInfo> {
         self.agents.read().await.values().map(|e| e.info.clone()).collect()
+    }
+
+    /// Remove an agent's process handle from the pool so a caller can read
+    /// its output exclusively (an AG-UI run does this). The `info` entry
+    /// stays behind, so `list` and `shutdown` still see the agent.
+    pub async fn take_handle(&self, id: AgentId) -> Option<Box<dyn AgentHandle>> {
+        self.agents.write().await.get_mut(&id)?.handle.take()
+    }
+
+    /// Give a handle back after the run ends, if the entry is still there.
+    /// Returns `true` when the pool took ownership again; on `false` the
+    /// caller must shut the handle down itself.
+    pub async fn restore_handle(&self, id: AgentId, handle: Box<dyn AgentHandle>) -> bool {
+        let mut agents = self.agents.write().await;
+        if let Some(entry) = agents.get_mut(&id)
+            && entry.handle.is_none()
+        {
+            entry.handle = Some(handle);
+            true
+        } else {
+            false
+        }
     }
 
     pub async fn shutdown(&self, id: AgentId) -> Result<()> {
@@ -177,6 +245,45 @@ mod tests {
         let pool = AgentPool::with_idle_timeout(5, 1);
         let agents = pool.list().await;
         assert!(agents.is_empty());
+    }
+
+    /// An AG-UI run takes the handle out of the pool while it streams and
+    /// gives it back afterwards; a stopped agent's entry disappears under
+    /// it, in which case the caller keeps ownership.
+    #[tokio::test]
+    async fn take_and_restore_handle_round_trip() {
+        let pool = AgentPool::new(4);
+        // A bare binary with no adapter: an interactive shell stays alive
+        // with piped stdin, giving us a real handle to move around.
+        let kind = AgentKind::Custom(if cfg!(windows) { "cmd" } else { "sh" }.into());
+        let id = pool
+            .spawn_with_prompt(kind, &std::env::temp_dir(), None)
+            .await
+            .expect("spawn");
+
+        let handle = pool.take_handle(id).await.expect("handle present");
+        assert!(pool.take_handle(id).await.is_none(), "a handle can only be taken once");
+        assert!(
+            pool.restore_handle(id, handle).await,
+            "restore succeeds while the entry exists"
+        );
+
+        // After shutdown the entry is gone: restore must refuse the handle.
+        pool.shutdown(id).await.expect("shutdown");
+        let spare = pool
+            .spawn_with_prompt(
+                AgentKind::Custom(if cfg!(windows) { "cmd" } else { "sh" }.into()),
+                &std::env::temp_dir(),
+                None,
+            )
+            .await
+            .expect("spawn");
+        let handle = pool.take_handle(spare).await.expect("handle present");
+        pool.shutdown(spare).await.expect("shutdown");
+        assert!(
+            !pool.restore_handle(spare, handle).await,
+            "restore refuses once the entry is gone"
+        );
     }
 }
 

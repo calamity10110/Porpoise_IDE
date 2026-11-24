@@ -1,5 +1,6 @@
 pub mod account;
 pub mod adapters;
+pub mod agui;
 pub mod detector;
 pub mod generic;
 pub mod hook;

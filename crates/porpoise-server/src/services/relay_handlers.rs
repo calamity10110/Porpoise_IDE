@@ -9,11 +9,15 @@ use porpoise_runtime::PtyManager;
 
 use crate::services::esp32_service;
 
+// One argument per wiring dependency; grouping them into a builder would
+// only move the same eight values around.
+#[allow(clippy::too_many_arguments)]
 pub fn register_all(
     router: &mut Router,
     start_time: DateTime<Utc>,
     pty_manager: Arc<PtyManager>,
     agent_pool: Arc<AgentPool>,
+    agui_runs: Arc<super::agui::AgUiRunRegistry>,
     state: AppState,
     session_token: String,
     tls_fingerprint: Option<String>,
@@ -239,6 +243,77 @@ pub fn register_all(
             let lines = req.params.get("lines").and_then(|v| v.as_u64()).unwrap_or(100) as usize;
             let pool = pool.clone();
             Box::pin(async move { super::agent::handle_logs(&pool, &id, lines).await })
+        }),
+    );
+
+    // AG-UI runs: start a run that streams protocol events, poll its
+    // event log, or interrupt it.
+    let runs = agui_runs.clone();
+    let pool = agent_pool.clone();
+    let st = state.clone();
+    router.register(
+        "agent_agui_run",
+        Arc::new(move |req, _| {
+            let kind = req
+                .params
+                .get("kind")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "opencode".into());
+            let worktree = req
+                .params
+                .get("worktree")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| ".".into());
+            let prompt = req
+                .params
+                .get("prompt")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_default();
+            let thread_id = req
+                .params
+                .get("thread_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            let runs = runs.clone();
+            let pool = pool.clone();
+            let st = st.clone();
+            Box::pin(async move {
+                super::agui::handle_agui_run(&runs, &pool, &st, &kind, &worktree, &prompt, thread_id.as_deref()).await
+            })
+        }),
+    );
+
+    let runs = agui_runs.clone();
+    router.register(
+        "agent_agui_events",
+        Arc::new(move |req, _| {
+            let run_id = req
+                .params
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_default();
+            let after = req.params.get("after").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+            let runs = runs.clone();
+            Box::pin(async move { super::agui::handle_agui_events(&runs, &run_id, after).await })
+        }),
+    );
+
+    let runs = agui_runs.clone();
+    router.register(
+        "agent_agui_stop",
+        Arc::new(move |req, _| {
+            let run_id = req
+                .params
+                .get("run_id")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .unwrap_or_default();
+            let runs = runs.clone();
+            Box::pin(async move { super::agui::handle_agui_stop(&runs, &run_id).await })
         }),
     );
 

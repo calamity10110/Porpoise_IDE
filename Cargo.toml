@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/porpoise-core",
+    "crates/porpoise-agui",
     "crates/porpoise-db",
     "crates/porpoise-cli",
     "crates/porpoise-relay",

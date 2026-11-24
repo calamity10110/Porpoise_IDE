@@ -4186,6 +4186,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "libc",
+ "porpoise-agui",
  "porpoise-core",
  "porpoise-db",
  "porpoise-git",
@@ -4195,6 +4196,15 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "porpoise-agui"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -4410,10 +4420,12 @@ dependencies = [
 name = "porpoise-server"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "libc",
  "notify-rust",
  "porpoise-agent",
+ "porpoise-agui",
  "porpoise-browser",
  "porpoise-core",
  "porpoise-db",

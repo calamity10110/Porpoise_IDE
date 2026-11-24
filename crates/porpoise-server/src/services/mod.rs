@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod agui;
 pub mod browser_service;
 pub mod config;
 pub mod esp32_service;

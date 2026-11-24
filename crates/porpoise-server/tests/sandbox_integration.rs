@@ -21,6 +21,7 @@ fn router_with_temp_data_dir(data_dir: &std::path::Path) -> Router {
         chrono::Utc::now(),
         pty,
         agents,
+        porpoise_server::services::agui::AgUiRunRegistry::new(),
         state,
         "test-token".into(),
         None,

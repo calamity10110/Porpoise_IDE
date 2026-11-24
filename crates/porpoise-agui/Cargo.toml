@@ -1,0 +1,11 @@
+[package]
+name = "porpoise-agui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "AG-UI 1.0 protocol events, SSE encoding, and run translation for Porpoise"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true

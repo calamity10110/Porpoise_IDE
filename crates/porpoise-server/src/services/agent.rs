@@ -3,6 +3,23 @@ use std::path::Path;
 use porpoise_agent::AgentPool;
 use porpoise_core::error::Result;
 
+/// Parse an RPC/CLI agent kind string ("claude", "opencode", ...) into
+/// an [`porpoise_agent::types::AgentKind`]. Unknown names become custom
+/// agents named after the string.
+pub fn parse_kind(kind: &str) -> porpoise_agent::types::AgentKind {
+    match kind {
+        "claude" | "claude-code" => porpoise_agent::types::AgentKind::ClaudeCode,
+        "codex" => porpoise_agent::types::AgentKind::Codex,
+        "gemini" => porpoise_agent::types::AgentKind::Gemini,
+        "opencode" => porpoise_agent::types::AgentKind::OpenCode,
+        "z" | "zai" => porpoise_agent::types::AgentKind::ZAI,
+        "openai" => porpoise_agent::types::AgentKind::OpenAI,
+        "grok" => porpoise_agent::types::AgentKind::Grok,
+        "openrouter" => porpoise_agent::types::AgentKind::OpenRouter,
+        other => porpoise_agent::types::AgentKind::Custom(other.to_string()),
+    }
+}
+
 pub async fn handle_list(pool: &AgentPool) -> Result<serde_json::Value> {
     let agents = pool.list().await;
     let list: Vec<serde_json::Value> = agents
@@ -38,17 +55,7 @@ pub async fn handle_detect() -> Result<serde_json::Value> {
 }
 
 pub async fn handle_run(pool: &AgentPool, kind: &str, worktree: &str, prompt: &str) -> Result<serde_json::Value> {
-    let agent_kind = match kind {
-        "claude" | "claude-code" => porpoise_agent::types::AgentKind::ClaudeCode,
-        "codex" => porpoise_agent::types::AgentKind::Codex,
-        "gemini" => porpoise_agent::types::AgentKind::Gemini,
-        "opencode" => porpoise_agent::types::AgentKind::OpenCode,
-        "z" | "zai" => porpoise_agent::types::AgentKind::ZAI,
-        "openai" => porpoise_agent::types::AgentKind::OpenAI,
-        "grok" => porpoise_agent::types::AgentKind::Grok,
-        "openrouter" => porpoise_agent::types::AgentKind::OpenRouter,
-        other => porpoise_agent::types::AgentKind::Custom(other.to_string()),
-    };
+    let agent_kind = parse_kind(kind);
 
     let worktree_path = Path::new(worktree);
     let id = pool.spawn(agent_kind, worktree_path).await?;

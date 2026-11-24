@@ -68,6 +68,9 @@ pub enum OutputType {
     Stderr,
     Status,
     Thinking,
+    /// The agent process exited with this code. `-1` means killed by a
+    /// signal or an unknown exit status. Always the last output of a run.
+    Exit(i32),
 }
 
 #[derive(Debug, Clone)]
