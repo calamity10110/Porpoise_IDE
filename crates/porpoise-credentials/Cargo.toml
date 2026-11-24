@@ -13,7 +13,7 @@ chrono.workspace = true
 aes-gcm.workspace = true
 rand.workspace = true
 zeroize.workspace = true
-sha2 = "0.10"
+sha2 = "0.11"
 pbkdf2 = { version = "0.12", features = ["simple"] }
 hmac = "0.12"
 fs2 = "0.4"
