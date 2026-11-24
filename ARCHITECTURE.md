@@ -67,7 +67,10 @@ porpoise-core (foundation types, traits, errors)
 ├── porpoise-runtime ────────── depends on: core, relay
 ├── porpoise-git ────────────── depends on: core, network
 ├── porpoise-terminal ───────── depends on: core, runtime
-├── porpoise-agent ──────────── depends on: core, runtime, git
+├── porpoise-agent ──────────── depends on: core, runtime, git, agui
+├── porpoise-agui ───────────── standalone (serde, uuid) — AG-UI 1.0 events
+├── porpoise-opencode ───────── depends on: core, agent
+├── porpoise-design ─────────── depends on: core
 ├── porpoise-ssh ────────────── depends on: core, network
 ├── porpoise-browser ────────── depends on: core, network
 ├── porpoise-skills ─────────── depends on: core
@@ -684,7 +687,10 @@ impl Transport for NamedPipeTransport { ... }
 | `porpoise-db` | SQLite persistence | `sqlx`/`rusqlite`, `porpoise-core` |
 | `porpoise-server` | Background daemon | All service crates above |
 | `porpoise-app` | Desktop application | `tauri`, `porpoise-cli` |
-| `porpoise-agent` | Agent integration protocols | `porpoise-core`, `porpoise-runtime` |
+| `porpoise-agent` | Agent integration protocols | `porpoise-core`, `porpoise-runtime`, `porpoise-agui` |
+| `porpoise-agui` | AG-UI 1.0 protocol events, SSE encoding, run translation | `serde`, `uuid` |
+| `porpoise-opencode` | OpenCode agent integration (CLI wrapper, JSON parsing) | `porpoise-core`, `porpoise-agent`, `tokio` |
+| `porpoise-design` | Visual workflow designer — graph-based pipeline builder | `porpoise-core`, `uuid`, `chrono` |
 | `porpoise-skills` | WASM plugin runtime | `wasmtime`, `porpoise-core` |
 | `porpoise-automation` | Workflow automation engine | `serde_yaml`, `tokio`, `porpoise-agent`, `porpoise-browser`, `porpoise-credentials` |
 | `porpoise-credentials` | Encrypted credential storage | `aes-gcm`, `rand`, `zeroize`, `porpoise-core` |

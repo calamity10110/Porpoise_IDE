@@ -378,6 +378,9 @@ porpoise/
 │   ├── porpoise-server/     # Background daemon
 │   ├── porpoise-app/        # Desktop app (Tauri)
 │   ├── porpoise-agent/      # Agent integration
+│   ├── porpoise-agui/       # AG-UI 1.0 event streams (SSE encoding)
+│   ├── porpoise-opencode/   # OpenCode agent integration
+│   ├── porpoise-design/     # Visual workflow designer (drag-and-drop)
 │   ├── porpoise-skills/     # WASM plugin runtime
 │   ├── porpoise-automation/ # Workflow automation engine
 │   ├── porpoise-credentials/ # Encrypted credential storage
